@@ -44,6 +44,12 @@ const ResoucePage = lazy(() => import("@/pages/resoucePage"));
 const MonitorPage = lazy(() => import("@/pages/Monitor"));
 const Deployment = lazy(() => import("@/pages/ModelPage/deployment"));
 const SystemConfig = lazy(() => import("@/pages/ModelPage/manage/SystemModelConfig"));
+const CoursesPage = lazy(() => import("../pages/EducationPage/CoursesPage"));
+const CourseDetailPage = lazy(() => import("../pages/EducationPage/CourseDetailPage"));
+const UnitLearningPage = lazy(() => import("../pages/EducationPage/UnitLearningPage"));
+const PortfolioPage = lazy(() => import("../pages/EducationPage/PortfolioPage"));
+const ClassesPage = lazy(() => import("../pages/EducationPage/ClassesPage"));
+const AccountsPage = lazy(() => import("../pages/EducationPage/AccountsPage"));
 
 const baseConfig = {
   basename: __APP_ENV__.BASE_URL
@@ -94,7 +100,15 @@ const privateRouter = [
       { path: "label/chat/:id/:fid/:cid/:type", element: <TaskAppChats /> },
       {
         path: "education",
-        element: <div>Education Module — Under Construction</div>,
+        children: [
+          { path: "courses", element: <CoursesPage /> },
+          { path: "courses/:courseId", element: <CourseDetailPage /> },
+          { path: "courses/:courseId/:unitId", element: <UnitLearningPage /> },
+          { path: "portfolio", element: <PortfolioPage /> },
+          { path: "classes", element: <ClassesPage /> },
+          { path: "classes/:classId", element: <ClassesPage /> },
+          { path: "accounts", element: <AccountsPage /> },
+        ],
       },
       { path: "monitor", element: <MonitorPage /> },
     ],
