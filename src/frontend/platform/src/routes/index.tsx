@@ -41,14 +41,6 @@ const Management = lazy(() => import("@/pages/ModelPage/manage"));
 const Report = lazy(() => import("@/pages/Report"));
 const SystemPage = lazy(() => import("@/pages/SystemPage"));
 const ResoucePage = lazy(() => import("@/pages/resoucePage"));
-const EducationLayout = lazy(() => import("@/pages/EducationPage/EducationLayout"));
-const EducationPage = lazy(() => import("@/pages/EducationPage"));
-const CourseDetail = lazy(() => import("@/pages/EducationPage/CourseDetail"));
-const ChapterLearning = lazy(() => import("@/pages/EducationPage/ChapterLearning"));
-const ProgressPage = lazy(() => import("@/pages/EducationPage/ProgressPage"));
-const PracticeEnvironment = lazy(() => import("@/pages/EducationPage/PracticeEnvironment"));
-const GuidedBuilder = lazy(() => import("@/pages/EducationPage/GuidedBuilder"));
-const CreationSuccess = lazy(() => import("@/pages/EducationPage/CreationSuccess"));
 const MonitorPage = lazy(() => import("@/pages/Monitor"));
 const Deployment = lazy(() => import("@/pages/ModelPage/deployment"));
 const SystemConfig = lazy(() => import("@/pages/ModelPage/manage/SystemModelConfig"));
@@ -102,16 +94,7 @@ const privateRouter = [
       { path: "label/chat/:id/:fid/:cid/:type", element: <TaskAppChats /> },
       {
         path: "education",
-        element: <EducationLayout />,
-        children: [
-          { index: true, element: <EducationPage /> },
-          { path: "courses/:courseId", element: <CourseDetail /> },
-          { path: "courses/:courseId/chapters/:chapterId", element: <ChapterLearning /> },
-          { path: "progress", element: <ProgressPage /> },
-          { path: "practice", element: <PracticeEnvironment /> },
-          { path: "guided-builder", element: <GuidedBuilder /> },
-          { path: "success", element: <CreationSuccess /> },
-        ],
+        element: <div>Education Module — Under Construction</div>,
       },
       { path: "monitor", element: <MonitorPage /> },
     ],
