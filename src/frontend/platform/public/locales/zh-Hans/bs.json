@@ -132,6 +132,9 @@
     "groupModel": "模型管理",
     "groupSettings": "系统管理",
     "educationTeaching": "课程管理",
+    "educationCourses": "课程学习",
+    "educationPortfolio": "我的作品集",
+    "educationClasses": "我的班级",
     "agentSquare": "智能体广场",
     "agentBuild": "智能体构建",
     "systemSettings": "系统设置"
