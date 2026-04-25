@@ -72,6 +72,22 @@ from bisheng.utils.exceptions import EtlException, FileParseException
 from bisheng_langchain.rag.extract_info import extract_title, async_extract_title
 from bisheng_langchain.text_splitter import ElemCharacterTextSplitter
 
+# ============================================================
+# 常量定义 - 知识库处理相关配置
+# ============================================================
+
+# 单个 chunk 的最大字符数限制
+# 增大到 50000，避免大段文本（如论文、表格）切分失败
+# 现代 LLM 上下文已足够大，10K 限制过时
+MAX_CHUNK_SIZE = 50000
+
+# ES 查询默认返回数量
+ES_SEARCH_SIZE = 10000
+
+# 文件复制分页大小
+FILE_COPY_PAGE_SIZE = 20
+
+
 filetype_load_map = {
     "txt": TextLoader,
     "pdf": PyPDFLoader,
@@ -184,6 +200,9 @@ class KnowledgeUtils:
     def get_knowledge_file_object_name(cls, file_id: int, file_name: str) -> str:
         """Get Knowledge Base Source Files atminioStorage Path for"""
         file_ext = file_name.split(".")[-1]
+        # Security: Validate file extension to prevent path traversal attacks
+        if not re.match(r'^[a-zA-Z0-9]{1,10}$', file_ext):
+            raise ValueError(f'Invalid file extension: "{file_ext}". Only alphanumeric characters (1-10 chars) are allowed.')
         return f"original/{file_id}.{file_ext}"
 
     @classmethod
@@ -611,7 +630,7 @@ def add_file_embedding(
                 texts.append(val["text"])
                 metadatas.append(Metadata(**val["metadata"]))
     for index, one in enumerate(texts):
-        if len(one) > 10000:
+        if len(one) > MAX_CHUNK_SIZE:
             if file_ext in (".xlsx", ".xls", ".csv"):
                 raise KnowledgeExcelChunkMaxError()
             raise KnowledgeFileChunkMaxError()
@@ -643,7 +662,7 @@ def add_file_embedding(
         metadata.document_id = db_file.id
         metadata.knowledge_id = db_file.knowledge_id
         if extra_meta:
-            metadata.user_metadata = metadata.user_metadata.update(extra_meta)
+            metadata.user_metadata.update(extra_meta)
         metadata.upload_time = int(db_file.create_time.timestamp())
         metadata.update_time = int(db_file.update_time.timestamp())
         metadata.uploader = uploader
@@ -983,7 +1002,7 @@ def read_chunk_text(
             bbox=json.dumps({"chunk_bboxes": t.metadata.get("chunk_bboxes", "")}),
             page=(
                 t.metadata["chunk_bboxes"][0].get("page")
-                if t.metadata.get("chunk_bboxes", None)
+                if isinstance(t.metadata.get("chunk_bboxes"), list) and len(t.metadata["chunk_bboxes"]) > 0
                 else t.metadata.get("page", 0)
             ),
             document_name=file_name,
@@ -1186,7 +1205,7 @@ async def async_read_chunk_text(
             bbox=json.dumps({"chunk_bboxes": t.metadata.get("chunk_bboxes", "")}),
             page=(
                 t.metadata["chunk_bboxes"][0].get("page")
-                if t.metadata.get("chunk_bboxes", None)
+                if isinstance(t.metadata.get("chunk_bboxes"), list) and len(t.metadata["chunk_bboxes"]) > 0
                 else t.metadata.get("page", 0)
             ),
             document_name=file_name,
@@ -1204,7 +1223,7 @@ def text_knowledge(
         db_knowledge: Knowledge, db_file: KnowledgeFile, documents: List[Document]
 ):
     """Usetext Importknowledge"""
-    embeddings = LLMService.get_bisheng_knowledge_embedding_sync(model_id=int(db_knowledge.model),
+    embeddings = LLMService.get_eagent_knowledge_embedding_sync(model_id=int(db_knowledge.model),
                                                                  invoke_user_id=db_file.user_id)
     vectore_client = decide_vectorstores(
         db_knowledge.collection_name, "Milvus", embeddings
@@ -1317,7 +1336,7 @@ def QA_save_knowledge(db_knowledge: Knowledge, QA: QAKnowledge):
     extra.update({"answer": answer, "main_question": questions[0]})
     docs = [Document(page_content=question, metadata=extra) for question in questions]
     try:
-        embeddings = LLMService.get_bisheng_knowledge_embedding_sync(invoke_user_id=QA.user_id,
+        embeddings = LLMService.get_eagent_knowledge_embedding_sync(invoke_user_id=QA.user_id,
                                                                      model_id=int(db_knowledge.model))
         vector_client = decide_vectorstores(
             db_knowledge.collection_name, "Milvus", embeddings

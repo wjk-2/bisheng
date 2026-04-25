@@ -14,9 +14,8 @@ import svgr from "vite-plugin-svgr";
 const app_env = { BASE_URL: '' } // /custom
 
 // Use environment variable to determine the target.
-//  const target = process.env.VITE_PROXY_TARGET || "http://127.0.0.1:7860";
-const target = process.env.VITE_PROXY_TARGET || "http://192.168.106.120:3002";
-const fileServiceTarget = "http://192.168.106.116:9000";
+const target = process.env.VITE_PROXY_TARGET || "http://127.0.0.1:7860";
+const fileServiceTarget = "http://minio:9000";
 
 // 公共代理配置
 const commonProxyOptions = {
@@ -44,7 +43,7 @@ const createProxyConfig = (target, rewrite = true) => ({
 const apiRoutes = ["/api/", "/health"];
 const apiProxyConfig = createProxyConfig(target);
 // 文件服务路由配置
-const fileServiceRoutes = ["/bisheng", "/tmp-dir"];
+const fileServiceRoutes = ["/eagent", "/tmp-dir"];
 const fileServiceProxyConfig = createProxyConfig(fileServiceTarget);
 
 const proxyTargets = {};
@@ -71,21 +70,30 @@ export default defineConfig(() => {
           entryFileNames: 'assets/js/[name]-[hash].js',
           assetFileNames: 'assets/[ext]/[name]-[hash].[ext]',
           manualChunks(id) {
+            // 优先处理共享组件
+            if (id.includes('components/OnlineConfirmModal')) {
+              return 'shared-components';
+            }
+
             if (id.includes('node_modules')) {
-              if (id.includes('react-ace') || id.includes('ace-builds') || id.includes('react-syntax-highlighter') || id.includes('rehype-mathjax') || id.includes('react-markdown')) {
-                return 'acebuilds';
-              }
+              // 注意：ace-builds, react-ace, react-markdown 等依赖 React
+              // 不要将它们单独分块，否则会导致循环依赖
+              // 统一放入 vendor chunk
               if (id.includes('@xyflow/react')) {
                 return 'reactflow';
               }
               if (id.includes('pdfjs-dist')) {
                 return 'pdfjs';
               }
+              if (id.includes('mathjax-full') || id.includes('rehype-mathjax')) {
+                return 'mathjax';
+              }
               if (id.includes('react-window') || id.includes('react-beautiful-dnd') || id.includes('react-dropzone')) {
                 return 'reactdrop';
               }
 
-              return
+              // 其他 node_modules 包（包括 ace-builds, react-markdown 等）放入 vendor chunk
+              return 'vendor';
             }
           }
         }
@@ -133,7 +141,8 @@ export default defineConfig(() => {
       // })
     ],
     define: {
-      __APP_ENV__: JSON.stringify(app_env)
+      __APP_ENV__: JSON.stringify(app_env),
+      PACKAGE_VERSION: JSON.stringify('browser'),
     },
     server: {
       host: '0.0.0.0',

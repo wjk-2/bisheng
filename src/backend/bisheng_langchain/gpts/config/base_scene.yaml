@@ -19,7 +19,7 @@ assistant:
   tools:
     - type: "sina_realtime_info"
     - type: "sina_history_KLine"
-    - type: "bisheng_code_interpreter"
+    - type: "eagent_code_interpreter"
       minio:
         MINIO_ENDPOINT: "110.16.193.170:50061"
         MINIO_SHAREPOINT: "110.16.193.170:50061"

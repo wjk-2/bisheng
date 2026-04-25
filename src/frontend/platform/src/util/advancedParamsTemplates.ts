@@ -1,35 +1,37 @@
 // src/configs/advancedParamsTemplates.ts
 
+/** LLM 高级参数动态值类型 */
+type LLMParamValue = string | number | boolean | null | Record<string, unknown> | LLMParamValue[];
+
 // 定义高级参数配置的类型接口
 export interface AdvancedParams {
-    cache?: any;
-    extra_body?: any;
-    request_timeout?: any;
-    seed?: any;
+    cache?: LLMParamValue;
+    extra_body?: LLMParamValue;
+    request_timeout?: LLMParamValue;
+    seed?: LLMParamValue;
     streaming?: boolean;
     temperature?: number | null;
     top_p?: number | null;
-    reasoning?: any;
-    top_p?: number;
+    reasoning?: LLMParamValue;
     max_retries?: number;
     disable_streaming?: boolean;
-    model_kwargs?: any;
-    model?: any;
-    endpoint?: any;
-    tags?: any;
-    default_request_timeout?: any;
-    api_base?: any;
-    default_headers?: any;
-    service_tier?: any;
+    model_kwargs?: LLMParamValue;
+    model?: LLMParamValue;
+    endpoint?: LLMParamValue;
+    tags?: LLMParamValue;
+    default_request_timeout?: LLMParamValue;
+    api_base?: LLMParamValue;
+    default_headers?: LLMParamValue;
+    service_tier?: LLMParamValue;
     base_url?: string;
-    http_client?: any;
+    http_client?: LLMParamValue;
     max_tokens?: number;
     n?: number;
-    tiktoken_model_name?: any;
+    tiktoken_model_name?: LLMParamValue;
     num_ctx?: number;
-    num_gpu?: any;
+    num_gpu?: LLMParamValue;
     chunk_size?: number;
-    [key: string]: any; // 允许其他自定义参数
+    [key: string]: LLMParamValue; // 允许其他自定义参数
   }
   
   // LLM模型模板

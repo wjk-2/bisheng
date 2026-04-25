@@ -27,7 +27,6 @@ export default function InvitationCodeForm({ showCode, setShowCode }) {
 
         try {
             const result = await bindInviteCode(invitationCode.trim())
-            console.log('result :>> ', result);
             if (result.status_code === 500) {
                 setError(result.status_message || localize('com_invite_submit_failed'))
                 // setError("您输入的邀请码无效")
@@ -52,7 +51,7 @@ export default function InvitationCodeForm({ showCode, setShowCode }) {
         <Dialog open={showCode} onOpenChange={setShowCode}>
             <DialogContent className="sm:max-w-[560px]">
                 <div className="p-2">
-                    {/* BISHENG Logo */}
+                    {/* E-Agent Logo */}
                     <div className="" style={{ backgroundImage: `url('${__APP_ENV__.BASE_URL}/assets/diandian.png')` }}>
                         <div className="text-2xl font-bold text-primary pt-20 pl-8">{localize('com_invite_title')}</div>
                         {/* Description */}

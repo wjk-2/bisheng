@@ -36,7 +36,7 @@ PYTHON_BASIC_TYPES = [str, bool, int, float, tuple, list, dict, set]
 
 DIRECT_TYPES = [
     'str', 'bool', 'dict', 'int', 'float', 'Any', 'prompt', 'code', 'NestedDict', 'variable', 'knowledge_list',
-    'knowledge_one', 'bisheng_model', 'bisheng_embedding'
+    'knowledge_one', 'eagent_model', 'eagent_embedding'
 ]
 
 # Added to recordnode_id And of the relationship between objectskey
@@ -52,6 +52,8 @@ RSA_KEY = 'rsa_'
 USER_PASSWORD_ERROR = 'user_password_error:{}'
 # Store current user logged incookie, keyIs Userid
 USER_CURRENT_SESSION = 'user_current_session:{}'
+# JWT Token blacklist key prefix, key is jti (JWT ID)
+JWT_BLACKLIST_PREFIX = 'jwt_blacklist:{}'
 
 LOADERS_INFO: List[Dict[str, Any]] = [
     {

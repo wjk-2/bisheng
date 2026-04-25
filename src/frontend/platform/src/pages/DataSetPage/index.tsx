@@ -78,7 +78,7 @@ export default function index() {
                                 <TableCell className="max-w-[300px] break-all">
                                     <div className="truncate-multiline">{el.user_name || '--'}</div>
                                 </TableCell>
-                                <TableCell className="text-right" onClick={() => { window.libname = el.name; }}>
+                                <TableCell className="text-right">
                                     <Button variant="link" className="px-1" onClick={() => handleDownloadFile(el.name, el.url)}>{t('dataset.download')}</Button>
                                     <Button variant="link" onClick={() => handleDelete(el.id)} className="ml-4 text-red-500 px-0">{t('delete')}</Button>
                                 </TableCell>
@@ -87,7 +87,7 @@ export default function index() {
                     </TableBody>
                 </Table>
             </div>
-            <div className="bisheng-table-footer px-6 bg-background-login">
+            <div className="eagent-table-footer px-6 bg-background-login">
                 <p className="desc">{t('dataset.collection')}</p>
                 <div>
                     <AutoPagination

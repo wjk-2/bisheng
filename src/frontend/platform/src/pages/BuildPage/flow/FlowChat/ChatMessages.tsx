@@ -86,7 +86,6 @@ export default function ChatMessages({
 
     // const messagesList = [...hisMessages, ...messages]
     const messagesList = [...messages]
-    console.log('ui messages :>> ', messagesList);
     // 成对的qa msg
     const findQa = (msgs, index) => {
         const item = msgs[index]

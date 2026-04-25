@@ -13,7 +13,6 @@ const getBrowserLanguage = () => {
     const browserLang = navigator.language || navigator.userLanguage || 'en-US';
     // Map browser language codes to the languages we support 
     if (browserLang.startsWith('zh')) return 'zh-Hans';
-    if (browserLang.startsWith('ja')) return 'ja';
     return 'en-US';
 };
 
@@ -25,7 +24,7 @@ i18n.use(Backend)
         partialBundledLanguages: true,
         ns: ['bs', 'flow'],
         lng: userLanguage,
-        fallbackLng: 'en-US',
+        fallbackLng: 'zh-Hans',
         backend: {
             loadPath: __APP_ENV__.BASE_URL + '/locales/{{lng}}/{{ns}}.json?v=' + json.version
         },

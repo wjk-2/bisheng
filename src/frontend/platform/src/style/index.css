@@ -10,7 +10,8 @@
 
     --text-color: rgba(17, 17, 17, 0.3);
 
-    --background-main: rgba(244, 245, 248, 1);
+    --background-main: rgba(247, 249, 255, 1);
+    --studio-page-bg: linear-gradient(180deg, #F7F9FF 0%, #F2F5FE 100%);
 
     --background-main-content: rgba(255, 255, 255, 1);
 
@@ -49,12 +50,11 @@
     --card-foreground: 222.2 47.4% 11.2%;
     --white: white;
     /* hsl(222 47% 11%) */
-    --border: 214.3 21.8% 91.4%;
-    /* hsl(214 32% 91%) */
+    --border: 220 22% 87%;
+    /* hsl(220 22% 87%) = #D9DEE9 */
     --input: 223 48% 44%;
-    /* hsl(214 32% 91%) */
-    --primary: 220 98% 45%;
-    /* hsl(222 27% 18%) */
+    --primary: 240 100% 64%;
+    /* hsl(240 100% 64%) = #4658FF */
     --primary-foreground: 210 40% 98%;
     /* hsl(210 40% 98%) */
     --secondary: 210 40% 96.1%;

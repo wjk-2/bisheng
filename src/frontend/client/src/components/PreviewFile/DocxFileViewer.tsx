@@ -1,4 +1,5 @@
 import * as mammoth from "mammoth";
+import DOMPurify from "dompurify";
 import { useEffect, useRef, useState } from "react";
 import { LoadingIcon } from "../ui/icon/Loading";
 
@@ -22,8 +23,8 @@ const DocxPreview = ({ filePath }) => {
                 // 3. 使用 Mammoth 转换为 HTML
                 const result = await mammoth.convertToHtml({ arrayBuffer });
 
-                // 4. 设置生成的 HTML
-                setHtmlContent(result.value);
+                // 4. 设置生成的 HTML（使用 DOMPurify 净化，防止 XSS）
+                setHtmlContent(DOMPurify.sanitize(result.value));
                 setError(null);
             } catch (err) {
                 setError(err.message);

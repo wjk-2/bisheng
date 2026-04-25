@@ -10,7 +10,6 @@ export function classNames(...classes: Array<string>): string {
 }
 
 export function downloadFile(url, label) {
-    console.log('download file :>> ', url);
 
     return axios.get(url, { responseType: "blob" }).then((res: any) => {
         const blob = new Blob([res.data]);
@@ -233,6 +232,38 @@ export function isValidJSON(str) {
         return true;
     } catch (e) {
         return false;
+    }
+}
+
+/**
+ * 安全格式化 ISO 时间字符串
+ * 将 '2024-01-15T10:30:00' 格式转换为 '2024-01-15 10:30:00'
+ * @param time - ISO 时间字符串，可能为 null/undefined
+ * @param fallback - 空值时的默认返回值，默认为 '--'
+ */
+export function formatDateTime(time: string | null | undefined, fallback: string = '--'): string {
+    if (!time || typeof time !== 'string') {
+        return fallback;
+    }
+    return time.replace('T', ' ');
+}
+
+/**
+ * 安全解析 JSON 字符串
+ * @param jsonStr - JSON 字符串，可能为 null/undefined/非法 JSON
+ * @param defaultValue - 解析失败时的默认返回值
+ */
+export function safeJsonParse<T = any>(jsonStr: string | null | undefined, defaultValue: T | null = null): T | null {
+    if (jsonStr === null || jsonStr === undefined || jsonStr === '') {
+        return defaultValue;
+    }
+    if (typeof jsonStr !== 'string') {
+        return defaultValue;
+    }
+    try {
+        return JSON.parse(jsonStr);
+    } catch (e) {
+        return defaultValue;
     }
 }
 

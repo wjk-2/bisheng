@@ -43,7 +43,7 @@ export const WebSearchConfig = ({
 
     return (
         <>
-            <Label className="bisheng-label">{t('bench.webSearchPrompt')}</Label>
+            <Label className="eagent-label">{t('bench.webSearchPrompt')}</Label>
             <div className="mt-3">
                 <Textarea
                     value={config.prompt || config}

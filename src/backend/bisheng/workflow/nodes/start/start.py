@@ -29,11 +29,19 @@ class StartNode(BaseNode):
     def _run(self, unique_id: str) -> Dict[str, Any]:
         if self._user_info is None and self.user_id:
             user_db = UserDao.get_user(int(self.user_id))
+            # 获取用户组信息，处理空值情况
             user_group = UserGroupDao.get_user_group(int(self.user_id))
-            groups = GroupDao.get_group_by_ids([group.group_id for group in user_group])
-            group_dict = {group.id: group.group_name for group in groups}
+            if user_group:
+                groups = GroupDao.get_group_by_ids([group.group_id for group in user_group])
+                group_dict = {group.id: group.group_name for group in groups}
+            else:
+                group_dict = {}
+            # 获取用户角色信息，处理空值情况
             user_role = UserRoleDao.get_user_roles(int(self.user_id))
-            roles = RoleDao.get_role_by_ids([role.role_id for role in user_role])
+            if user_role:
+                roles = RoleDao.get_role_by_ids([role.role_id for role in user_role])
+            else:
+                roles = []
             user_roles = []
             for one in roles:
                 if one.group_id not in group_dict.keys():

@@ -89,7 +89,7 @@ export default function KnowledgeQaSelectItem({ nodeId, data, onChange, onValida
     }, [data, value]);
 
     return <div className='node-item mb-4'>
-        <Label className="flex items-center bisheng-label mb-2">
+        <Label className="flex items-center eagent-label mb-2">
             {data.required && <span className="text-red-500">*</span>}
             {t(`${i18nPrefix}label`)}
         </Label>

@@ -15,7 +15,7 @@ import { bsConfirm } from "@/components/bs-ui/alertDialog/useConfirm";
 import { Checkbox } from "@/components/bs-ui/checkBox";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/bs-ui/tooltip";
 import Tip from "@/components/bs-ui/tooltip/tip";
-import { truncateString } from "@/util/utils";
+import { truncateString, formatDateTime, safeJsonParse } from "@/util/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
 import { CircleAlertIcon, ClipboardPenLine, Filter, RotateCw, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -251,17 +251,18 @@ export default function Files({ onPreview }) {
     const dataSouce = useMemo(() => {
         return datalist.map(el => {
             if (el.file_name.includes('xlsx', 'xls', 'csv') && el.parse_type !== "local" && el.parse_type !== "uns") {
-                const excel_rule = JSON.parse(el.split_rule).excel_rule
+                const rule = safeJsonParse(el.split_rule, {});
+                const excel_rule = rule?.excel_rule;
                 return {
                     ...el,
                     strategy: ['', t('everyRowsAsOneSegment', { count: excel_rule?.slice_length })]
                 }
             }
-            if (!el.split_rule) return {
+            const rule = safeJsonParse(el.split_rule, null);
+            if (!rule) return {
                 ...el,
                 strategy: ['', '']
             }
-            const rule = JSON.parse(el.split_rule)
             const { separator, separator_rule } = rule
             const data = separator.map((el, i) => `${separator_rule[i] === 'before' ? '✂️' : ''}${el}${separator_rule[i] === 'after' ? '✂️' : ''}`)
             return {
@@ -274,7 +275,8 @@ export default function Files({ onPreview }) {
     const splitRuleDesc = (el) => {
         if (!el.split_rule) return el.strategy[1].replace(/\n/g, '\\n')
         const suffix = el.file_name.split('.').pop().toUpperCase()
-        const excel_rule = JSON.parse(el.split_rule).excel_rule
+        const rule = safeJsonParse(el.split_rule, null);
+        const excel_rule = rule?.excel_rule;
         if (!excel_rule) return el.strategy[1].replace(/\n/g, '\\n')
         return ['XLSX', 'XLS', 'CSV'].includes(suffix) ? t('everyRowsAsOneSegment', { count: excel_rule.slice_length }) : el.strategy[1].replace(/\n/g, '\\n')
     }
@@ -567,7 +569,7 @@ export default function Files({ onPreview }) {
                                         </TooltipProvider>
                                     ) : splitRuleDesc(el)}
                                 </TableCell>
-                                <TableCell>{el.update_time.replace('T', ' ')}</TableCell>
+                                <TableCell>{formatDateTime(el.update_time)}</TableCell>
 
                                 <TableCell>
                                     <StatusIndicator status={el.status} remark={el.remark} />
@@ -617,7 +619,7 @@ export default function Files({ onPreview }) {
                     </TableBody>
                 </Table>
             </div>
-            <div className="bisheng-table-footer px-6">
+            <div className="eagent-table-footer px-6">
                 <p></p>
                 <div>
                     <AutoPagination

@@ -51,8 +51,8 @@ class ChatClient:
         # Incoming when talking to the model Full Historical Dialogue Round Count
         self.latest_history_num = 10
         self.gpts_conf = settings.get_from_db('gpts')
-        # Asynchronous Task List
-        self.task_ids = []
+        # Asynchronous Task ID set (use set for O(1) lookup and safe discard)
+        self.task_ids: set = set()
         # A queue of streaming outputs to accept the content of the streaming output, processing newquestionEmpty at all times
         self.stream_queue = Queue()
 
@@ -80,7 +80,7 @@ class ChatClient:
 
     async def wrapper_task(self, task_id: str, fn: Callable, *args, **kwargs):
         # The wrapper handler function is an asynchronous task
-        self.task_ids.append(task_id)
+        self.task_ids.add(task_id)
         start_time = time.time()
         try:
             # Execute Handling Functions
@@ -89,7 +89,7 @@ class ChatClient:
             logger.exception("handle message error")
         finally:
             # When the execution is complete, the task will beidRemove from list
-            self.task_ids.remove(task_id)
+            self.task_ids.discard(task_id)
             end_time = time.time()
             await telemetry_service.log_event(user_id=self.user_id,
                                               event_type=BaseTelemetryTypeEnum.APPLICATION_PROCESS,
@@ -266,7 +266,8 @@ class ChatClient:
         logger.info(f'need stop agent, client_key: {self.client_key}, message: {message}')
 
         # Processing function before abort
-        thread_pool.cancel_task(self.task_ids[:-1])
+        # Convert set to list for slicing; cancel all tasks except one (keep latest)
+        thread_pool.cancel_task(list(self.task_ids)[:-1])
 
         # Write streaming output to database
         answer = ''
@@ -279,8 +280,8 @@ class ChatClient:
                 reasoning_answer += msg.get('content', '')
 
         # If there is streaming output, record the streaming output to the database
-        if reasoning_answer.split():
-            res = await self.add_message('bot', answer, 'reasoning_answer', 'break_answer')
+        if reasoning_answer.strip():
+            res = await self.add_message('bot', reasoning_answer, 'reasoning_answer', 'break_answer')
             await self.send_response('reasoning_answer', 'end', '', message_id=res.id if res else None)
         if answer.strip():
             res = await self.add_message('bot', answer, 'answer', 'break_answer')
@@ -308,8 +309,10 @@ class ChatClient:
             if not input_msg:
                 # Session needs to be switched
                 logger.debug(f'need switch agent, client_key: {self.client_key} inputs: {inputs}')
-                self.client_id = inputs.get('data').get('id')
-                self.chat_id = inputs.get('data').get('chatId')
+                data = inputs.get('data')
+                if data:
+                    self.client_id = data.get('id')
+                    self.chat_id = data.get('chatId')
                 self.gpts_agent = None
                 self.gpts_async_callback = None
                 self.chat_history = []

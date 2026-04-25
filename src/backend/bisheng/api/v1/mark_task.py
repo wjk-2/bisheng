@@ -11,6 +11,7 @@ from bisheng.database.models.mark_app_user import MarkAppUser, MarkAppUserDao
 from bisheng.database.models.mark_record import MarkRecord, MarkRecordDao
 from bisheng.database.models.mark_task import MarkTask, MarkTaskDao, MarkTaskRead, MarkTaskStatus
 from bisheng.database.models.message import ChatMessageDao
+from bisheng.database.models.role_access import AccessType
 from bisheng.database.models.session import MessageSessionDao
 from bisheng.database.models.user_group import UserGroupDao
 from bisheng.user.domain.models.user import UserDao
@@ -26,16 +27,33 @@ def list(request: Request,
          page_num: int = 1,
          login_user: UserPayload = Depends(UserPayload.get_login_user)):
     """
-    Nonadmin Can only see their own marked and unlabeled
+    Admin can see all tasks
+    Group admins can see all tasks in their groups
+    Regular users can only see tasks assigned to them
     """
-    groups = UserGroupDao.get_user_admin_group(login_user.user_id)
     if login_user.is_admin():
+        # Admin: view all tasks
         task_list, count = MarkTaskDao.get_task_list(page_size=page_size, page_num=page_num, status=status,
                                                      create_id=None, user_id=None)
     else:
-        task_list, count = MarkTaskDao.get_task_list(page_size=page_size, page_num=page_num, status=status,
-                                                     create_id=login_user.user_id if groups else None,
-                                                     user_id=login_user.user_id)
+        # Check if user is a group admin
+        groups = UserGroupDao.get_user_admin_group(login_user.user_id)
+        if groups:
+            # Group admin: view all tasks in their groups
+            group_ids = [g.group_id for g in groups]
+            group_users = UserGroupDao.get_groups_user(group_ids)
+            group_user_ids = [ug.user_id for ug in group_users]
+            task_list, count = MarkTaskDao.get_task_list(
+                page_size=page_size,
+                page_num=page_num,
+                status=status,
+                create_ids=group_user_ids,
+                user_id=None
+            )
+        else:
+            # Regular user: only view tasks assigned to them
+            task_list, count = MarkTaskDao.get_task_list(page_size=page_size, page_num=page_num, status=status,
+                                                         create_id=None, user_id=login_user.user_id)
 
     result_list = []
     for task in task_list:
@@ -64,6 +82,14 @@ def list(request: Request,
 @router.get('/get_status')
 async def get_status(task_id: int, chat_id: str,
                      login_user: UserPayload = Depends(UserPayload.get_login_user)):
+    # Verify permission
+    task = MarkTaskDao.get_task_byid(task_id)
+    if not task:
+        return resp_500(data="标注任务不存在")
+
+    if not login_user.access_check(task.create_id, str(task_id), AccessType.MARK_TASK):
+        return resp_500(data="无权查看该任务状态")
+
     record = MarkRecordDao.get_record(task_id, chat_id)
     if not record:
         return resp_200(data={"status": ""})
@@ -80,7 +106,19 @@ async def get_status(task_id: int, chat_id: str,
 async def create(task_create: MarkTaskCreate, login_user: UserPayload = Depends(UserPayload.get_login_user)):
     """
     Apps and users are in a many-to-many relationship, relying on one director record
+    Only admin and group admins can create tasks
     """
+    # Permission check: only Admin and group admins can create tasks
+    if not login_user.is_admin():
+        groups = UserGroupDao.get_user_admin_group(login_user.user_id)
+        if not groups:
+            from bisheng.common.errcode.http_error import UnAuthorizedError
+            raise UnAuthorizedError.http_exception(msg='Only admin and group admins can create tasks')
+
+    # Validate user IDs exist
+    valid_users = UserDao.get_user_by_ids(task_create.user_list)
+    if not valid_users or len(valid_users) != len(task_create.user_list):
+        return resp_500(data="部分用户不存在，请检查用户ID")
 
     task = MarkTask(create_id=login_user.user_id,
                     create_user=login_user.user_name,
@@ -97,18 +135,25 @@ async def create(task_create: MarkTaskCreate, login_user: UserPayload = Depends(
 
 
 @router.get('/get_user')
-async def get_user(task_id: int):
+async def get_user(task_id: int, login_user: UserPayload = Depends(UserPayload.get_login_user)):
     """
     Query under this app All Users
     """
-
-    # accordingtype Query different sessions
+    # Verify permission
     task = MarkTaskDao.get_task_byid(task_id)
+    if not task:
+        return resp_500(data="标注任务不存在")
+
+    if not login_user.access_check(task.create_id, str(task_id), AccessType.MARK_TASK):
+        return resp_500(data="无权查看该任务用户列表")
+
     user_list = []
 
     for u in task.process_users.split(","):
-        user = UserDao.get_user(int(u))
-        user_list.append(user)
+        if u:  # Skip empty strings
+            user = UserDao.get_user(int(u))
+            if user:
+                user_list.append(user)
 
     return resp_200(data=user_list)
 
@@ -120,6 +165,14 @@ async def mark(data: MarkData,
     Flag task as current user and cannot be overwritten by others
     flow_type flow assistant
     """
+    # Verify permission: user must be in process_users list
+    task = MarkTaskDao.get_task_byid(data.task_id)
+    if not task:
+        return resp_500(data="标注任务不存在")
+
+    process_users_list = [u for u in task.process_users.split(",") if u]
+    if str(login_user.user_id) not in process_users_list:
+        return resp_500(data="您未被分配到该标注任务")
 
     # record = MarkRecordDao.get_record(data.task_id,data.session_id)
     # if record:
@@ -146,7 +199,6 @@ async def mark(data: MarkData,
         # Create an article User callout record
         MarkRecordDao.create_record(record_info)
 
-    task = MarkTaskDao.get_task_byid(task_id=data.task_id)
     msg_list = ChatMessageDao.get_msg_by_flows(task.app_id.split(","))
     # m_list = [msg.chat_id for msg in msg_list]
     m_list = msg_list
@@ -170,7 +222,15 @@ async def mark(data: MarkData,
 
 
 @router.get('/get_record')
-async def get_record(chat_id: str, task_id: int):
+async def get_record(chat_id: str, task_id: int, login_user: UserPayload = Depends(UserPayload.get_login_user)):
+    # Verify permission
+    task = MarkTaskDao.get_task_byid(task_id)
+    if not task:
+        return resp_500(data="标注任务不存在")
+
+    if not login_user.access_check(task.create_id, str(task_id), AccessType.MARK_TASK):
+        return resp_500(data="无权查看该任务记录")
+
     record = MarkRecordDao.get_record(task_id, chat_id)
     return resp_200(data=record)
 
@@ -179,8 +239,16 @@ async def get_record(chat_id: str, task_id: int):
 async def pre_or_next(chat_id: str, action: str, task_id: int,
                       login_user: UserPayload = Depends(UserPayload.get_login_user)):
     """
-    prev or next 
+    prev or next
     """
+    # Verify permission
+    task = MarkTaskDao.get_task_byid(task_id)
+    if not task:
+        return resp_500(data="标注任务不存在")
+
+    process_users_list = [u for u in task.process_users.split(",") if u]
+    if str(login_user.user_id) not in process_users_list:
+        return resp_500(data="您未被分配到该标注任务")
 
     if action not in ["prev", "next"]:
         return resp_500(data="actionParameter salah")
@@ -251,8 +319,14 @@ async def pre_or_next(chat_id: str, action: str, task_id: int,
 @router.delete('/del')
 def del_task(request: Request, task_id: int, login_user: UserPayload = Depends(UserPayload.get_login_user)):
     """
-    Nonadmin Can only see their own marked and unlabeled
+    Only the creator of the task can delete it
     """
+    task = MarkTaskDao.get_task_byid(task_id)
+    if not task:
+        return resp_500(data="标注任务不存在")
+
+    if not login_user.access_check(task.create_id, str(task_id), AccessType.MARK_TASK_WRITE):
+        return resp_500(data="无权删除该标注任务，仅任务创建者可删除")
 
     MarkTaskDao.delete_task(task_id)
     MarkRecordDao.del_record(task_id)

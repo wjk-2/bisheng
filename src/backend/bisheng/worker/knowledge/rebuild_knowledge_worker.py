@@ -4,7 +4,8 @@ from loguru import logger
 
 from bisheng.api.services.knowledge import KnowledgeService
 from bisheng.api.services.knowledge_imp import (
-    decide_vectorstores
+    decide_vectorstores,
+    ES_SEARCH_SIZE,
 )
 from bisheng.common.errcode.knowledge import KnowledgeFileFailedError
 from bisheng.core.logger import trace_id_var
@@ -19,7 +20,7 @@ from bisheng.llm.domain import LLMService
 from bisheng.worker.main import bisheng_celery
 
 
-@bisheng_celery.task(acks_late=True)
+@bisheng_celery.task(acks_late=True, time_limit=7200, soft_time_limit=6900)
 def rebuild_knowledge_celery(knowledge_id: int, new_model_id: int, invoke_user_id: int) -> str:
     """
     Asynchronous task to rebuild knowledge base
@@ -152,7 +153,7 @@ def _rebuild_embeddings(knowledge: Knowledge, files: List[KnowledgeFile], new_mo
 
         # Get newembeddingModel and createMilvusClient
         logger.info(f"[DEBUG] Begin initializing newembeddingModelsmodel_id={new_model_id}")
-        new_embeddings = LLMService.get_bisheng_knowledge_embedding_sync(model_id=new_model_id,
+        new_embeddings = LLMService.get_eagent_knowledge_embedding_sync(model_id=new_model_id,
                                                                          invoke_user_id=invoke_user_id)
         logger.info(
             f"[DEBUG] Slider Created Successfully.embeddingModel Instance: {type(new_embeddings).__name__}, model_id={getattr(new_embeddings, 'model_id', 'unknown')}")
@@ -215,7 +216,7 @@ def _process_single_file(file, es_client, index_name, vector_client):
                 "metadata.file_id": file.id
             }
         },
-        "size": 10000
+        "size": ES_SEARCH_SIZE
     }
 
     logger.debug(f"ES search query: {search_query}")

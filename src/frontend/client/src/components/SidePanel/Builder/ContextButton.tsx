@@ -39,7 +39,6 @@ export default function ContextButton({
       });
 
       if (createMutation.data?.id !== undefined) {
-        console.log('[deleteAssistant] resetting createMutation');
         createMutation.reset();
       }
 

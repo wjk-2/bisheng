@@ -17,11 +17,12 @@ from bisheng.common.errcode.server import NoLlmModelConfigError, LlmModelConfigD
 from bisheng.core.ai import ChatOllama, ChatOpenAI, ChatOpenAICompatible, \
     AzureChatOpenAI, ChatTongyi, ChatZhipuAI, MiniMaxChat, ChatAnthropic, ChatDeepSeek, \
     MoonshotChat
+from bisheng_langchain.chat_models import HostChatGLM
 from bisheng.llm.domain.const import LLMModelType, LLMServerType
 from bisheng.llm.domain.models import LLMServer, LLMModel
 from .base import BishengBase
-from ..utils import wrapper_bisheng_model_limit_check, wrapper_bisheng_model_limit_check_async, \
-    wrapper_bisheng_model_generator, wrapper_bisheng_model_generator_async
+from ..utils import wrapper_eagent_model_limit_check, wrapper_eagent_model_limit_check_async, \
+    wrapper_eagent_model_generator, wrapper_eagent_model_generator_async
 
 
 def _get_user_kwargs(model_config: dict) -> dict:
@@ -61,7 +62,7 @@ def _get_openai_params(params: dict, server_config: dict, model_config: dict) ->
             'api_key': server_config.get('openai_api_key') or server_config.get('api_key') or "empty",
             'base_url': server_config.get('openai_api_base') or server_config.get('base_url'),
         })
-        params['base_url'] = params['base_url'].rstrip('/')
+        params['base_url'] = (params.get('base_url') or '').rstrip('/')
     if server_config.get('openai_proxy'):
         params['openai_proxy'] = server_config.get('openai_proxy')
     params['stream_usage'] = True
@@ -73,7 +74,7 @@ def _get_openai_params(params: dict, server_config: dict, model_config: dict) ->
 
 def _get_azure_openai_params(params: dict, server_config: dict, model_config: dict) -> dict:
     params.update({
-        'azure_endpoint': server_config.get('azure_endpoint').rstrip('/'),
+        'azure_endpoint': (server_config.get('azure_endpoint') or '').rstrip('/'),
         'openai_api_key': server_config.get('openai_api_key'),
         'openai_api_version': server_config.get('openai_api_version'),
         'azure_deployment': params.pop('model'),
@@ -111,7 +112,7 @@ def _get_qwen_params(params: dict, server_config: dict, model_config: dict) -> d
 
 def _get_minimax_params(params: dict, server_config: dict, model_config: dict) -> dict:
     params['minimax_api_key'] = server_config.get('openai_api_key')
-    params['base_url'] = server_config.get('openai_api_base').rstrip('/')
+    params['base_url'] = (server_config.get('openai_api_base') or '').rstrip('/')
     if 'max_tokens' not in params:
         params['max_tokens'] = 2048
     if '/chat/completions' not in params['base_url']:
@@ -132,7 +133,7 @@ def _get_anthropic_params(params: dict, server_config: dict, model_config: dict)
 
 def _get_zhipu_params(params: dict, server_config: dict, model_config: dict) -> dict:
     params['zhipuai_api_key'] = server_config.get('openai_api_key')
-    params['zhipuai_api_base'] = server_config.get('openai_api_base').rstrip('/')
+    params['zhipuai_api_base'] = (server_config.get('openai_api_base') or '').rstrip('/')
     if 'chat/completions' not in params['zhipuai_api_base']:
         params['zhipuai_api_base'] = f"{params['zhipuai_api_base'].rstrip('/')}/chat/completions"
 
@@ -144,12 +145,20 @@ def _get_zhipu_params(params: dict, server_config: dict, model_config: dict) -> 
 def _get_spark_params(params: dict, server_config: dict, model_config: dict) -> dict:
     params.update({
         'api_key': f'{server_config.get("api_key")}:{server_config.get("api_secret")}',
-        'base_url': server_config.get('openai_api_base').rstrip('/'),
+        'base_url': (server_config.get('openai_api_base') or '').rstrip('/'),
     })
 
     user_kwargs = _get_user_kwargs(model_config)
     user_kwargs.update(params)
     return params
+
+
+def _get_eagent_rt_params(params: dict, server_config: dict, model_config: dict) -> dict:
+    """Bisheng RT 推理服务参数处理"""
+    params['host_base_url'] = server_config.get('host_base_url', '')
+    user_kwargs = _get_user_kwargs(model_config)
+    user_kwargs.update(params)
+    return user_kwargs
 
 
 _llm_node_type: Dict = {
@@ -174,10 +183,13 @@ _llm_node_type: Dict = {
     LLMServerType.VOLCENGINE.value: {'client': ChatOpenAICompatible, 'params_handler': _get_openai_params},
     LLMServerType.SILICON.value: {'client': ChatOpenAICompatible, 'params_handler': _get_openai_params},
     LLMServerType.MIND_IE.value: {'client': ChatOpenAICompatible, 'params_handler': _get_openai_params},
+
+    # E-Agent RT inference service (used by SFT finetune models)
+    LLMServerType.EAGENT_RT.value: {'client': HostChatGLM, 'params_handler': _get_eagent_rt_params},
 }
 
 
-class BishengLLM(BishengBase, BaseChatModel):
+class EagentLLM(BishengBase, BaseChatModel):
     """
      Use the llm model that has been launched in model management
     """
@@ -218,7 +230,7 @@ class BishengLLM(BishengBase, BaseChatModel):
         if not ignore_online and not model_info.online:
             raise LlmModelOfflineError(server_name=server_info.name, model_name=model_info.model_name)
 
-        logger.debug(f'init_bisheng_llm: server_id: {server_info.id}, model_id: {model_info.id}')
+        logger.debug(f'init_eagent_llm: server_id: {server_info.id}, model_id: {model_info.id}')
         self.model_info = model_info
         self.model_name = model_info.model_name
         self.server_info = server_info
@@ -228,7 +240,7 @@ class BishengLLM(BishengBase, BaseChatModel):
         try:
             self.llm = class_object(**params)
         except Exception as e:
-            logger.exception('init bisheng llm error')
+            logger.exception('init eagent llm error')
             raise InitLlmError(exception=e)
 
     @staticmethod
@@ -328,7 +340,7 @@ class BishengLLM(BishengBase, BaseChatModel):
                             one['image'] = one.pop('image_url', {}).get('url')
         return messages, kwargs
 
-    @wrapper_bisheng_model_limit_check
+    @wrapper_eagent_model_limit_check
     def _generate(
             self,
             messages: List[BaseMessage],
@@ -372,7 +384,7 @@ class BishengLLM(BishengBase, BaseChatModel):
                     break
         return result
 
-    @wrapper_bisheng_model_limit_check_async
+    @wrapper_eagent_model_limit_check_async
     async def _agenerate(
             self,
             messages: List[BaseMessage],
@@ -430,7 +442,7 @@ class BishengLLM(BishengBase, BaseChatModel):
             message.content = ''.join([one.get('text', '') for one in message.content])
         return message
 
-    @wrapper_bisheng_model_generator
+    @wrapper_eagent_model_generator
     def _stream(
             self,
             messages: list[BaseMessage],
@@ -443,7 +455,7 @@ class BishengLLM(BishengBase, BaseChatModel):
                 one.message = self.convert_qwen_result(one.message)
             yield one
 
-    @wrapper_bisheng_model_generator_async
+    @wrapper_eagent_model_generator_async
     async def _astream(
             self,
             messages: list[BaseMessage],

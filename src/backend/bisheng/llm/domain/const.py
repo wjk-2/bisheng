@@ -17,7 +17,7 @@ class LLMServerType(Enum):
     ANTHROPIC = 'anthropic'
     DEEPSEEK = 'deepseek'
     SPARK = 'spark'  # Xunfei Starfire Large Model
-    BISHENG_RT = 'bisheng_rt'
+    EAGENT_RT = 'eagent_rt'
     TENCENT = 'tencent'  # Tencent Cloud
     MOONSHOT = 'moonshot'  # Dark Side of the Moonkimi
     VOLCENGINE = 'volcengine'  # Large model of a volcanic engine

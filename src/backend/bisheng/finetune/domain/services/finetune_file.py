@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 from bisheng.common.dependencies.user_deps import UserPayload
 from bisheng.common.errcode.finetune import TrainFileNotExistError
+from bisheng.common.errcode.http_error import UnAuthorizedError
 from bisheng.common.schemas.api import PageList
 from bisheng.core.storage.minio.minio_manager import get_minio_storage
 from bisheng.utils import generate_uuid
@@ -65,9 +66,11 @@ class FinetuneFileService(BaseModel):
         ret = []
         for file in files:
             file_id = generate_uuid()
-            file_ext = os.path.basename(file.filename).split('.')[-1]
+            # 处理文件名为空的情况
+            filename = file.filename or f"unknown_{file_id}"
+            file_ext = os.path.basename(filename).split('.')[-1] if '.' in filename else 'bin'
             file_info = PresetTrain(id=file_id,
-                                    name=file.filename,
+                                    name=filename,
                                     url=f'{file_root}/{file_id}.{file_ext}',
                                     user_id=user.user_id,
                                     user_name=user.user_name)
@@ -80,8 +83,9 @@ class FinetuneFileService(BaseModel):
     async def get_preset_file(cls,
                               keyword: str = None,
                               page_size: int = None,
-                              page_num: int = None) -> PageList:
-        list_res, total_count = await PresetTrainDao.search_name(keyword, page_size, page_num)
+                              page_num: int = None,
+                              user_id: str = None) -> PageList:
+        list_res, total_count = await PresetTrainDao.search_name(keyword, page_size, page_num, user_id=user_id)
         return PageList(list=list_res, total=total_count)
 
     @classmethod
@@ -89,6 +93,10 @@ class FinetuneFileService(BaseModel):
         file_data = await PresetTrainDao.find_one(file_id)
         if not file_data:
             raise TrainFileNotExistError()
+
+        # admin can delete any dataset, regular users can only delete their own
+        if not user.is_admin() and str(file_data.user_id) != str(user.user_id):
+            raise UnAuthorizedError.http_exception(msg='No permission to delete this dataset')
 
         logger.info(f'delete preset train file, user: {user}; file: {file_data.model_dump()}')
         await PresetTrainDao.delete_one(file_data)

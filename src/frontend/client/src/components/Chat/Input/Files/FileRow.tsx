@@ -44,10 +44,8 @@ export default function FileRow({
         tool_resource,
       ),
     onSuccess: () => {
-      console.log('Files deleted');
     },
     onError: (error) => {
-      console.log('Error deleting files:', error);
     },
   });
 

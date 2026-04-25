@@ -1,4 +1,6 @@
 import hashlib
+import hmac
+import os
 import random
 from base64 import b64encode
 from datetime import datetime
@@ -10,6 +12,7 @@ from captcha.image import ImageCaptcha
 from fastapi import APIRouter, Depends, HTTPException, Query, Body, Request
 from fastapi.security import OAuth2PasswordBearer
 from loguru import logger
+from pydantic import BaseModel, Field
 from sqlmodel import select
 
 from bisheng.api.services.audit_log import AuditLogService
@@ -45,6 +48,10 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl='token')
 
 @router.post('/user/regist')
 async def regist(*, user: UserCreate):
+    # Check if public registration is allowed
+    allow_register = settings.get_from_db('allow_public_register')
+    if allow_register is False:
+        raise HTTPException(status_code=403, detail='Public registration is disabled')
     # Captcha Verification
     db_user = await UserService.user_register(user)
     return resp_200(db_user)
@@ -53,7 +60,18 @@ async def regist(*, user: UserCreate):
 @router.post('/user/sso')
 async def sso(*, request: Request, user: UserCreate, auth_jwt: AuthJwt = Depends()):
     """ Login interface for closed source gateways """
-    if settings.get_system_login_method().bisheng_pro:  # Judgingsso Open or not
+    # 验证 SSO 密钥
+    sso_secret = request.headers.get('X-SSO-Secret')
+    expected_secret = os.getenv('EAGENT_SSO_SECRET')
+    if not expected_secret:
+        logger.error('EAGENT_SSO_SECRET environment variable not set')
+        raise HTTPException(status_code=500, detail='SSO not configured')
+
+    if not sso_secret or not hmac.compare_digest(sso_secret, expected_secret):
+        logger.warning(f'Invalid SSO secret attempt from {get_request_ip(request)}')
+        raise HTTPException(status_code=401, detail='Invalid SSO credentials')
+
+    if settings.get_system_login_method().eagent_pro:  # Judgingsso Open or not
         account_name = user.user_name
         user_exist = UserDao.get_unique_user_by_name(account_name)
         if not user_exist:
@@ -142,7 +160,12 @@ async def get_info(login_user: LoginUser = Depends(LoginUser.get_login_user)):
 
 
 @router.post('/user/logout', status_code=201)
-async def logout(auth_jwt: AuthJwt = Depends()):
+async def logout(request: Request, auth_jwt: AuthJwt = Depends()):
+    # Revoke the current JWT token by adding its jti to the Redis blacklist
+    token = request.cookies.get('access_token_cookie')
+    if token:
+        await AuthJwt.revoke_token(token)
+    # Delete the cookie
     auth_jwt.unset_access_token()
     return resp_200()
 
@@ -552,34 +575,38 @@ async def get_captcha():
     image.save(buffered, format='PNG')
 
     capthca_b64 = b64encode(buffered.getvalue()).decode()
-    logger.info('get_captcha captcha_char={}', chr_4)
     # generate key, Generate Simple Uniqueid，
     key = CAPTCHA_PREFIX + generate_uuid()[:8]
     redis_client = await get_redis_client()
     await redis_client.aset(key, chr_4, expiration=300)
 
-    # Add configuration, whether the verification code must be used
+    # Add configuration, whether the verification code must be used - 直接从源码配置读取
     return resp_200({
         'captcha_key': key,
         'captcha': capthca_b64,
-        'user_capthca': settings.get_from_db('use_captcha') or False
+        'user_capthca': settings.get_from_yaml('use_captcha') or False
     })
 
 
 @router.get('/user/public_key', status_code=200)
 async def get_rsa_publish_key():
-    # redis Storage
     key = RSA_KEY
     redis_client = await get_redis_client()
-    # redis lock
-    if await redis_client.asetNx(key, 1):
-        # Generate a key pair
-        (pubkey, privkey) = rsa.newkeys(512)
 
-        # Save the keys to strings
-        await redis_client.aset(key, (pubkey, privkey), 3600)
+    # Try to get cached key pair first
+    cached = await redis_client.aget(key)
+    if cached:
+        pubkey, privkey = cached
     else:
-        pubkey, privkey = await redis_client.aget(key)
+        # Generate a key pair with secure key length (S-1: 512->2048)
+        (pubkey, privkey) = rsa.newkeys(2048)
+        # Atomic SET NX EX to avoid TOCTOU race (C-15)
+        set_ok = await redis_client.asetNx(key, (pubkey, privkey), 3600)
+        if not set_ok:
+            # Another process set the key first, use its value
+            cached = await redis_client.aget(key)
+            if cached:
+                pubkey, privkey = cached
 
     pubkey_str = pubkey.save_pkcs1().decode()
 
@@ -633,6 +660,18 @@ async def change_password(*,
     """
     Login user Change my password
     """
+    # 频率限制：每个用户 10 分钟内最多 5 次
+    rate_limit_key = f'change_password_rate:{login_user.user_id}'
+    redis_client = get_redis_client_sync()
+    try:
+        current_count = redis_client.get(rate_limit_key)
+        if current_count and int(current_count) >= 5:
+            raise HTTPException(status_code=429, detail='Too many password change attempts. Please try again later.')
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.warning(f'Failed to check rate limit: {e}')
+
     user_info = UserDao.get_user(login_user.user_id)
     if not user_info.password:
         return UserNotPasswordError.return_resp()
@@ -647,6 +686,12 @@ async def change_password(*,
     user_info.password_update_time = datetime.now()
     UserDao.update_user(user_info)
 
+    # 设置频率限制计数器，10分钟过期
+    try:
+        redis_client.set(rate_limit_key, int(current_count or 0) + 1, expiration=600)
+    except Exception as e:
+        logger.warning(f'Failed to set rate limit: {e}')
+
     clear_error_password_key(user_info.user_name)
     return resp_200()
 
@@ -660,6 +705,18 @@ async def change_password_public(*,
     Not Logged-In Users Change my password
     """
 
+    # 频率限制：每个用户 10 分钟内最多 5 次
+    rate_limit_key = f'change_password_public_rate:{username}'
+    redis_client = get_redis_client_sync()
+    try:
+        current_count = redis_client.get(rate_limit_key)
+        if current_count and int(current_count) >= 5:
+            raise HTTPException(status_code=429, detail='Too many password change attempts. Please try again later.')
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.warning(f'Failed to check rate limit: {e}')
+
     user_info = UserDao.get_user_by_username(username)
     if not user_info.password:
         return UserValidateError.return_resp()
@@ -670,6 +727,12 @@ async def change_password_public(*,
     user_info.password = UserService.decrypt_md5_password(new_password)
     user_info.password_update_time = datetime.now()
     UserDao.update_user(user_info)
+
+    # 设置频率限制计数器，10分钟过期
+    try:
+        redis_client.set(rate_limit_key, int(current_count or 0) + 1, expiration=600)
+    except Exception as e:
+        logger.warning(f'Failed to set rate limit: {e}')
 
     clear_error_password_key(username)
     return resp_200()
@@ -709,3 +772,80 @@ def md5_hash(string):
     md5 = hashlib.md5()
     md5.update(string.encode('utf-8'))
     return md5.hexdigest()
+
+
+class UpdateRolesAndGroupsReq(BaseModel):
+    """Request schema for updating user roles and groups"""
+    user_id: int
+    nickname: Optional[str] = Field(default=None, max_length=50, description='Display name')
+    role_ids: List[int] = []
+    group_ids: List[int] = []
+
+
+@router.post('/user/update_roles_and_groups', status_code=200)
+async def update_roles_and_groups(*,
+                                   request: Request,
+                                   data: UpdateRolesAndGroupsReq,
+                                   login_user: LoginUser = Depends(LoginUser.get_login_user)):
+    """
+    Update user's roles and groups in a single operation.
+    Only Super Admin can use this API.
+    """
+    # Only Super Admin can update roles and groups
+    if not login_user.is_admin():
+        raise HTTPException(status_code=403, detail='Only Super Admin can update user roles and groups')
+
+    user_id = data.user_id
+    role_ids = data.role_ids
+    group_ids = data.group_ids
+
+    # Check if target user exists
+    db_user = UserDao.get_user(user_id)
+    if not db_user:
+        raise HTTPException(status_code=404, detail='User not found')
+
+    # Prevent editing Super Admin
+    user_roles = UserRoleDao.get_user_roles(user_id)
+    if any(one.role_id == AdminRole for one in user_roles):
+        raise HTTPException(status_code=403, detail='Cannot edit Super Admin')
+
+    # Prevent setting as Super Admin
+    if AdminRole in role_ids:
+        raise HTTPException(status_code=403, detail='Cannot set user as Super Admin')
+
+    # Update nickname if provided
+    if data.nickname is not None:
+        db_user.nickname = data.nickname
+        UserDao.update_user(db_user)
+
+    # Update roles
+    old_role_ids = [one.role_id for one in user_roles]
+    roles_to_add = [rid for rid in role_ids if rid not in old_role_ids]
+    roles_to_remove = [rid for rid in old_role_ids if rid not in role_ids]
+
+    if roles_to_add:
+        UserRoleDao.add_user_roles(user_id, roles_to_add)
+    if roles_to_remove:
+        UserRoleDao.delete_user_roles(user_id, roles_to_remove)
+
+    # Update groups
+    old_groups = UserGroupDao.get_user_group(user_id)
+    old_group_ids = [one.group_id for one in old_groups]
+    groups_to_add = [gid for gid in group_ids if gid not in old_group_ids]
+    groups_to_remove = [gid for gid in old_group_ids if gid not in group_ids]
+
+    if groups_to_add:
+        UserGroupDao.add_user_groups(user_id, groups_to_add)
+    if groups_to_remove:
+        UserGroupDao.delete_user_groups(user_id, groups_to_remove)
+
+    logger.info(f'update_roles_and_groups: user_id={user_id}, nickname={data.nickname}, roles={role_ids}, groups={group_ids}, by={login_user.user_name}')
+
+    # Audit log
+    if roles_to_add or roles_to_remove:
+        role_info = RoleDao.get_role_by_ids(old_role_ids + role_ids)
+        role_dict = {one.id: one.role_name for one in role_info}
+        note = f"角色变更: {[role_dict.get(r, r) for r in old_role_ids]} → {[role_dict.get(r, r) for r in role_ids]}"
+        AuditLogService.update_user(login_user, get_request_ip(request), user_id, group_ids, note)
+
+    return resp_200()

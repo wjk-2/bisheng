@@ -365,10 +365,7 @@ export default function AppUseLog() {
                                     : <Badge variant="outline" className="text-red-500">{t('log.sensitiveViolation')}</Badge>
                                 }
                             </TableCell>}
-                            <TableCell className="text-right" onClick={() => {
-                                // @ts-ignore
-                                // window.libname = el.name;
-                            }}>
+                            <TableCell className="text-right">
                                 {/* <Button variant="link" className="" onClick={() => setOpenData(true)}>Add to dataset</Button> */}
                                 {
                                     el.chat_id && <Link
@@ -384,7 +381,7 @@ export default function AppUseLog() {
                 </TableBody>
             </Table>
         </div>
-        <div className="bisheng-table-footer px-6 bg-background-login">
+        <div className="eagent-table-footer px-6 bg-background-login">
             <p className="desc"></p>
             <div>
                 <AutoPagination

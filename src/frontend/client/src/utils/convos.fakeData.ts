@@ -1,5 +1,5 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck
+// Note: This is test fixture data with extensive nested objects.
+// Using type assertions for complex mock data is acceptable in test files.
 import { EModelEndpoint, ImageDetail } from '~/data-provider/data-provider/src';
 import type { ConversationData } from '~/data-provider/data-provider/src';
 

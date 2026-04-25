@@ -1,11 +1,11 @@
 import { Dialog, DialogTrigger } from "@/components/bs-ui/dialog";
 import { useToast } from "@/components/bs-ui/toast/use-toast";
-import { updateKnowledgeApi } from "@/controllers/API";
+import { getKnowledgeDetailApi, updateKnowledgeApi } from "@/controllers/API";
 import { captureAndAlertRequestErrorHoc } from "@/controllers/request";
 import { ArrowLeft, SquarePen } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { Button } from "../../../components/bs-ui/button";
 import ShadTooltip from "../../../components/ShadTooltipComponent";
 import KnowledgeBaseSettingsDialog from "./EditKnowledgeDialog";
@@ -24,17 +24,16 @@ export default function Header({ fileTitle, onBack, showBackButton = true }: Hea
     const { id } = useParams()
     const { t } = useTranslation()
     const navigate = useNavigate()
-    const location = useLocation()
 
     useEffect(() => {
-        // @ts-ignore
-        const [libname, libdesc] = window.libname || [] // 临时记忆
-        if (libname) {
-            localStorage.setItem('libname', libname)
-            localStorage.setItem('libdesc', libdesc)
-        }
-        setLibInfo({ name: libname || localStorage.getItem('libname'), desc: libdesc || localStorage.getItem('libdesc') })
-    }, [])
+        if (!id) return
+        getKnowledgeDetailApi([Number(id)]).then((res) => {
+            const item = res?.[0] as { name: string; description?: string } | undefined
+            if (item?.name) {
+                setLibInfo({ name: item.name, desc: item.description || '' })
+            }
+        })
+    }, [id])
 
     // 默认的回退逻辑
     const handleBackDefault = () => {
@@ -62,8 +61,6 @@ export default function Header({ fileTitle, onBack, showBackButton = true }: Hea
             setLibInfo(form)
             setOpen(false)
             message({ variant: 'success', description: t('saved') })
-            localStorage.setItem('libname', form.name)
-            localStorage.setItem('libdesc', form.desc)
         })
     }
 

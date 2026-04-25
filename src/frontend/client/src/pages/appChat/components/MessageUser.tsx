@@ -3,14 +3,14 @@ import { useMemo } from "react";
 import { useRecoilState } from "recoil";
 import { useLocalize } from "~/hooks";
 import { formatStrTime } from "~/utils";
-import { bishengConfState } from "../store/atoms";
+import { eagentConfState } from "../store/atoms";
 import { emitAreaTextEvent, EVENT_TYPE } from "../useAreaText";
 
 export default function MessageUser({ useName, data, showButton, disabledSearch = false, readOnly }) {
     const avatar = useMemo(() => {
         return <div className="w-6 h-6 min-w-6 text-white bg-primary rounded-full flex justify-center items-center text-xs">{useName.substring(0, 2).toUpperCase()}</div>
     }, [useName])
-    const [config] = useRecoilState(bishengConfState)
+    const [config] = useRecoilState(eagentConfState)
     const localize = useLocalize()
 
     const msg = useMemo(() => {

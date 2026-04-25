@@ -185,11 +185,16 @@ export default function ChatInput({ autoRun, version, clear, form, wsUrl, onBefo
                 wsRef.current = ws
                 // websocket linsen
                 ws.onopen = () => {
-                    console.log("WebSocket connection established!");
                     res('ok')
                 };
                 ws.onmessage = (event) => {
-                    const data = JSON.parse(event.data);
+                    let data: any;
+                    try {
+                        data = JSON.parse(event.data);
+                    } catch (e) {
+                        console.error('WebSocket message parse error:', e);
+                        return;
+                    }
                     // 过滤一些不需要的数据
                     if ((data.category === 'end_cover' && data.type !== 'end_cover')) {
                         return
@@ -217,7 +222,6 @@ export default function ChatInput({ autoRun, version, clear, form, wsUrl, onBefo
                     // }
                 }
                 ws.onclose = (event) => {
-                    console.log('error event :>> ', event);
                     // wsRef.current = null
                     // console.error('链接手动断开 event :>> ', event);
                     // setStop({ show: false, disable: false })
@@ -481,7 +485,6 @@ export default function ChatInput({ autoRun, version, clear, form, wsUrl, onBefo
     // 文件上传状态
     const { fileUploading, getFileIds, loadingChange } = useFileLoading(inputLock.locked)
     const handleSpeechRecognition = (text) => {
-        console.log('text', text);
 
         if (!showWhenLocked && inputLock.locked) return;
         if (!inputRef.current) return;

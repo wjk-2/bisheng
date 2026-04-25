@@ -285,7 +285,9 @@ export default function FileView({
 
 
         pdfjsLib.GlobalWorkerOptions.workerSrc = __APP_ENV__.BASE_URL + '/pdf.worker.min.js';
-        pdfjsLib.getDocument(pdfUrl).promise.then(async (pdfDocument) => {
+        // CVE-2024-4367: 禁用 eval 防止恶意 PDF 执行任意 JS
+        pdfjsLib.GlobalWorkerOptions.isEvalSupported = false;
+        pdfjsLib.getDocument({ url: pdfUrl, isEvalSupported: false }).promise.then(async (pdfDocument) => {
             pdfPageCache = {}
             const page = pdfPageCache[1] || await pdfDocument.getPage(1);
             pdfPageCache[1] = page
@@ -338,7 +340,6 @@ export default function FileView({
                 const [sx, sy, ex, ey] = item.label
                 const pageH = (key - startIndex) * (boxSize.width / pageScale * scale)
                 if (x <= sx && y <= sy + pageH && x1 >= ex && y1 >= ey + pageH) {
-                    console.log('item.id :>> ', item.id);
                     selects.push({ id: item.id, active: !item.active })
                 }
             })
@@ -390,7 +391,7 @@ export default function FileView({
 };
 
 
-const SASS_HOST = 'https://bisheng.dataelem.com'
+const SASS_HOST = 'https://eagent.dataelem.com'
 export const checkSassUrl = (url: string) => {
     return url.replace(/https?:\/\/[^\/]+/, __APP_ENV__.BASE_URL)
     // location.origin === SASS_HOST ? url.replace(/https?:\/\/[^\/]+/, '') : url;

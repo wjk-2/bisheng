@@ -13,7 +13,7 @@ const connections: Record<string, WebSocket> = {};
 export const useLinsightWebSocket = (versionId) => {
     const { getLinsight, updateLinsight } = useLinsightManager()
     const { showToast } = useToastContext();
-    const maxRetryCountRef = useRef(5);
+    const maxRetryCountRef = useRef(3);
 
     const linsight = getLinsight(versionId);
     const task = useMemo(() => {
@@ -25,6 +25,8 @@ export const useLinsightWebSocket = (versionId) => {
 
     // 使用 ref 存储当前活跃版本 ID
     const activeVersionIdRef = useRef(versionId);
+    // 记录当前已初始化连接的 versionId，防止 task 更新时重置 retry 计数器
+    const connectedVersionRef = useRef<string | null>(null);
 
     // 同步最新活跃版本 ID
     useEffect(() => {
@@ -65,13 +67,11 @@ export const useLinsightWebSocket = (versionId) => {
         connections[id] = websocket;
 
         websocket.onopen = () => {
-            console.log("WebSocket connection established!");
             // websocket.send(JSON.stringify(msg));
         };
 
         websocket.onmessage = (event) => {
             const taskData = JSON.parse(event.data);
-            console.log('ws data :>> ', taskData);
             /**
              * 生成一级任务list
              * 生成当前一级任务下的二级任务list
@@ -279,7 +279,6 @@ export const useLinsightWebSocket = (versionId) => {
         };
 
         websocket.onclose = () => {
-            console.log(`WebSocket closed for session ${id}`);
             if (connections[id] === websocket) {
                 delete connections[id];
                 if (maxRetryCountRef.current > 0) {
@@ -299,13 +298,21 @@ export const useLinsightWebSocket = (versionId) => {
 
 
     useEffect(() => {
-        if (!task.running) return;
+        if (!task.running) {
+            // task 停止时清除记录，下次同一 versionId 重新运行可获得全量 retry 次数
+            connectedVersionRef.current = null;
+            return;
+        }
 
         // 当没有连接或连接已关闭时创建新连接
         if (!connections[task.versionId] ||
             connections[task.versionId].readyState !== WebSocket.OPEN) {
+            // 仅在全新任务（非断线重试）时重置计数器，避免 task 属性变化触发无限 retry
+            if (connectedVersionRef.current !== task.versionId) {
+                maxRetryCountRef.current = 3;
+                connectedVersionRef.current = task.versionId;
+            }
             connect(task.versionId, { type: 'init' });
-            maxRetryCountRef.current = 3;
         }
     }, [task])
 

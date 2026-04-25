@@ -21,7 +21,7 @@ from bisheng.common.constants.enums.telemetry import BaseTelemetryTypeEnum, Appl
 from bisheng.common.dependencies.user_deps import UserPayload
 from bisheng.common.errcode import BaseErrorCode
 from bisheng.common.errcode.http_error import UnAuthorizedError
-from bisheng.common.errcode.linsight import LinsightToolInitError, LinsightBishengLLMError, LinsightGenerateSopError
+from bisheng.common.errcode.linsight import LinsightToolInitError, LinsightEagentLLMError, LinsightGenerateSopError
 from bisheng.common.schemas.telemetry.event_data_schema import NewMessageSessionEventData
 from bisheng.common.services import telemetry_service
 from bisheng.common.services.config_service import settings
@@ -38,7 +38,7 @@ from bisheng.linsight.domain.models.linsight_sop import LinsightSOPRecord
 from bisheng.database.models.session import MessageSessionDao, MessageSession
 from bisheng.interface.embeddings.custom import FakeEmbedding
 from bisheng.knowledge.domain.models.knowledge import KnowledgeRead, KnowledgeTypeEnum
-from bisheng.llm.domain.llm import BishengLLM
+from bisheng.llm.domain.llm import EagentLLM
 from bisheng.llm.domain.services import LLMService
 from bisheng.tool.domain.models.gpts_tools import GptsToolsDao
 from bisheng.tool.domain.services.executor import ToolExecutor
@@ -87,11 +87,11 @@ class LinsightWorkbenchImpl:
     class ToolsInitializationError(Exception):
         """Tool initialization error"""
 
-    class BishengLLMError(Exception):
-        """Bisheng LLMRelated Errors"""
+    class EagentLLMError(Exception):
+        """E-Agent LLM Related Errors"""
 
     @classmethod
-    async def _get_llm(cls, invoke_user_id: int) -> (BishengLLM, Any):
+    async def _get_llm(cls, invoke_user_id: int) -> (EagentLLM, Any):
         # Get and validate the workbench configuration
         workbench_conf = await cls._get_workbench_config()
 
@@ -290,11 +290,93 @@ class LinsightWorkbenchImpl:
             }
 
     @classmethod
+    async def task_title_and_route(cls, question: str, chat_id: str,
+                                    login_user: 'UserPayload',
+                                    has_files: bool = False,
+                                    tools_count: int = 0) -> Dict:
+        """Generate task title + intent routing (merged into one LLM call)"""
+        try:
+            llm, _ = await cls._get_llm(login_user.user_id)
+            prompt_service = await get_prompt_manager()
+            prompt_obj = prompt_service.render_prompt(
+                namespace="gen_title",
+                prompt_name="linsight_with_routing",
+                USER_GOAL=question,
+                HAS_FILES=str(has_files),
+                TOOLS_COUNT=str(tools_count)
+            )
+            prompt = [
+                ("system", prompt_obj.prompt.system),
+                ("user", prompt_obj.prompt.user)
+            ]
+            result = await llm.ainvoke(prompt)
+            if not result.content:
+                raise ValueError("LLM returned empty")
+
+            import re
+            raw = result.content.strip()
+            raw = re.sub(r'^```json\s*', '', raw)
+            raw = re.sub(r'\s*```$', '', raw)
+            raw = raw.strip()
+            parsed = json.loads(raw)
+            title = parsed.get("title", "New Chat")
+            intent = parsed.get("intent", "sop_task")
+            if intent not in ("simple_qa", "sop_task"):
+                intent = "sop_task"
+
+            await cls._update_session_title(chat_id, title)
+            return {"task_title": title, "chat_id": chat_id, "intent": intent, "error_message": None}
+        except Exception as e:
+            logger.error(f"Title+route failed: {e}")
+            return {"task_title": "New Chat", "chat_id": chat_id, "intent": "sop_task", "error_message": str(e)}
+
+    @classmethod
+    async def simple_qa_answer(cls, question: str,
+                               session_version: 'LinsightSessionVersion'):
+        """Simple QA direct answer (skip SOP flow). Returns async generator of SSE events."""
+        try:
+            llm, _ = await cls._get_llm(session_version.user_id)
+
+            # Prepare file context if files are uploaded
+            file_context = ""
+            if session_version.files:
+                minio_client = await get_minio_storage()
+                for file_info in session_version.files:
+                    md_path = file_info.get("markdown_file_path", "")
+                    if md_path:
+                        try:
+                            content_bytes = await minio_client.get_object(minio_client.bucket, md_path)
+                            if content_bytes:
+                                text = content_bytes.decode("utf-8") if isinstance(content_bytes, bytes) else str(content_bytes)
+                                file_context += f"\n\n### File: {file_info.get('original_filename', 'unknown')}\n{text}"
+                        except Exception as e:
+                            logger.warning(f"Failed to read file content: {e}")
+
+            system_prompt = "You are Linsight, an intelligent assistant. Answer the user question directly and accurately. Use the same language as the user."
+            if file_context:
+                system_prompt += f"\n\nThe following is the content of files uploaded by the user:{file_context}"
+
+            prompt = [("system", system_prompt), ("user", question)]
+
+            async for chunk in llm.astream(prompt):
+                if chunk.content:
+                    yield {"event": "simple_qa_chunk", "data": json.dumps({"content": chunk.content})}
+
+            yield {"event": "simple_qa_complete", "data": json.dumps({"message": "Answer complete"})}
+
+            # Update session version status to completed
+            session_version.status = SessionVersionStatusEnum.COMPLETED
+            await LinsightSessionVersionDao.insert_one(session_version)
+        except Exception as e:
+            logger.error(f"Simple QA failed: {e}")
+            yield {"event": "simple_qa_error", "data": json.dumps({"error": str(e)})}
+
+    @classmethod
     async def _get_workbench_config(cls):
         """Get and validate the workbench configuration"""
         workbench_conf = await LLMService.get_workbench_llm()
         if not workbench_conf or not workbench_conf.task_model:
-            raise cls.BishengLLMError("The task has been terminated, please contact the administrator to check the status of the Ideas task execution model")
+            raise cls.EagentLLMError("The task has been terminated, please contact the administrator to check the status of the Ideas task execution model")
         return workbench_conf
 
     @classmethod
@@ -390,7 +472,7 @@ class LinsightWorkbenchImpl:
                 llm, workbench_conf = await cls._get_llm(session_version.user_id)
             except Exception as e:
                 logger.error(f"BuatSOPContent failed: session_version_id={linsight_session_version_id}, error={str(e)}")
-                raise cls.BishengLLMError(str(e))
+                raise cls.EagentLLMError(str(e))
             tools = await cls._prepare_tools(session_version, llm)
 
             # Preparation History Summary
@@ -432,9 +514,9 @@ class LinsightWorkbenchImpl:
             logger.exception(
                 f"Failed to initialize the Inspiration Workbench tool: session_version_id={linsight_session_version_id}, error={str(e)}")
             error_message = LinsightToolInitError(exception=e)
-        except cls.BishengLLMError as e:
-            logger.exception(f"Bisheng LLMError-free: session_version_id={linsight_session_version_id}, error={str(e)}")
-            error_message = LinsightBishengLLMError(exception=e)
+        except cls.EagentLLMError as e:
+            logger.exception(f"E-Agent LLMError: session_version_id={linsight_session_version_id}, error={str(e)}")
+            error_message = LinsightEagentLLMError(exception=e)
         except Exception as e:
             logger.exception(f"BuatSOPContent failed: session_version_id={linsight_session_version_id}, error={str(e)}")
             error_message = LinsightGenerateSopError(exception=e)
@@ -458,7 +540,7 @@ class LinsightWorkbenchImpl:
 
     @classmethod
     async def _prepare_tools(cls, session_version: LinsightSessionVersion,
-                             llm: BishengLLM) -> List[BaseTool]:
+                             llm: EagentLLM) -> List[BaseTool]:
         """Preparation Tools List"""
         try:
             tools = await cls.init_linsight_config_tools(session_version, llm)
@@ -522,7 +604,7 @@ class LinsightWorkbenchImpl:
 
     @classmethod
     async def _create_linsight_agent(cls, session_version: LinsightSessionVersion,
-                                     llm: BishengLLM, tools: List[BaseTool],
+                                     llm: EagentLLM, tools: List[BaseTool],
                                      workbench_conf):
         """BuatLinsightAgent"""
         from bisheng_langchain.linsight.agent import LinsightAgent
@@ -862,17 +944,17 @@ class LinsightWorkbenchImpl:
         )
 
     @classmethod
-    async def _init_bisheng_code_tool(cls, config_tool_ids: List[int], file_dir: str, user_id: int) -> List[BaseTool]:
+    async def _init_eagent_code_tool(cls, config_tool_ids: List[int], file_dir: str, user_id: int) -> List[BaseTool]:
         """
-        Code interpreter tool for special handling initialization Bi Lift
+        Code interpreter tool for special handling initialization E-Agent
         """
         tools = []
-        bisheng_code_tool = await GptsToolsDao.aget_tool_by_tool_key(tool_key='bisheng_code_interpreter')
-        if not bisheng_code_tool or bisheng_code_tool.id not in config_tool_ids:
+        eagent_code_tool = await GptsToolsDao.aget_tool_by_tool_key(tool_key='eagent_code_interpreter')
+        if not eagent_code_tool or eagent_code_tool.id not in config_tool_ids:
             return tools
         # Individual initialization code interpreter tool
-        config_tool_ids.remove(bisheng_code_tool.id)
-        code_config = json.loads(bisheng_code_tool.extra) if bisheng_code_tool.extra else {}
+        config_tool_ids.remove(eagent_code_tool.id)
+        code_config = json.loads(eagent_code_tool.extra) if eagent_code_tool.extra else {}
         if "config" not in code_config:
             code_config["config"] = {}
         if "local" not in code_config["config"]:
@@ -891,9 +973,9 @@ class LinsightWorkbenchImpl:
                 file_list.append(WriteEntry(data=file_path, path=file_path.replace(file_dir, ".")))
         code_config["config"]["e2b"]["file_list"] = file_list
 
-        bisheng_code_tool.extra = code_config
+        eagent_code_tool.extra = code_config
 
-        tools = await ToolExecutor.init_by_tool_id(tool=bisheng_code_tool, app_id=ApplicationTypeEnum.LINSIGHT.value,
+        tools = await ToolExecutor.init_by_tool_id(tool=eagent_code_tool, app_id=ApplicationTypeEnum.LINSIGHT.value,
                                                    app_name=ApplicationTypeEnum.LINSIGHT.value,
                                                    app_type=ApplicationTypeEnum.LINSIGHT,
                                                    user_id=user_id)
@@ -901,7 +983,7 @@ class LinsightWorkbenchImpl:
 
     @classmethod
     async def init_linsight_config_tools(cls, session_version: LinsightSessionVersion,
-                                         llm: BishengLLM, need_upload: bool = False, file_dir: str = None) -> List[
+                                         llm: EagentLLM, need_upload: bool = False, file_dir: str = None) -> List[
         BaseTool]:
         """
         Tools for initializing Invis configurations
@@ -930,11 +1012,11 @@ class LinsightWorkbenchImpl:
         # todo Better tool initialization scheme
         if need_upload and file_dir:
             try:
-                bisheng_code_tool = await cls._init_bisheng_code_tool(config_tool_ids, file_dir,
+                eagent_code_tool = await cls._init_eagent_code_tool(config_tool_ids, file_dir,
                                                                       user_id=session_version.user_id)
-                tools.extend(bisheng_code_tool)
+                tools.extend(eagent_code_tool)
             except Exception as e:
-                logger.error(f"Failed to initialize BiSheng code interpreter tool: session_version_id={session_version.id}, error={str(e)}")
+                logger.error(f"Failed to initialize E-Agent code interpreter tool: session_version_id={session_version.id}, error={str(e)}")
 
         # Filter Effective ToolsID
         valid_tool_ids = [tid for tid in tool_ids if tid in config_tool_ids]

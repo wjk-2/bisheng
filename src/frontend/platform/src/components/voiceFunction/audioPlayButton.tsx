@@ -31,11 +31,9 @@ export const AudioPlayComponent = ({ messageId, msg = '' }: AudioPlayButtonProps
   const API_BASE_URL = __APP_ENV__.BASE_URL || '';
 
   const getAudioUrl = async (text: string) => {
-    console.log('请求TTS的文本:', text);
 
     // 1. 调用API
     const response = await textToSpeech(text, version);
-    console.log('TTS API 原始响应:', response);
 
     // 2. 处理响应
     let audioPath = '';
@@ -54,7 +52,6 @@ export const AudioPlayComponent = ({ messageId, msg = '' }: AudioPlayButtonProps
     if (audioPath) {
       // 3. 将相对路径拼接成完整的URL
       const audioUrl = `${API_BASE_URL}${audioPath}`;
-      console.log('生成的音频播放链接:', audioUrl);
       return audioUrl;
     } else {
       // 如果无法解析路径，抛出异常
@@ -86,7 +83,6 @@ export const AudioPlayComponent = ({ messageId, msg = '' }: AudioPlayButtonProps
       setCurrentPlayingId(messageId);
 
       const audioUrl = await getAudioUrl(msg);
-      console.log('成功获取音频链接:', audioUrl);
 
       playAudio({
         id: messageId,

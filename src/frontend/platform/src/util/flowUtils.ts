@@ -236,7 +236,6 @@ export function useCopyPasteNode(dom, lastSelection, paste, del, deps) {
     useEffect(() => {
         if (!dom) return
         const onKeyDown = (event: KeyboardEvent) => {
-            console.log('event.target :>> ', event.target);
             if (!dom.contains(event.target)) return
             if (['INPUT', 'TEXTAREA'].includes(event.target.tagName)) return // 排除输入框内复制粘贴
             if (
@@ -318,7 +317,7 @@ export function importFlow() {
                                 if (['rag', 'llm', 'agent', 'qa_retriever'].includes(node.data.type)) {
                                     node.data.group_params.forEach(group =>
                                         group.params.forEach(param => {
-                                            if (param.type === 'bisheng_model') {
+                                            if (param.type === 'eagent_model') {
                                                 param.value = workflowModelId
                                             } else if (param.type === 'agent_model') {
                                                 param.value = assistantModelId

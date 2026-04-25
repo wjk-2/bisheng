@@ -53,7 +53,7 @@ export const CustomHandle = ({ id = '', node, isLeft = false, className = '' }) 
                 id={id || "left_handle"}
                 type="target"
                 position={Position.Left}
-                className='bisheng-flow-handle group'
+                className='eagent-flow-handle group'
                 onClick={(e) => {
                     posRef.current = { x: e.clientX, y: e.clientY }
                     setOpenLeft(true)
@@ -81,7 +81,7 @@ export const CustomHandle = ({ id = '', node, isLeft = false, className = '' }) 
             id={id || "right_handle"}
             type="source"
             position={Position.Right}
-            className='bisheng-flow-handle group'
+            className='eagent-flow-handle group'
             onClick={(e) => {
                 posRef.current = { x: e.clientX, y: e.clientY }
                 setOpenRight(true)
@@ -242,19 +242,19 @@ function CustomNode({ data: node, selected, isConnectable }: { data: WorkflowNod
             </NodeToolbar>
 
             <div
-                className={cname(`bisheng-node hover:border-primary/10 max-w-[35rem] ${nodeWidthClass} ${selected ? 'border-primary/10' : ' border-transparent'}`, nodeError && 'border-red-500')}
+                className={cname(`eagent-node hover:border-primary/10 max-w-[35rem] ${nodeWidthClass} ${selected ? 'border-primary/10' : ' border-transparent'}`, nodeError && 'border-red-500')}
                 data-id={node.id}
             >
                 {/* top */}
                 <RunLog node={node}>
-                    <div className='bisheng-node-top flex items-center'>
+                    <div className='eagent-node-top flex items-center'>
                         <LoadingIcon className='size-5 text-[#B3BBCD]' />
-                        <span className='node-face text-sm text-[#B3BBCD]'>BISHENG</span>
+                        <span className='node-face text-sm text-[#B3BBCD]'>E-Agent</span>
                     </div>
                 </RunLog>
 
                 {/* head */}
-                <div className='bisheng-node-head'>
+                <div className='eagent-node-head'>
                     <div className='relative z-10 flex gap-2'>
                         <NodeLogo type={node.type} colorStr={node.name} />
                         <div className='flex-1 max-w-60'>
@@ -286,7 +286,7 @@ function CustomNode({ data: node, selected, isConnectable }: { data: WorkflowNod
                                 node.expand = !expend
                             }}>
                             <ChevronDown
-                                className={`bisheng-label ${expend && 'rotate-180'}`}
+                                className={`eagent-label ${expend && 'rotate-180'}`}
                                 size={16}
                             /></div>}
                     </div>

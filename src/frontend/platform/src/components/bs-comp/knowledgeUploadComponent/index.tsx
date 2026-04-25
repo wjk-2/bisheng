@@ -53,14 +53,12 @@ const KnowledgeUploadComponent = ({
         }, [[], []])
 
         if (awaitingList.length === 0 && uploadingList.length === 0) {
-            console.log('所有文件上传完成 :>> ');
             onFileChange(successFilesRef.current, failFilesRef.current)
         } else if (awaitingList.length > 0 && uploadingList.length < MaximumTask) {
             let runCount = 0
             setProgressList((oldState) => {
                 return oldState.map((pros) => {
                     if (pros.progress === ProgressStatus.Await && runCount++ < MaximumTask - uploadingList.length) {
-                        console.log('开启上传任务 +1 :>> ', pros.id);
                         return {
                             ...pros,
                             progress: ProgressStatus.Uploading
@@ -112,7 +110,6 @@ const KnowledgeUploadComponent = ({
     }
 
     const handleUploadResult = (id: string, result: any) => {
-        console.log('上传完成+1 :>> ', id);
         setProgressList((list) => list.map((pros) => (
             pros.id === id ? {
                 ...pros,

@@ -1,7 +1,7 @@
 import { TitleIconBg } from "@/components/bs-comp/cardComponent";
 import { LoadIcon } from "@/components/bs-icons/loading";
 import { Button } from "@/components/bs-ui/button";
-import { DialogClose, DialogContent, DialogFooter } from "@/components/bs-ui/dialog";
+import { DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/bs-ui/dialog";
 import { Textarea } from "@/components/bs-ui/input";
 import { useToast } from "@/components/bs-ui/toast/use-toast";
 import { getAssistantOptimizeTaskApi } from "@/controllers/API/assistant";
@@ -26,11 +26,22 @@ export default function AutoPromptDialog({ onOpenChange }) {
     const { id } = useParams()
     const { assistantState, dispatchAssistant } = useAssistantStore()
 
+    // 持有当前 EventSource 引用，用于：1) handleReload 时关闭旧连接；2) 组件卸载时清理
+    const eventSourceRef = useRef<EventSource | null>(null)
+
     const init = async () => {
+        // 关闭上一次连接（handleReload 重试时防止双路写入）
+        if (eventSourceRef.current) {
+            eventSourceRef.current.close()
+            eventSourceRef.current = null
+        }
+
         const prompt = areaRef.current?.value || assistantState.prompt
         const res = await getAssistantOptimizeTaskApi(id, prompt)
         const apiUrl = `${__APP_ENV__.BASE_URL}/api/v1/assistant/auto?task_id=${res.task_id}`;
         const eventSource = new EventSource(apiUrl);
+        eventSourceRef.current = eventSource
+
         if (areaRef.current) areaRef.current.value = ''
         let queue = LoadType.Prompt
         setLoading(queue)
@@ -55,6 +66,7 @@ export default function AutoPromptDialog({ onOpenChange }) {
                     setFlows(parsedData.message); break
                 case 'end':
                     setLoading(--queue)
+                    eventSourceRef.current = null
                     if (parsedData.message) {
                         toast({
                             title: t('tip'),
@@ -71,6 +83,7 @@ export default function AutoPromptDialog({ onOpenChange }) {
         eventSource.onerror = (error: any) => {
             console.error("EventSource failed:", error);
             eventSource.close();
+            eventSourceRef.current = null
             if (error.data) {
                 const parsedData = JSON.parse(error.data);
                 setLoading(0);
@@ -87,6 +100,13 @@ export default function AutoPromptDialog({ onOpenChange }) {
     useEffect(() => {
         // api
         init()
+        // 组件卸载时关闭 SSE 连接，防止游离连接继续占用资源
+        return () => {
+            if (eventSourceRef.current) {
+                eventSourceRef.current.close()
+                eventSourceRef.current = null
+            }
+        }
     }, [])
 
     const [loading, setLoading] = useState(0)
@@ -168,6 +188,7 @@ export default function AutoPromptDialog({ onOpenChange }) {
     }
 
     return <DialogContent className="sm:max-w-[925px] bg-background-login max-h-[90vh] overflow-hidden flex flex-col" close={false}>
+    <DialogHeader className="sr-only"><DialogTitle>AI优化助手</DialogTitle></DialogHeader>
     <div className="flex-1 overflow-y-auto">
         <div className="flex">
             {/* Prompt */}

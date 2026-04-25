@@ -83,10 +83,11 @@ class WorkFlowService(BaseService):
         return data
 
     @classmethod
-    def get_all_flows(cls, user: UserPayload, name: str, status: int, tag_id: Optional[int], flow_type: Optional[int],
+    def get_all_flows(cls, user: UserPayload, name: str, status: int, tag_id: Optional[int], category: Optional[str],
                       page: int = 1, page_size: int = 10, managed: bool = False) -> (list[dict], int):
         """
         Get all the skills
+        Support category filter
         """
         # SetujutagDapatkanidVertical
         flow_ids = []
@@ -99,14 +100,15 @@ class WorkFlowService(BaseService):
 
         # Get a list of skills visible to the user
         if user.is_admin():
-            data, total = FlowDao.get_all_apps(name, status, flow_ids, flow_type, None, None, None, page, page_size)
+            data, total = FlowDao.get_all_apps(name, status, flow_ids, None, None, None, None, page, page_size,
+                                               category=category)
         else:
             access_list = [AccessType.FLOW, AccessType.WORKFLOW, AccessType.ASSISTANT_READ]
             if managed:
                 access_list = [AccessType.FLOW_WRITE, AccessType.WORKFLOW_WRITE, AccessType.ASSISTANT_WRITE]
             flow_id_extra = user.get_user_access_resource_ids(access_list)
-            data, total = FlowDao.get_all_apps(name, status, flow_ids, flow_type, user.user_id, flow_id_extra, None,
-                                               page, page_size)
+            data, total = FlowDao.get_all_apps(name, status, flow_ids, None, user.user_id, flow_id_extra, None,
+                                               page, page_size, category=category)
         data = cls.add_extra_field(user, data, managed)
 
         return data, total
@@ -178,9 +180,12 @@ class WorkFlowService(BaseService):
         return res
 
     @classmethod
-    async def update_flow_status(cls, login_user: UserPayload, flow_id: str, version_id: int, status: int):
+    async def update_flow_status(cls, login_user: UserPayload, flow_id: str, version_id: int, status: int,
+                                is_public: int = 0, category: str = '其他'):
         """
         Modify workflow status, Also modify the current version of the workflow
+        Support is_public parameter for public sharing
+        Support category parameter for classification
         """
         db_flow = await FlowDao.aget_flow_by_id(flow_id)
         if not db_flow:
@@ -203,6 +208,8 @@ class WorkFlowService(BaseService):
 
             await FlowVersionDao.change_current_version(flow_id, version_info)
         db_flow.status = status
+        db_flow.is_public = is_public
+        db_flow.category = category
         await FlowDao.aupdate_flow(db_flow)
         await telemetry_service.log_event(
             user_id=login_user.user_id,
@@ -397,9 +404,8 @@ class WorkFlowService(BaseService):
         if tag_id:
             ret = TagDao.get_resources_by_tags_batch(tag_id, [ResourceTypeEnum.FLOW, ResourceTypeEnum.WORK_FLOW,
                                                               ResourceTypeEnum.ASSISTANT])
-            if not ret:
-                return [], 0
-            flow_ids_not_in = [one.resource_id for one in ret]
+            if ret:
+                flow_ids_not_in = [one.resource_id for one in ret]
 
         # Get a list of skills visible to the user
         if user.is_admin():

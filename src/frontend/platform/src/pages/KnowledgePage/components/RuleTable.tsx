@@ -115,7 +115,6 @@ export default function RuleTable({
 }: RuleTableProps) {
   const { t } = useTranslation('knowledge')
 
-  console.log('rules.fileList :>> ', rules.fileList);
   const tableFils = useMemo(() => {
     return rules.fileList.filter(item => item.fileType === 'table')
   }, [rules.fileList])

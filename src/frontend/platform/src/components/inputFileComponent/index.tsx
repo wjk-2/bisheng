@@ -96,7 +96,6 @@ export default function InputFileComponent({
         onFileChange(file_path);
       }) : uploadFile(file, flow.id)
         .then((data) => {
-          console.log("File uploaded successfully");
           // Get the file name from the response
           const { file_path } = data;
 
@@ -181,7 +180,6 @@ export default function InputFileComponent({
                 return res.file_path
               })
             : uploadFile(file, flow.id).then((data) => {
-              console.log("File uploaded successfully");
               return data.file_path
             });
         });

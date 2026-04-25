@@ -17,7 +17,7 @@ from bisheng.worker.main import bisheng_celery
 from bisheng_langchain.vectorstores import Milvus, ElasticKeywordsSearch
 
 
-@bisheng_celery.task
+@bisheng_celery.task(time_limit=7200, soft_time_limit=6900, acks_late=True)
 def insert_qa_celery(qa_id: int):
     """
     Insert a QA pair into the milvus and es.
@@ -34,7 +34,7 @@ def insert_qa_celery(qa_id: int):
     QA_save_knowledge(knowledge_info, qa_info)
 
 
-@bisheng_celery.task
+@bisheng_celery.task(time_limit=7200, soft_time_limit=6900, acks_late=True)
 def copy_qa_knowledge_celery(source_knowledge_id: int, target_knowledge_id: int, login_user_id: int):
     """
     SalinQAkey learning points
@@ -156,7 +156,7 @@ def copy_qa_knowledge_celery(source_knowledge_id: int, target_knowledge_id: int,
         KnowledgeDao.update_state(knowledge_id=source_knowledge.id, state=KnowledgeState.PUBLISHED)
 
 
-@bisheng_celery.task
+@bisheng_celery.task(time_limit=7200, soft_time_limit=6900, acks_late=True)
 def rebuild_qa_knowledge_celery(knowledge_id: int, embedding_model_id: int, invoke_user_id: int):
     """
      RebuildQAThe knowledge base upon,Vector Storage
@@ -197,7 +197,7 @@ def rebuild_qa_knowledge_celery(knowledge_id: int, embedding_model_id: int, invo
             knowledge_info.state = KnowledgeState.PUBLISHED.value
             return
 
-        embeddings = LLMService.get_bisheng_knowledge_embedding_sync(model_id=embedding_model_id,
+        embeddings = LLMService.get_eagent_knowledge_embedding_sync(model_id=embedding_model_id,
                                                                      invoke_user_id=invoke_user_id)
         milvus_db: Milvus = decide_vectorstores(
             knowledge_info.collection_name, "Milvus", embeddings

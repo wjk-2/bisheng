@@ -6,12 +6,15 @@ import './style.css';
 import './mobile.css';
 import './vditor.css';
 import { ApiErrorBoundaryProvider } from './hooks/ApiErrorBoundaryContext';
+import GlobalErrorBoundary from './components/GlobalErrorBoundary';
 
 const container = document.getElementById('root');
 const root = createRoot(container);
 
 root.render(
-  <ApiErrorBoundaryProvider>
-    <App />
-  </ApiErrorBoundaryProvider>,
+  <GlobalErrorBoundary>
+    <ApiErrorBoundaryProvider>
+      <App />
+    </ApiErrorBoundaryProvider>
+  </GlobalErrorBoundary>,
 );

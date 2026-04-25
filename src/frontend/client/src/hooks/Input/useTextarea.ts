@@ -184,7 +184,6 @@ export default function useTextarea({
       if ((isNonShiftEnter || isCtrlEnter) && !isComposingInput) {
         const globalAudio = document.getElementById(globalAudioId) as HTMLAudioElement | undefined;
         if (globalAudio) {
-          console.log('Unmuting global audio');
           globalAudio.muted = false;
         }
         submitButtonRef.current?.click();

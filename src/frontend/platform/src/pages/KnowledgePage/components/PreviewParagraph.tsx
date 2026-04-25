@@ -111,7 +111,6 @@ const VditorEditor = forwardRef(({ defalutValue, hidden, onBlur, onChange }, ref
                 enable: false,
             },
             after: () => {
-                console.log('Vditor is ready');
                 readyRef.current = true;
 
                 if (valurCacheRef.current) {

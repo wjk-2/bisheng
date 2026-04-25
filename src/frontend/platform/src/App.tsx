@@ -14,9 +14,10 @@ import { Toaster } from "./components/bs-ui/toast";
 import { alertContext } from "./contexts/alertContext";
 import { locationContext } from "./contexts/locationContext";
 import { userContext } from "./contexts/userContext";
-import { getAdminRouter, getPrivateRouter, publicRouter } from "./routes";
+import { getRouter, publicRouter } from "./routes";
 import { LoadingIcon } from "./components/bs-icons/loading";
 import { useToast } from "./components/bs-ui/toast/use-toast";
+import { logoutApi } from "./controllers/API/user";
 
 export default function App() {
   let { setCurrent, setShowSideBar, setIsStackedOpen } = useContext(locationContext);
@@ -140,12 +141,24 @@ export default function App() {
 
   const { user, setUser } = useContext(userContext);
 
-  // 退出
+  // 退出 - Ctrl+Q 快捷键登出（调用后端 API 使 JWT 失效）
   useEffect(() => {
-    const handleKeyDown = (event) => {
-      if (event.ctrlKey && event.keyCode === 81) {
-        setUser(null)
-        localStorage.setItem('UUR_INFO', '')
+    const handleKeyDown = async (event: KeyboardEvent) => {
+      // Ctrl+Q: keyCode 81 或 key 'q'/'Q'
+      if (event.ctrlKey && (event.key === 'q' || event.key === 'Q' || event.keyCode === 81)) {
+        event.preventDefault();
+        try {
+          await logoutApi();
+        } catch (error) {
+          console.error('Logout API failed:', error);
+        } finally {
+          setUser(null);
+          localStorage.removeItem('isLogin');
+          localStorage.removeItem('ws_token');
+          localStorage.removeItem('token');
+          localStorage.removeItem('userInfo');
+          localStorage.removeItem('UUR_INFO');
+        }
       }
     };
     document.addEventListener('keydown', handleKeyDown);
@@ -153,7 +166,7 @@ export default function App() {
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [setUser]);
 
   // i18n title
   const { t } = useTranslation()
@@ -172,11 +185,10 @@ export default function App() {
   const noAuthPages = ['chat', 'resouce']
   const path = location.pathname.replace(__APP_ENV__.BASE_URL, '').split('/')?.[1] || ''
 
-  // 动态路由根据权限
+  // 所有登录用户获得完整路由表，菜单可见性在 MainLayout 中控制，URL 拦截在 userContext 中实现
   const router = useMemo(() => {
-    // return getAdminRouter()
-    if (user && ['admin', 'group_admin'].includes(user.role)) return getAdminRouter()
-    return user?.user_id ? getPrivateRouter(user.web_menu) : null
+    if (user?.user_id) return getRouter()
+    return null
   }, [user])
 
   // url error toast

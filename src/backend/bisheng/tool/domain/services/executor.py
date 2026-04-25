@@ -104,8 +104,8 @@ class ToolExecutor(BaseTool):
             elif isinstance(tool_type.extra, dict):
                 params = tool_type.extra
 
-        # special handling for bisheng_code_interpreter, because it needs minio config
-        if tool.tool_key == 'bisheng_code_interpreter':
+        # special handling for eagent_code_interpreter, because it needs minio config
+        if tool.tool_key == 'eagent_code_interpreter':
             return {'minio': settings.get_minio_conf().model_dump(), **params}
         return params
 

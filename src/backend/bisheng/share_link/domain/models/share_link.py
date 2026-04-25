@@ -64,6 +64,7 @@ class ShareLink(SQLModelSerializable, table=True):
     access_count: int = Field(default=0, description='Number of visits')
     meta_data: Optional[Dict] = Field(default=None, description='Shared link metadata', sa_type=JSON, nullable=True)
     expire_time: int = Field(default=0, description='Expiration time, in seconds,0Indicates never expires')
+    password: Optional[str] = Field(default=None, sa_column=Column(CHAR(6), nullable=True), description='6-char access password, None means no password required')
 
     create_user_id: str = Field(..., sa_column=Column(CHAR(36)), description='Create UserID')
 
@@ -72,3 +73,21 @@ class ShareLink(SQLModelSerializable, table=True):
 
     update_time: Optional[datetime] = Field(default=None, sa_column=Column(
         DateTime, nullable=True, server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')))
+
+    def is_valid(self, resource_id: str) -> bool:
+        """Check if this share link is valid for the given resource.
+
+        A valid share link must:
+        - Have meta_data with a matching flowId
+        - Have status == ACTIVE
+        - Not be expired (expire_time == 0 means never expires)
+        """
+        if self.meta_data is None or self.meta_data.get('flowId') != resource_id:
+            return False
+        if self.status != ShareLinkStatusEnum.ACTIVE:
+            return False
+        if self.expire_time > 0:
+            elapsed = (datetime.now() - self.create_time).total_seconds()
+            if elapsed > self.expire_time:
+                return False
+        return True

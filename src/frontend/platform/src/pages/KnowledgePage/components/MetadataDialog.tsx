@@ -10,6 +10,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { DatePicker } from "@/components/bs-ui/calendar/datePicker";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import Tip from '@/components/bs-ui/tooltip/tip';
+import { formatDateTime } from '../../../util/utils';
 
 // Types
 interface MetadataItem {
@@ -282,11 +283,11 @@ export const MainMetadataDialog = React.memo(({
                                 },
                                 {
                                     label: t('fileinfor.createTime'),
-                                    value: fileInfor?.create_time ? metadataDialog.file?.create_time?.replace('T', ' ') : null
+                                    value: formatDateTime(fileInfor?.create_time || metadataDialog.file?.create_time)
                                 },
                                 {
                                     label: t('fileinfor.updateTime'),
-                                    value: fileInfor?.update_time ? fileInfor?.update_time.replace('T', ' ') : null
+                                    value: formatDateTime(fileInfor?.update_time)
                                 },
                                 {
                                     label: t('fileinfor.creator'),

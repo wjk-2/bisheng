@@ -49,7 +49,6 @@ export default function useDragHelpers(isLingsi) {
     () => ({
       accept: [NativeTypes.FILE],
       drop(item: { files: File[] }) {
-        console.log('drop', item.files);
         // Split the accepted file extensions
         const acceptedExtensions = accept
           ? accept.split(',')

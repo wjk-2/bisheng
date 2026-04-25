@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, Body, Request
+from fastapi import APIRouter, Depends, Body, Request, HTTPException
 from loguru import logger
 
 from bisheng.api.services.invite_code.invite_code import InviteCodeService
 from bisheng.api.v1.schemas import resp_200
 from bisheng.common.dependencies.user_deps import UserPayload
+from bisheng.core.cache.redis_manager import get_redis_client
 from bisheng.utils import get_request_ip
 
 router = APIRouter(prefix='/invite', tags=['InviteCode'])
@@ -33,6 +34,14 @@ async def bind_invite_code(request: Request, login_user: UserPayload = Depends(U
     """
     Binding Invitation Code
     """
+    # 速率限制：每用户每小时最多尝试 10 次，防止暴力枚举邀请码。
+    # 使用 Lua 原子 INCR，TTL 在首次调用时固定为 3600 秒（固定窗口）。
+    rate_key = f"rate:invite_bind:{login_user.user_id}"
+    redis_client = await get_redis_client()
+    attempts = await redis_client.aincr(rate_key, expiration=3600)
+    if attempts > 10:
+        raise HTTPException(status_code=429, detail="操作过于频繁，请稍后再试")
+
     result = await InviteCodeService.bind_invite_code(login_user, code)
     logger.debug(f"bind_invite_code user_id:{login_user.user_id}, code:{code}, flag:{result}")
     return resp_200()

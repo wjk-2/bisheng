@@ -67,7 +67,6 @@ export default function CreateTask({ rtClick, gpuClick, onCancel, onCreate }) {
         if (!/^(?=.*[a-zA-Z])(?=.*\d)?[a-zA-Z\d_-]+$/.test(resultRef.current.model_name)) errors.push(t('finetune.enterModelName'))
         if (errors.length) return setErrorData({ title: '', list: errors });
         // 合并数据
-        console.log('object :>> ', resultRef.current);
         setLoading(true)
         // api
         const res = await captureAndAlertRequestErrorHoc(createTaskApi(resultRef.current))

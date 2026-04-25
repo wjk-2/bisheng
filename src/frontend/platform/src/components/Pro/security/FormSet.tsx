@@ -25,15 +25,16 @@ export default function FormSet({ data, onChange, onSave, onCancel }) {
         })
     }
 
-    const handleUploadFile = (e) => {
-        const file = e.target.files[0]
+    const handleUploadFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
         if (file) {
             const reader = new FileReader()
             reader.onload = (evt) => {
-                const text = evt.target.result
-                //@ts-ignore
-                const formatContent = text.replace(/[\s,，\r\n]+/g, '\n') // 将所有符号替换成换行符
-                setForm({ ...form, words: formatContent })
+                const text = evt.target?.result
+                if (typeof text === 'string') {
+                    const formatContent = text.replace(/[\s,，\r\n]+/g, '\n') // 将所有符号替换成换行符
+                    setForm({ ...form, words: formatContent })
+                }
             }
             reader.readAsText(file)
         }
@@ -45,7 +46,7 @@ export default function FormSet({ data, onChange, onSave, onCancel }) {
     }
     return <>
         <div className="px-4 mt-6">
-            <span className="bisheng-label">{t('build.reviewType')}</span>
+            <span className="eagent-label">{t('build.reviewType')}</span>
             <RadioGroup value="1"
                 className="flex space-x-2 h-[20px] mt-4 mb-6">
                 <div>
@@ -60,7 +61,7 @@ export default function FormSet({ data, onChange, onSave, onCancel }) {
                 </div>
             </RadioGroup>
             <div className="mb-6">
-                <span className="bisheng-label">{t('build.wordListType')}</span>
+                <span className="eagent-label">{t('build.wordListType')}</span>
                 <div className="mt-4 mb-6 space-y-3">
                     <div className="space-x-2 flex items-center">
                         <Checkbox
@@ -86,14 +87,13 @@ export default function FormSet({ data, onChange, onSave, onCancel }) {
                         onChange={(e) => setForm({ ...form, words: e.target.value })}
                         placeholder={t('build.useNewlineToSeparate')}></Textarea>
                     <input type="file" accept=".txt" id="fileUpload" className="hidden" onChange={handleUploadFile} />
-                    {/* @ts-ignore */}
-                    <div className="flex items-center absolute right-1 top-1 cursor-pointer" onClick={() => document.querySelector('#fileUpload').click()}>
+                    <div className="flex items-center absolute right-1 top-1 cursor-pointer" onClick={() => (document.querySelector('#fileUpload') as HTMLInputElement | null)?.click()}>
                         <Upload id="ul" color="blue" className="w-3 h-3" />
                         <Label htmlFor="ul"><span className="text-xs text-primary cursor-pointer">{t('build.txtFile')}</span></Label>
                     </div>
                 </div>
             </div>
-            <span className="bisheng-label">{t('build.autoReplyContent')}</span>
+            <span className="eagent-label">{t('build.autoReplyContent')}</span>
             <div className="flex justify-center mt-4">
                 <Textarea className="h-[100px] resize-none" value={form.autoReply}
                     onChange={(e) => setForm({ ...form, autoReply: e.target.value })}

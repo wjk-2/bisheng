@@ -39,6 +39,7 @@ from bisheng.database.models.message import ChatMessage, ChatMessageDao, LikedTy
 from bisheng.database.models.session import MessageSession, MessageSessionDao, SensitiveStatus
 from bisheng.database.models.user_group import UserGroupDao
 from bisheng.graph.graph.base import Graph
+from bisheng.open_endpoints.domain.utils import get_default_operator
 from bisheng.share_link.api.dependencies import header_share_token_parser
 from bisheng.share_link.domain.models.share_link import ShareLink
 from bisheng.user.domain.models.user import UserDao
@@ -170,7 +171,8 @@ async def get_chat_message(*,
 
 
 @router.get('/chat/info')
-async def get_chat_info(chat_id: str = Query(..., description='Session Uniqueid，chai_id')):
+async def get_chat_info(chat_id: str = Query(..., description='Session Uniqueid，chai_id'),
+                        login_user: UserPayload = Depends(UserPayload.get_login_user)):
     """ Setujuchat_idGet session details """
     res = await MessageSessionDao.async_get_one(chat_id)
     res.flow_logo = WorkFlowService.get_logo_share_link(res.flow_logo)
@@ -188,7 +190,8 @@ def rename(conversationId: str = Body(..., description='Sessionsid', embed=True)
 
 
 @router.post('/chat/conversation/copy')
-def copy(conversationId: str = Body(..., description='Sessionsid', embed=True), ):
+def copy(conversationId: str = Body(..., description='Sessionsid', embed=True),
+         login_user: UserPayload = Depends(UserPayload.get_login_user)):
     conversation = MessageSessionDao.get_one(conversationId)
     conversation.chat_id = uuid4().hex
     conversation = MessageSessionDao.insert_one(conversation)
@@ -403,7 +406,7 @@ def del_message_id(*, message_id: str, login_user: UserPayload = Depends(UserPay
 
 
 @router.post('/liked', status_code=200)
-def like_response(*, data: ChatInput):
+def like_response(*, data: ChatInput, login_user: UserPayload = Depends(UserPayload.get_login_user)):
     message_id = data.message_id
     message = ChatMessageDao.get_message_by_id(data.message_id)
     if not message:
@@ -440,7 +443,7 @@ def like_response(*, data: ChatInput):
 
 
 @router.post('/chat/copied', status_code=200)
-def copied_message(message_id: int = Body(embed=True)):
+def copied_message(message_id: int = Body(embed=True), login_user: UserPayload = Depends(UserPayload.get_login_user)):
     """ Upload CopymessageData """
     message = ChatMessageDao.get_message_by_id(message_id)
     if not message:
@@ -452,7 +455,7 @@ def copied_message(message_id: int = Body(embed=True)):
 
 
 @router.post('/chat/comment', status_code=200)
-def comment_resp(*, data: ChatInput):
+def comment_resp(*, data: ChatInput, login_user: UserPayload = Depends(UserPayload.get_login_user)):
     comment_answer(data.message_id, data.comment)
     return resp_200()
 
@@ -497,11 +500,28 @@ def get_session_list(page: Optional[int] = Query(default=1, ge=1, le=1000),
 def get_online_chat(*,
                     keyword: Optional[str] = None,
                     tag_id: Optional[int] = None,
+                    category: Optional[str] = None,
                     page: Optional[int] = 1,
                     limit: Optional[int] = 10,
                     user: UserPayload = Depends(UserPayload.get_login_user)):
-    data, _ = WorkFlowService.get_all_flows(user, keyword, FlowStatus.ONLINE.value, tag_id, None, page, limit)
-    return resp_200(data=data)
+    data, total = WorkFlowService.get_all_flows(user, keyword, FlowStatus.ONLINE.value, tag_id, category, page, limit)
+    return resp_200(data={'list': data, 'total': total})
+
+
+@router.websocket('/chat/share/{flow_id}')
+async def chat_share(
+        *,
+        flow_id: UUID,
+        websocket: WebSocket,
+        chat_id: Optional[str] = None,
+):
+    """Anonymous WebSocket endpoint for share link access (no auth required)."""
+    flow_id = flow_id.hex
+    login_user = get_default_operator()
+    try:
+        await chat_manager.handle_websocket(flow_id, chat_id, websocket, login_user.user_id)
+    except Exception as exc:
+        await ChatServiceError(exception=exc).websocket_close_message(websocket=websocket)
 
 
 @router.websocket('/chat/{flow_id}')
@@ -565,7 +585,8 @@ async def chat(
 async def init_build(*,
                      graph_data: dict,
                      flow_id: str,
-                     version_id: Optional[int] = Query(default=None, description='Skill VersionID')):
+                     version_id: Optional[int] = Query(default=None, description='Skill VersionID'),
+                     login_user: UserPayload = Depends(UserPayload.get_login_user)):
     """Initialize the build by storing graph data and returning a unique session ID."""
     chat_id = graph_data.get('chat_id')
     flow_data_key = 'flow_data_' + flow_id
@@ -596,13 +617,14 @@ async def init_build(*,
         return resp_200(InitResponse(flowId=flow_id))
     except Exception as exc:
         logger.error(exc)
-        return HTTPException(status_code=500, detail=str(exc))
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 @router.get('/build/{flow_id}/status', response_model=UnifiedResponseModel[BuiltResponse])
 async def build_status(flow_id: str,
                        chat_id: Optional[str] = None,
-                       version_id: Optional[int] = Query(default=None, description='Skill VersionID')):
+                       version_id: Optional[int] = Query(default=None, description='Skill VersionID'),
+                       login_user: UserPayload = Depends(UserPayload.get_login_user)):
     """Check the flow_id is in the flow_data_store."""
     try:
         flow_data_store = await get_redis_client()
@@ -614,13 +636,14 @@ async def build_status(flow_id: str,
 
     except Exception as exc:
         logger.error(exc)
-        return HTTPException(status_code=500, detail=str(exc))
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 @router.get('/build/stream/{flow_id}', response_class=StreamingResponse)
 async def stream_build(flow_id: str,
                        chat_id: Optional[str] = None,
-                       version_id: Optional[int] = Query(default=None, description='Skill VersionID')):
+                       version_id: Optional[int] = Query(default=None, description='Skill VersionID'),
+                       login_user: UserPayload = Depends(UserPayload.get_login_user)):
     """Stream the build process based on stored flow data."""
 
     async def event_stream(flow_id, chat_id: str, version_id: Optional[int] = None):

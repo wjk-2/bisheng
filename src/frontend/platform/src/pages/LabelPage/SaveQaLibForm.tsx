@@ -153,7 +153,7 @@ const SaveQaLibForm = forwardRef(({ onMarked }, ref) => {
                 </DialogHeader>
                 <div className="flex flex-col gap-4 py-2">
                     <div>
-                        <label htmlFor="knowledgeLib" className="bisheng-label"><span className="text-red-500">*</span>{t('log.qaKnowledgeLib')}</label>
+                        <label htmlFor="knowledgeLib" className="eagent-label"><span className="text-red-500">*</span>{t('log.qaKnowledgeLib')}</label>
                         <KnowledgeSelect
                             type="qa"
                             value={form.knowledgeLib}
@@ -162,11 +162,11 @@ const SaveQaLibForm = forwardRef(({ onMarked }, ref) => {
                         />
                     </div>
                     <div>
-                        <label htmlFor="question" className="bisheng-label"><span className="text-red-500">*</span>{t('log.question')}</label>
+                        <label htmlFor="question" className="eagent-label"><span className="text-red-500">*</span>{t('log.question')}</label>
                         <Input name="question" className={`col-span-3 ${error.question && 'border-red-400'}`} value={form.question} onChange={handleInputChange} />
                     </div>
                     <div>
-                        <label htmlFor="similarQuestions" className="bisheng-label">{t('log.similarQuestions')}</label>
+                        <label htmlFor="similarQuestions" className="eagent-label">{t('log.similarQuestions')}</label>
                         <div className="max-h-52 overflow-y-auto">
                             <InputList
                                 value={form.similarQuestions}
@@ -178,7 +178,7 @@ const SaveQaLibForm = forwardRef(({ onMarked }, ref) => {
                         </Button>
                     </div>
                     <div>
-                        <label htmlFor="answer" className="bisheng-label"><span className="text-red-500">*</span>{t('log.answer')}</label>
+                        <label htmlFor="answer" className="eagent-label"><span className="text-red-500">*</span>{t('log.answer')}</label>
                         <Textarea name="answer" className={`col-span-3 min-h-36 ${error.answer && 'border-red-400'}`} value={form.answer} onChange={handleInputChange} />
                     </div>
                 </div>

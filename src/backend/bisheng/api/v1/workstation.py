@@ -6,7 +6,7 @@ from typing import Optional, Union, List
 from urllib.parse import unquote
 from uuid import uuid4
 
-from fastapi import APIRouter, BackgroundTasks, Body, Depends, File, Request, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, File, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
 from langchain_core.documents import Document
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -31,7 +31,7 @@ from bisheng.common.errcode.workstation import WebSearchToolNotFoundError, Conve
 from bisheng.common.schemas.telemetry.event_data_schema import NewMessageSessionEventData, ApplicationAliveEventData, \
     ApplicationProcessEventData
 from bisheng.common.services import telemetry_service
-from bisheng.common.services.config_service import settings as bisheng_settings
+from bisheng.common.services.config_service import settings as eagent_settings
 from bisheng.core.cache.redis_manager import get_redis_client
 from bisheng.core.cache.utils import file_download, save_download_file, save_uploaded_file
 from bisheng.core.logger import trace_id_var
@@ -40,7 +40,7 @@ from bisheng.database.models.flow import FlowType
 from bisheng.database.models.message import ChatMessage, ChatMessageDao
 from bisheng.database.models.session import MessageSession, MessageSessionDao
 from bisheng.llm.domain import LLMService
-from bisheng.llm.domain.llm import BishengLLM
+from bisheng.llm.domain.llm import EagentLLM
 from bisheng.share_link.api.dependencies import header_share_token_parser
 from bisheng.share_link.domain.models.share_link import ShareLink
 from bisheng.tool.domain.models.gpts_tools import GptsToolsDao
@@ -138,14 +138,14 @@ def get_config(
     """ Get model configurations related to reviews """
     ret = WorkStationService.get_config()
 
-    etl_for_lm_url = bisheng_settings.get_knowledge().etl4lm.url
+    etl_for_lm_url = eagent_settings.get_knowledge().etl4lm.url
     ret = ret.model_dump() if ret else {}
 
     ret['enable_etl4lm'] = bool(etl_for_lm_url)
-    linsight_invitation_code = bisheng_settings.get_all_config().get('linsight_invitation_code', None)
+    linsight_invitation_code = eagent_settings.get_all_config().get('linsight_invitation_code', None)
     ret['linsight_invitation_code'] = linsight_invitation_code if linsight_invitation_code else False
     ret['linsight_cache_dir'] = "./"
-    ret['waiting_list_url'] = bisheng_settings.get_linsight_conf().waiting_list_url
+    ret['waiting_list_url'] = eagent_settings.get_linsight_conf().waiting_list_url
 
     return resp_200(data=ret)
 
@@ -161,14 +161,19 @@ def update_config(
     return resp_200(data=ret)
 
 
+_MAX_UPLOAD_SIZE = 100 * 1024 * 1024  # 100MB
+
+
 @router.post('/knowledgeUpload')
-def knowledgeUpload(request: Request,
+async def knowledgeUpload(request: Request,
                     background_tasks: BackgroundTasks,
                     file: UploadFile = File(...),
                     login_user: UserPayload = Depends(UserPayload.get_login_user)):
     file_byte = file.file.read()
-    file_path = save_download_file(file_byte, 'bisheng', file.filename)
-    res = WorkStationService.uploadPersonalKnowledge(request,
+    if len(file_byte) > _MAX_UPLOAD_SIZE:
+        raise HTTPException(status_code=413, detail='文件超过 100MB 上限，请压缩后重新上传')
+    file_path = save_download_file(file_byte, 'eagent', file.filename)
+    res = await WorkStationService.uploadPersonalKnowledge(request,
                                                      login_user,
                                                      file_path=file_path,
                                                      background_tasks=background_tasks)
@@ -205,7 +210,7 @@ async def upload_file(
     """
     # Read file contents
     # Save file
-    file_path = await save_uploaded_file(file, 'bisheng', unquote(file.filename))
+    file_path = await save_uploaded_file(file, 'eagent', unquote(file.filename))
 
     # Return to file path
     return resp_200(
@@ -265,7 +270,7 @@ async def get_chat_history(conversationId: str,
         return resp_200([])
 
 
-async def genTitle(human: str, assistant: str, llm: BishengLLM, conversationId: str):
+async def genTitle(human: str, assistant: str, llm: EagentLLM, conversationId: str):
     """
     Generate Title
     """

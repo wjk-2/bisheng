@@ -1,9 +1,11 @@
 from fastapi import APIRouter, HTTPException
+from fastapi.params import Depends
 from loguru import logger
 from sqlalchemy import or_
 from sqlmodel import select
 
 from bisheng.api.v1.schemas import resp_200
+from bisheng.common.dependencies.ip_whitelist import verify_internal_request
 from bisheng.core.database import get_sync_db_session
 from bisheng.core.storage.minio.minio_manager import get_minio_storage
 from bisheng.database.models.report import Report
@@ -11,7 +13,7 @@ from bisheng.utils import generate_uuid
 from bisheng_langchain.utils.requests import Requests
 
 # build router
-router = APIRouter(prefix='/report', tags=['report'])
+router = APIRouter(prefix='/report', tags=['report'], dependencies=[Depends(verify_internal_request)])
 mino_prefix = 'report/'
 
 

@@ -94,7 +94,7 @@ export default function EditAssistantDialog({ logo, viewLogo, name, desc, onSave
         </DialogHeader>
         <div className="flex flex-col gap-8 py-6">
             <div className="">
-                <label htmlFor="name" className="bisheng-label">{t('build.assistantAvatar')}<span className="bisheng-tip">*</span></label>
+                <label htmlFor="name" className="eagent-label">{t('build.assistantAvatar')}<span className="eagent-tip">*</span></label>
                 <Avator
                     value={previewAvatar}
                     className="mt-2"
@@ -103,10 +103,10 @@ export default function EditAssistantDialog({ logo, viewLogo, name, desc, onSave
                     <AppAvator id={6} flowType={5} className="size-9"></AppAvator>
                 </Avator>
 
-                {errors.name && <p className="bisheng-tip mt-1">{errors.name}</p>}
+                {errors.name && <p className="eagent-tip mt-1">{errors.name}</p>}
             </div>
             <div className="">
-                <label htmlFor="name" className="bisheng-label">{t('build.assistantName')}<span className="bisheng-tip">*</span></label>
+                <label htmlFor="name" className="eagent-label">{t('build.assistantName')}<span className="eagent-tip">*</span></label>
                 <Input
                     id="name"
                     name="name"
@@ -117,10 +117,10 @@ export default function EditAssistantDialog({ logo, viewLogo, name, desc, onSave
                     value={formData.name}
                     onChange={handleChange}
                 />
-                {errors.name && <p className="bisheng-tip mt-1">{errors.name}</p>}
+                {errors.name && <p className="eagent-tip mt-1">{errors.name}</p>}
             </div>
             <div className="">
-                <label htmlFor="desc" className="bisheng-label">{t('build.assistantDesc')}</label>
+                <label htmlFor="desc" className="eagent-label">{t('build.assistantDesc')}</label>
                 <Textarea
                     id="desc"
                     name="desc"
@@ -130,7 +130,7 @@ export default function EditAssistantDialog({ logo, viewLogo, name, desc, onSave
                     value={formData.desc}
                     onChange={handleChange}
                 />
-                {errors.desc && <p className="bisheng-tip mt-1">{errors.desc}</p>}
+                {errors.desc && <p className="eagent-tip mt-1">{errors.desc}</p>}
             </div>
         </div>
         <DialogFooter>

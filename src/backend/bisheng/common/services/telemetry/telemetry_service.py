@@ -67,6 +67,8 @@ class BaseTelemetryService(object):
         self.thread_pool = ThreadPoolExecutor(max_workers=10)
         # Create a semaphore to limit the number of concurrency
         self._semaphore = Semaphore(10)
+        # Hold strong references to pending async tasks to prevent GC collection
+        self._pending_tasks: set = set()
 
     async def _ensure_index(self):
         """Initialize the Elasticsearch index safely"""
@@ -227,8 +229,8 @@ class BaseTelemetryService(object):
             if not self._index_initialized:
                 await self._ensure_index()
 
-            # Log events asynchronously
-            asyncio.create_task(
+            # Log events asynchronously, keeping a strong reference to prevent GC collection
+            task = asyncio.create_task(
                 self._record_event_task(
                     user_id=user_id,
                     event_type=event_type,
@@ -236,6 +238,8 @@ class BaseTelemetryService(object):
                     event_data=event_data
                 )
             )
+            self._pending_tasks.add(task)
+            task.add_done_callback(self._pending_tasks.discard)
 
         except Exception as e:
             # Swallow exceptions, do not let the log system crash the main business

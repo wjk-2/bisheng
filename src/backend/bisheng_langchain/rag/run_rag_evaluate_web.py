@@ -35,7 +35,7 @@ def rag_evaluate(excel_file, metric='answer_recall_bisheng', batch_size=5):
 
 
 if __name__ == '__main__':
-     title = """毕昇QA问答自动评估系统"""
+     title = """E-Agent QA 问答自动评估系统"""
      with gr.Blocks() as demo:
         gr.Markdown(title)
         

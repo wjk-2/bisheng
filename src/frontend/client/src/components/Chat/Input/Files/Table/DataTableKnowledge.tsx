@@ -13,8 +13,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { dataService, FileContext } from '~/data-provider/data-provider/src';
-import { debounce } from 'lodash';
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { NotificationSeverity, type AugmentedColumnDef } from '~/common';
 import {
   Button,
@@ -53,7 +52,6 @@ type Style = {
 export default function DataTableKnowledge<TData, TValue>({
   page,
   onPage,
-  onSearch,
   onUpload,
   columns,
   data,
@@ -68,14 +66,6 @@ export default function DataTableKnowledge<TData, TValue>({
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const { deleteFiles } = useDeleteFilesFromTable(() => setIsDeleting(false));
 
-  // const { handleFileChange, abortUpload } = useFileHandling();
-  const handleSearch = useCallback(
-    debounce((event: any) => {
-      onSearch(event.target.value);
-    }, 300),
-    [onSearch],
-  );
-
   const [loading, setLoading] = useState(false)
   const { showToast } = useToast()
   const handleUpload = async (event) => {
@@ -88,7 +78,6 @@ export default function DataTableKnowledge<TData, TValue>({
         formData.append('filename', file.name);
         formData.append('file', file);
         const res = await dataService.knowledgeUpload(formData); // 等待每个文件上传完成
-        console.log(`File ${file.name} uploaded successfully`, res);
         if (res.status_code === 500) {
           showToast({
             message: res.status_message,

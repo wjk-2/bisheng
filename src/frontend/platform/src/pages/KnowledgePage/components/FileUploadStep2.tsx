@@ -74,8 +74,12 @@ const FileUploadStep2 = forwardRef(({
     const displayStep = isAdjustMode ? step + 1 : step;
     const initialStrategies = useMemo(() => {
         return [
-            { id: '1', regex: '\\n\\n', position: 'after', rule: t('predefinedRules.singleNewlineRule.desc') },
-            { id: '2', regex: '\\n', position: 'after', rule: t('predefinedRules.doubleNewlineRule.desc') }
+            { id: '1', regex: '\\n\\n', position: 'after', rule: t('predefinedRules.doubleNewlineRule.desc') },
+            { id: '2', regex: '\\n', position: 'after', rule: t('predefinedRules.singleNewlineRule.desc') },
+            { id: '3', regex: '。', position: 'after', rule: t('predefinedRules.chinesePeriodRule.desc') },
+            { id: '4', regex: '！', position: 'after', rule: t('predefinedRules.chineseExclamationRule.desc') },
+            { id: '5', regex: '？', position: 'after', rule: t('predefinedRules.chineseQuestionRule.desc') },
+            { id: '6', regex: '；', position: 'after', rule: t('predefinedRules.chineseSemicolonRule.desc') }
         ]
     }, [t]);
     const displayMode: DisplayModeType | null = useMemo(() => {
@@ -355,10 +359,10 @@ const useFileProcessingRules = (
         return {
             knowledgeId: kid,
             fileList: [],
-            separator: (parsedSplitRule?.separator || ['\\n\\n', '\\n']).map((s) =>
+            separator: (parsedSplitRule?.separator || ['\\n\\n', '\\n', '。', '！', '？', '；']).map((s) =>
                 typeof s === 'string' ? s.replace(/\n/g, '\\n') : s
             ),
-            separatorRule: parsedSplitRule?.separator_rule || ['after', 'after'],
+            separatorRule: parsedSplitRule?.separator_rule || ['after', 'after', 'after', 'after', 'after', 'after'],
             chunkSize: parsedSplitRule?.chunk_size?.toString() || "1000",
             chunkOverlap: parsedSplitRule?.chunk_overlap?.toString() || "0",
             retainImages: parsedSplitRule?.retain_images ?? true,
@@ -392,6 +396,9 @@ const useFileProcessingRules = (
             '第.{1,3}章': t('chapterRule'),
             '第.{1,3}条': t('articleRule'),
             '。': t('chinesePeriodRule'),
+            '！': t('chineseExclamationRule'),
+            '？': t('chineseQuestionRule'),
+            '；': t('chineseSemicolonRule'),
             '\\.': t('englishPeriodRule')
         };
         return ruleMap[regex] || t('customRule', { regex });

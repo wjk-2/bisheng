@@ -79,6 +79,11 @@ def resp_200(data: Union[list, dict, str, Any] = None,
     return UnifiedResponseModel(status_code=200, status_message=message, data=data)
     # return data
 
+def resp_404(data: Union[list, dict, str, Any] = None,
+             message: str = 'NOT FOUND') -> UnifiedResponseModel:
+    """Not found response"""
+    return UnifiedResponseModel(status_code=404, status_message=message, data=data)
+
 
 def resp_500(code: int = 500,
              data: Union[list, dict, str, Any] = None,
@@ -258,6 +263,7 @@ class AssistantUpdateReq(BaseModel):
     model_name: Optional[str] = Field('', description='Selected model name, Leave empty to not update')
     temperature: Optional[float] = Field(None, description='Model Temperature, Do not pass or do not update')
     max_token: Optional[int] = Field(32000, description='MaxtokenQuantity Do not pass or do not update')
+    category: Optional[str] = Field('其他', max_length=32, description='分类：助教/助学/助研/助管/助评/其他')
 
     tool_list: List[int] | None = Field(default=None,
                                         description='Tools for assistantsIDVertical,An empty list empties the bound tool forNonethen do not update')
@@ -320,6 +326,7 @@ class GroupAndRoles(BaseModel):
 class CreateUserReq(BaseModel):
     user_name: str = Field(max_length=30, description='Username')
     password: str = Field(description='Passwords')
+    nickname: Optional[str] = Field(default=None, max_length=50, description='Display name')
     group_roles: List[GroupAndRoles] = Field(description='List of user groups and roles to join')
 
 
@@ -396,10 +403,10 @@ class WorkstationConfig(BaseModel):
     fileUpload: Optional[WSPrompt] = None
     systemPrompt: Optional[str] = None
     applicationCenterWelcomeMessage: Optional[str] = Field(default='', max_length=1000,
-                                                           pattern=r'^[\u4e00-\u9fff\w\s\.,;:!@#$%^&*()\-_=+\[\]{}|\\\'"<>/?`~·！￥（）【】、《》，。；：“”‘’？]+$',
+                                                           pattern=r'^[\u4e00-\u9fff\w\s\.,;:!@#$%^&*()\-_=+\[\]{}|\\\'"<>/?`~·！￥（）【】、《》，。；：“”‘’？]*$',
                                                            description='App Center Welcome Message')
     applicationCenterDescription: Optional[str] = Field(default='', max_length=1000,
-                                                        pattern=r'^[\u4e00-\u9fff\w\s\.,;:!@#$%^&*()\-_=+\[\]{}|\\\'"<>/?`~·！￥（）【】、《》，。；：“”‘’？]+$',
+                                                        pattern=r'^[\u4e00-\u9fff\w\s\.,;:!@#$%^&*()\-_=+\[\]{}|\\\'"<>/?`~·！￥（）【】、《》，。；：“”‘’？]*$',
                                                         description='App Center Description')
     linsightConfig: Optional[LinsightConfig] = Field(default=None, description='Inspiration Configuration')
 
@@ -430,7 +437,8 @@ class FileProcessBase(BaseModel):
     @classmethod
     def check_separator_rule(cls, values: Any):
         if not values.get('separator', None):
-            values['separator'] = ['\n\n', '\n']
+            # 中文文档分段分隔符：段落 -> 换行 -> 句号 -> 感叹号 -> 问号 -> 分号
+            values['separator'] = ['\n\n', '\n', '。', '！', '？', '；']
         if not values.get('separator_rule', None):
             values['separator_rule'] = ['after' for _ in values['separator']]
         if values.get('chunk_size', None) is None:

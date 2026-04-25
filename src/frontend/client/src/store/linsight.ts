@@ -18,6 +18,10 @@ export type LinsightInfo = {
     version: string;
     create_time: string;
     session_id: string;
+    /** 路由类型：simple_qa | sop_task */
+    intent?: 'simple_qa' | 'sop_task';
+    /** 简单问答的回答内容 */
+    simpleAnswer?: string;
     tools: {
         id: string | number;
         name: string;

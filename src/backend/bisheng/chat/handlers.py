@@ -200,6 +200,7 @@ class Handler:
 
         Summarize what the refining user might ask next3Questions, output questions directly, separate questions with line breaks, and do not add any modifier text or prefixes.
         """
+        llm_chain = None
         if hasattr(langchain_obj, 'llm'):
             llm_chain = LLMChain(llm=langchain_obj.llm,
                                  prompt=PromptTemplate.from_template(prompt))
@@ -363,7 +364,7 @@ class Handler:
                 continue
             input_dict[input_key] = question
             payload = {'inputs': input_dict, 'is_begin': False}
-            start_resp.category == 'question'
+            start_resp.category = 'question'
             await session.send_json(client_id, chat_id, start_resp)
             step_resp = ChatResponse(type='end',
                                      intermediate_steps=question,

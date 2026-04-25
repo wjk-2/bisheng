@@ -260,15 +260,14 @@ class AuditLogService:
                        assistant_info.id, assistant_info.name, ResourceTypeEnum.ASSISTANT)
 
     @classmethod
-    def delete_build_assistant(cls, user: UserPayload, ip_address: str, assistant_id: str):
+    def delete_build_assistant(cls, user: UserPayload, ip_address: str, assistant: 'Assistant'):
         """
         Delete Audit Log for Assistant
         """
-        logger.info(f"act=delete_build_assistant user={user.user_name} ip={ip_address} assistant={assistant_id}")
-        assistant_info = AssistantDao.get_one_assistant(assistant_id)
+        logger.info(f"act=delete_build_assistant user={user.user_name} ip={ip_address} assistant={assistant.id}")
 
         cls._build_log(user, ip_address, EventType.DELETE_BUILD, ObjectType.ASSISTANT,
-                       assistant_info.id, assistant_info.name, ResourceTypeEnum.ASSISTANT)
+                       assistant.id, assistant.name, ResourceTypeEnum.ASSISTANT)
 
     @classmethod
     def _knowledge_log(cls, user: UserPayload, ip_address: str, event_type: EventType, object_type: ObjectType,
@@ -602,8 +601,8 @@ class AuditLogService:
              'Message text content',
              'Like',
              'Dislike', 'copy']]
-        bisheng_pro = settings.get_system_login_method().bisheng_pro
-        if bisheng_pro:
+        eagent_pro = settings.get_system_login_method().eagent_pro
+        if eagent_pro:
             excel_data[0].append('Does it meet the content security review requirements?')
 
         while True:
@@ -623,7 +622,7 @@ class AuditLogService:
                                     'Yes' if message.liked == LikedType.LIKED.value else 'No',
                                     'Yes' if message.liked == LikedType.DISLIKED.value else 'No',
                                     'Yes' if message.copied else 'No']
-                    if bisheng_pro:
+                    if eagent_pro:
                         message_data.append(
                             'Yes' if message.sensitive_status == SensitiveStatus.VIOLATIONS.value else 'No')
                     excel_data.append(message_data)

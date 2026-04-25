@@ -32,7 +32,7 @@ export default function InputItem({ type = 'text', char = false, linefeed = fals
             className={`node-item mb-4 ${!linefeed ? 'flex items-center justify-between' : ''}`}
             data-key={data.key}
         >
-            <Label className="flex items-center bisheng-label">
+            <Label className="flex items-center eagent-label">
                 {label || data.label && t(`${i18nPrefix}label`)}
                 {data.help && <QuestionTooltip content={t(`${i18nPrefix}help`)} />}
             </Label>
@@ -45,14 +45,14 @@ export default function InputItem({ type = 'text', char = false, linefeed = fals
                     max={data.max}
                     onChange={(e) => handleChange(e.target.value)}
                 />
-                <Label className="bisheng-label">{t('character')}</Label>
+                <Label className="eagent-label">{t('character')}</Label>
             </div>
         </div>
     );
 
     return (
         <div className='node-item mb-4' data-key={data.key}>
-            <Label className="flex items-center bisheng-label">
+            <Label className="flex items-center eagent-label">
                 {data.label && t(`${i18nPrefix}label`)}
                 {data.help && <QuestionTooltip content={t(`${i18nPrefix}help`)} />}
             </Label>

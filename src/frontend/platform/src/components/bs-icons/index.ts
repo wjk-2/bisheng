@@ -14,6 +14,7 @@ export { GoIcon } from './go';
 export { KnowledgeIcon } from './knowledge';
 export { LoadIcon } from './loading';
 export { ApplicationIcon } from './menu/application';
+export { EducationIcon } from './menu/education';
 export { EvaluatingIcon } from './menu/evaluation';
 export { LabelIcon } from './menu/label';
 export { LogIcon } from './menu/log';

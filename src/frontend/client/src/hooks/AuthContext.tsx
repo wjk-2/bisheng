@@ -96,7 +96,7 @@ const AuthContextProvider = ({
         token: undefined,
         isAuthenticated: false,
         // user: undefined,
-        redirect: `${location.origin}${__APP_ENV__.BISHENG_HOST}` // data.redirect ?? bsConfig?.host,
+        redirect: location.origin + '/' // data.redirect ?? bsConfig?.host,
       });
     },
     onError: (error) => {
@@ -121,7 +121,6 @@ const AuthContextProvider = ({
 
   const silentRefresh = useCallback(() => {
     if (authConfig?.test === true) {
-      console.log('Test mode. Skipping silent refresh.');
       return;
     }
     // refreshToken.mutate(undefined, {
@@ -152,7 +151,7 @@ const AuthContextProvider = ({
       setUser(userQuery.data);
     } else if (userQuery.isError) {
       doSetError((userQuery.error as Error).message);
-      // navigate(`/${__APP_ENV__.BISHENG_HOST}`, { replace: true });
+      // navigate(`/${__APP_ENV__.EAGENT_HOST}`, { replace: true });
     }
     if (error != null && error && isAuthenticated) {
       doSetError(undefined);
@@ -175,7 +174,6 @@ const AuthContextProvider = ({
 
   useEffect(() => {
     const handleTokenUpdate = (event) => {
-      console.log('tokenUpdated event received event');
       const newToken = event.detail;
       setUserContext({
         token: newToken,
@@ -205,9 +203,11 @@ const AuthContextProvider = ({
         [SystemRoles.ADMIN]: adminRole,
       },
       isAuthenticated,
+      isLoading: userQuery.isLoading,
+      isError: userQuery.isError,
     }),
 
-    [user, error, isAuthenticated, token, userRole, adminRole],
+    [user, error, isAuthenticated, token, userRole, adminRole, userQuery.isLoading, userQuery.isError],
   );
 
   return <AuthContext.Provider value={memoedValue}>{children}</AuthContext.Provider>;

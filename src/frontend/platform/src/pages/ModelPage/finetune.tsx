@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import AutoPagination from "../../components/bs-ui/pagination/autoPagination";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/bs-ui/table";
 import { alertContext } from "../../contexts/alertContext";
+import { userContext } from "../../contexts/userContext";
 import { deleteTaskApi, getTasksApi } from "../../controllers/API/finetune";
 import { captureAndAlertRequestErrorHoc } from "../../controllers/request";
 import { useDebounce, useTable } from "../../util/hook";
@@ -15,6 +16,8 @@ import { CpuDetail } from "./cpuInfo";
 
 export const Finetune = () => {
     const { setSuccessData } = useContext(alertContext);
+    const { user } = useContext(userContext);
+    const isAdmin = user.role === 'admin';
     const { t, i18n } = useTranslation();
 
     useEffect(() => {
@@ -58,76 +61,85 @@ export const Finetune = () => {
         scorllDom && (scorllDom.scrollTop = 0)
         setTaskId(id)
     }, 600, false)
-
-    return <div className="relative bg-background-main-content pt-2">
-        <div className={createOpen ? 'hidden' : 'block'}>
-            <FinetuneHead onSearch={search} onFilter={filterData} rtClick={() => setRTOpen(true)} onCreate={() => setCreateOpen(true)}></FinetuneHead>
-            {/* body */}
-            {tasks?.length === 0 ?
-                <div className="mt-6 text-center text-gray-400">{t('finetune.noData')}</div>
-                : <div className="flex gap-4 mt-4">
-                    <div className="w-[40%] relative">
-                        <div className="border-r overflow-y-auto max-h-[calc(100vh-150px)] pb-20">
-                            <Table className="px-2">
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead className="w-[100px]">{t('finetune.modelName')}</TableHead>
-                                        <TableHead></TableHead>
-                                        <TableHead>{t('finetune.rtService')}</TableHead>
-                                        <TableHead className="text-right">{t('finetune.createTime')}</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {tasks.map((task: any) => (
-                                        <TableRow key={task.id} onClick={() => changeItem(task.id)} className={`cursor-pointer ${task.id === taskId && 'bg-gray-100'}`}>
-                                            <TableCell className="font-medium">{task.model_name}</TableCell>
-                                            <TableCell><BadgeView value={task.status}></BadgeView></TableCell>
-                                            <TableCell>{task.server_name}</TableCell>
-                                            <TableCell className="text-right">{task.create_time.replace('T', ' ')}</TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </div>
-                        <div className="bisheng-table-footer bg-background-login">
-                            <p className="desc"></p>
-                            <AutoPagination
-                                page={page}
-                                pageSize={pageSize}
-                                total={total}
-                                onChange={(newPage) => setPage(newPage)}
-                            />
-                        </div>
-                    </div>
-                    <div className="flex-1 overflow-hidden overflow-y-auto max-h-[calc(100vh-150px)]">
-                        {taskId ?
-                            <FinetuneDetail id={taskId} onDelete={handleDeleteTask} onStatusChange={reload}></FinetuneDetail> :
-                            <div className="flex justify-center items-center h-full">
-                                <p className="text-sm text-muted-foreground">{t('finetune.selectModel')}</p>
-                            </div>}
-                    </div>
+    return (
+        <div className="relative bg-background-login h-full px-2 py-4">
+            <div className="h-full overflow-y-auto">
+                {/* 页面头部 */}
+                <div className="flex justify-between items-center mb-6 px-4">
+                    <h1 className="text-2xl font-bold">{t('model.modelFineTune')}</h1>
                 </div>
-            }
-        </div>
-
-        {/* create */}
-        <div className={createOpen ? 'block' : 'hidden'}>
-            {
-                createOpen && <div>
-                    <CreateTask
-                        rtClick={() => setRTOpen(true)}
-                        gpuClick={() => setShowCpu({ type: 'finetune', show: true })}
-                        onCancel={() => setCreateOpen(false)}
-                        onCreate={(id) => {
-                            reload();
-                            setCreateOpen(false);
-                            setTaskId(id)
-                        }}></CreateTask>
+                <div className={createOpen ? 'hidden' : 'block'}>
+                    <FinetuneHead onSearch={search} onFilter={filterData} rtClick={() => setRTOpen(true)} onCreate={() => setCreateOpen(true)} isAdmin={isAdmin}></FinetuneHead>
+                    {/* body */}
+                    {tasks?.length === 0 ?
+                        <div className="mt-6 text-center text-gray-400">{t('finetune.noData')}</div>
+                        : <div className="flex gap-4 mt-4 pb-16">
+                            <div className="w-[40%] relative">
+                                <div className="border-r overflow-y-auto max-h-[calc(100vh-180px)]">
+                                    <Table className="px-2">
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead className="w-[100px]">{t('finetune.modelName')}</TableHead>
+                                                <TableHead></TableHead>
+                                                <TableHead>{t('finetune.rtService')}</TableHead>
+                                                <TableHead className="text-right">{t('finetune.createTime')}</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {tasks.map((task: any) => (
+                                                <TableRow key={task.id} onClick={() => changeItem(task.id)} className={`cursor-pointer ${task.id === taskId && 'bg-gray-100'}`}>
+                                                    <TableCell className="font-medium">{task.model_name}</TableCell>
+                                                    <TableCell><BadgeView value={task.status}></BadgeView></TableCell>
+                                                    <TableCell>{task.server_name}</TableCell>
+                                                    <TableCell className="text-right">{task.create_time.replace('T', ' ')}</TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                                {/* 分页移到表格容器底部 */}
+                                <div className="pt-2">
+                                    <AutoPagination
+                                        page={page}
+                                        pageSize={pageSize}
+                                        total={total}
+                                        onChange={(newPage) => setPage(newPage)}
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex-1 overflow-hidden overflow-y-auto max-h-[calc(100vh-180px)]">
+                                {taskId ?
+                                    <FinetuneDetail id={taskId} onDelete={handleDeleteTask} onStatusChange={reload} isAdmin={isAdmin}></FinetuneDetail> :
+                                    <div className="flex justify-center items-center h-full">
+                                        <p className="text-sm text-muted-foreground">{t('finetune.selectModel')}</p>
+                                    </div>}
+                            </div>
+                        </div>
+                    }
                 </div>
-            }
-        </div>
+                {/* create */}
+                <div className={createOpen ? 'block' : 'hidden'}>
+                    {
+                        createOpen && <div>
+                            <CreateTask
+                                rtClick={() => setRTOpen(true)}
+                                gpuClick={() => setShowCpu({ type: 'finetune', show: true })}
+                                onCancel={() => setCreateOpen(false)}
+                                onCreate={(id) => {
+                                    reload();
+                                    setCreateOpen(false);
+                                    setTaskId(id)
+                                }}></CreateTask>
+                        </div>
+                    }
+                </div>
+            </div>
+            {/* footer 在最外层 */}
+            <div className="eagent-table-footer bg-background-login">
+                <p className="desc">{t('finetune.finetuneCaption')}</p>
+            </div>
         {/* RT配置 */}
-        <RTConfig open={rtOpen} onChange={() => setRTOpen(false)}></RTConfig>
+        <RTConfig open={rtOpen} onChange={() => setRTOpen(false)} isAdmin={isAdmin}></RTConfig>
         {/* CPU使用情况 */}
         <Dialog open={showCpu.show} onOpenChange={(show) => setShowCpu({ ...showCpu, show })}>
             <DialogContent className="sm:max-w-[80%]">
@@ -140,4 +152,5 @@ export const Finetune = () => {
             </DialogContent>
         </Dialog>
     </div>
+    );
 };

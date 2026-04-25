@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { useRecoilState, useRecoilValue } from "recoil";
 import { ChatMessageType, FlowData } from "~/@types/chat";
@@ -20,7 +20,7 @@ export default function index({ chatId = '', flowId = '', shareToken = '', flowT
     const cid = _cid || chatId;
     const fid = _fid || flowId;
     const type = _type || flowType;
-    const [readOnly] = useState(shareToken);
+    const readOnly = false;
     const [chats, setChats] = useRecoilState(chatsState)
     const [__, setRunningState] = useRecoilState(runningState)
     const [_, setChatId] = useRecoilState(chatIdState)
@@ -152,7 +152,7 @@ export default function index({ chatId = '', flowId = '', shareToken = '', flowT
 
     if (!cid || !chatState?.flow) return null;
 
-    return <ChatView data={chatState.flow} cid={cid} v={API_VERSION} readOnly={readOnly} />
+    return <ChatView data={chatState.flow} cid={cid} v={API_VERSION} readOnly={readOnly} shareToken={shareToken} />
 };
 
 /**
@@ -165,6 +165,17 @@ const useBuild = () => {
     const { showToast } = useToastContext();
     const [_, setTabsState] = useRecoilState(tabsState)
 
+    const eventSourceRef = useRef<EventSource | null>(null);
+    const isUnmountedRef = useRef(false);
+
+    useEffect(() => {
+        return () => {
+            isUnmountedRef.current = true;
+            eventSourceRef.current?.close();
+            eventSourceRef.current = null;
+        };
+    }, []);
+
     // SSE 服务端推送
     async function streamNodeData(flow: any, chatId: string) {
         // Step 1: Make a POST request to send the flow data and receive a unique session ID
@@ -176,6 +187,7 @@ const useBuild = () => {
         let buildEnd = false
         const apiUrl = `${__APP_ENV__.BASE_URL}/api/v1/build/stream/${flowId}?chat_id=${chatId}`;
         const eventSource = new EventSource(apiUrl);
+        eventSourceRef.current = eventSource;
 
         eventSource.onmessage = (event) => {
             // If the event is parseable, return
@@ -218,9 +230,11 @@ const useBuild = () => {
         };
         // Step 3: Wait for the stream to finish
         while (!finished) {
+            if (isUnmountedRef.current) { eventSource.close(); break; }
             await new Promise((resolve) => setTimeout(resolve, 100));
             finished = buildEnd // validationResults.length === flow.data.nodes.length;
         }
+        eventSourceRef.current = null;
         // Step 4: Return true if all nodes are valid, false otherwise
         return validationResults.every((result) => result);
     }

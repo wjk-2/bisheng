@@ -28,7 +28,7 @@ class CacheServiceFactory(ServiceFactory):
                 logger.debug('Redis cache is connected')
                 return redis_cache
             logger.warning('Redis cache is not connected, falling back to in-memory cache')
-            return InMemoryCache()
+            return InMemoryCache(max_size=1000)
 
         elif settings_service.settings.CACHE_TYPE == 'memory':
-            return InMemoryCache()
+            return InMemoryCache(max_size=1000)

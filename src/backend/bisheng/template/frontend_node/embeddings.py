@@ -54,11 +54,11 @@ class EmbeddingFrontendNode(FrontendNode):
         if field.name == 'model':
             field.show = True
             field.advanced = False
-        if name == 'BishengEmbedding':
+        if name == 'EagentEmbedding':
             if field.name == 'model_id':
                 field.show = True
                 field.display_name = 'Model Name'
-                field.field_type = 'bisheng_embedding'
+                field.field_type = 'eagent_embedding'
                 field.advanced = False
             elif field.name in ['model', 'llm_node_type', "app_type", "app_id", "app_name", "user_id"]:
                 field.show = False

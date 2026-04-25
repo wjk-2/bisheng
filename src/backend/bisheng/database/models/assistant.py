@@ -19,6 +19,17 @@ class AssistantStatus(Enum):
     ONLINE = 2
 
 
+# 固定分类枚举
+class AssistantCategory(Enum):
+    """智能体分类：助教、助学、助研、助管、助评、其他"""
+    TEACHING = '助教'
+    LEARNING = '助学'
+    RESEARCH = '助研'
+    MANAGEMENT = '助管'
+    EVALUATION = '助评'
+    OTHER = '其他'
+
+
 class AssistantBase(SQLModelSerializable):
     id: Optional[str] = Field(default_factory=generate_uuid, nullable=False, primary_key=True, description='Uniqueness quantificationID')
     name: str = Field(default='', description='The assistant name.')
@@ -32,6 +43,8 @@ class AssistantBase(SQLModelSerializable):
     temperature: float = Field(default=0.5, description='Model Temperature')
     max_token: int = Field(default=32000, description='MaxtokenQuantity')
     status: int = Field(default=AssistantStatus.OFFLINE.value, description='Whether the assistant is online')
+    is_public: int = Field(default=0, description='可见范围 (0=仅自己, 1=组内, 2=全部)')
+    category: str = Field(default=AssistantCategory.OTHER.value, max_length=32, description='分类：助教/助学/助研/助管/助评/其他')
     user_id: int = Field(default=0, description='Create UserID')
     is_delete: int = Field(default=0, description='Remove logo')
     create_time: Optional[datetime] = Field(default=None, sa_column=Column(
@@ -81,10 +94,9 @@ class AssistantDao(AssistantBase):
     @classmethod
     def delete_assistant(cls, data: Assistant) -> Assistant:
         with get_sync_db_session() as session:
-            data.is_delete = 1
-            session.add(data)
+            # 硬删除：直接从数据库删除记录
+            session.delete(data)
             session.commit()
-            session.refresh(data)
             return data
 
     @classmethod

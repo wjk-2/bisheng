@@ -113,7 +113,7 @@ export default function Theme() {
                 className="flex space-x-2 h-[20px] mt-4 mb-6">
                 <div>
                     <Label className="flex justify-center">
-                        <RadioGroupItem className="mr-2" value="logo" />{t('theme.bishengLogo')}
+                        <RadioGroupItem className="mr-2" value="logo" />{t('theme.eagentLogo')}
                     </Label>
                 </div>
                 <div>

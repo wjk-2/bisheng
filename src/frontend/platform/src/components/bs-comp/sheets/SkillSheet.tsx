@@ -33,7 +33,6 @@ export default function SkillSheet({ select, children, onSelect }) {
   };
 
   const toCreateFlow = () => {
-    //@ts-ignore
     window.open(__APP_ENV__.BASE_URL + "/build/apps");
   };
 

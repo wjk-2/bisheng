@@ -1,11 +1,8 @@
 import { useEffect } from 'react';
 import { useRecoilState } from 'recoil';
-import { useAuthContext } from '~/hooks/AuthContext';
-import StartupLayout from './Startup';
 import store from '~/store';
 
 export default function LoginLayout() {
-  const { isAuthenticated } = useAuthContext();
   const [queriesEnabled, setQueriesEnabled] = useRecoilState<boolean>(store.queriesEnabled);
   
   useEffect(() => {
@@ -20,7 +17,5 @@ export default function LoginLayout() {
       clearTimeout(timeout);
     };
   }, [queriesEnabled, setQueriesEnabled]);
-  return null // 禁用登录页
-  
-  return <StartupLayout isAuthenticated={isAuthenticated} />;
+  return null; // 禁用登录页
 }

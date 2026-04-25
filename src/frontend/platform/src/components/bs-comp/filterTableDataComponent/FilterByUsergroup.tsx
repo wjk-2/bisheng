@@ -1,6 +1,7 @@
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/bs-ui/select";
 import { getUserGroupsApi } from "@/controllers/API/user";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
+import { userContext } from "@/contexts/userContext";
 
 interface Group {
     id: string;
@@ -45,11 +46,19 @@ export default function FilterByUsergroup({ value, placeholder = '', onChange })
 };
 
 const useGroups = () => {
+    const { user } = useContext(userContext);
     const [groups, setGroups] = useState<Group[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const abortControllerRef = useRef<AbortController>();
 
     const loadData = useCallback(async () => {
+        // 只有管理员才能调用此 API
+        if (user.role !== 'admin') {
+            setGroups([]);
+            setLoading(false);
+            return;
+        }
+
         abortControllerRef.current?.abort();
         abortControllerRef.current = new AbortController();
 
@@ -66,7 +75,7 @@ const useGroups = () => {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [user.role]);
 
     useEffect(() => {
         loadData();

@@ -38,7 +38,6 @@ const BookmarkMenu: FC = () => {
     onSuccess: (newTags: string[], vars) => {
       updateConvoTags(newTags);
       const tagElement = document.getElementById(vars.tag);
-      console.log('tagElement', tagElement);
       if (tagElement) {
         setTimeout(() => tagElement.focus(), 2);
       }
@@ -51,7 +50,6 @@ const BookmarkMenu: FC = () => {
     },
     onMutate: (vars) => {
       const tagElement = document.getElementById(vars.tag);
-      console.log('tagElement', tagElement);
       if (tagElement) {
         setTimeout(() => tagElement.focus(), 2);
       }

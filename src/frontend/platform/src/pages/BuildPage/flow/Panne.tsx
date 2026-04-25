@@ -57,7 +57,6 @@ export default function Panne({ flow, preFlow }: { flow: WorkFlow, preFlow: stri
      */
     useEffect(() => {
         if (reactFlowInstance && flow) {
-            console.log('数据更新 :>> ', reactFlowInstance.toObject());
             const { nodes, edges, viewport } = reactFlowInstance.toObject()
             flow.nodes = nodes
             flow.edges = edges
@@ -170,7 +169,6 @@ export default function Panne({ flow, preFlow }: { flow: WorkFlow, preFlow: stri
                             onNodeDragStart={onNodeDragStart} // 快照
                             onSelectionDragStart={onSelectionDragStart} // 快照
                             onNodesDelete={() => {
-                                console.log('【删除节点】');
                                 takeSnapshot(flow)
                             }} // 更新setEdges
                             // 自定义线组件

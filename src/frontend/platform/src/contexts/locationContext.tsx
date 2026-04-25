@@ -88,29 +88,21 @@ export function LocationProvider({ children }: { children: ReactNode }) {
           enableEtl4lm: res.enable_etl4lm
         }));
 
-        // backend version
-        res.version && console.log(
-          "%cversion " + res.version,
-          "background-color:#024de3;color:#fff;font-weight:bold;font-size: 38px;" +
-          "padding: 6px 12px;font-family:'american typewriter';text-shadow:1px 1px 3px black;"
-        );
+        // backend version (removed decorative console.log)
 
         // Then get workstation config separately
         return getWorkstationConfigApi()
-          .then(bench => {
-            // Only update the benchMenu property
-            setAppConfig(prev => ({
-              ...prev,
-              benchMenu: bench?.menuShow ?? true
-            }));
+          .then(wc => {
+            if (wc) {
+              setAppConfig(prev => ({
+                ...prev,
+                sidebarSlogan: (wc as any).sidebarSlogan || 'E-Agent',
+                sidebarIcon: (wc as any).sidebarIcon ?? null,
+              }));
+            }
           })
           .catch(error => {
             console.error('Failed to get workstation config:', error);
-            // Set default value for benchMenu if the request fails
-            setAppConfig(prev => ({
-              ...prev,
-              benchMenu: false
-            }));
           });
       })
       .catch(error => {

@@ -3,7 +3,7 @@ import json
 import os
 from typing import List
 
-from bisheng.telemetry_search.domain.init_dataset import init_dashboard_datasets
+# from bisheng.telemetry_search.domain.init_dataset import init_dashboard_datasets  # disabled: .pyc compiled for Python 3.10
 from loguru import logger
 from sqlmodel import select, update
 
@@ -26,7 +26,7 @@ from bisheng.user.domain.models.user_role import UserRoleDao
 async def init_default_data():
     """Initialize Database"""
     redis_client = await get_redis_client()
-    if await redis_client.asetNx('init_default_data', '1'):
+    if await redis_client.asetNx('init_default_data', '1', 300):
         try:
             db_manager = await get_database_connection()
             await db_manager.create_db_and_tables()
@@ -64,20 +64,57 @@ async def init_default_data():
                     await session.commit()
                     await session.refresh(group)
 
-                user = await session.exec(select(User).limit(1))
-                user = user.all()
-                if not user and settings.admin:
+                # ===== 改进后的逻辑 =====
+                # 检查 admin 用户是否存在，而不是检查是否有任何用户
+                admin_username = settings.admin.get('user_name') if settings.admin else None
+                if not admin_username:
+                    logger.warning("Admin config exists but username is empty")
+                    return
+
+                admin_user = await session.exec(select(User).where(User.user_name == admin_username))
+                admin_user = admin_user.first()
+                if admin_user:
+                    logger.info(f"Admin user '{admin_username}' already exists, skipping creation")
+                    return
+
+                # 验证密码配置
+                password = settings.admin.get('password')
+                if not password:
+                    logger.warning("Admin config exists but password is empty")
+                    return
+
+                # 检查密码是否需要加密（以 encrypt: 开头）
+                if password.startswith('encrypt(') and password.endswith(')'):
+                    # 已经是加密格式，直接使用
+                    encrypted_password = password[8:-1]
+                    try:
+                        password = decrypt_token(encrypted_password)
+                    except Exception as e:
+                        logger.error(f"Failed to decrypt admin password: {e}")
+                        return
+                    # 加密密码需要解密后做 MD5
                     md5 = hashlib.md5()
-                    md5.update(settings.admin.get('password').encode('utf-8'))
-                    user = User(
-                        user_id=1,
-                        user_name=settings.admin.get('user_name'),
-                        password=md5.hexdigest(),
-                    )
-                    session.add(user)
-                    await session.commit()
-                    await session.refresh(user)
-                    await UserRoleDao.set_admin_user(user.user_id)
+                    md5.update(password.encode('utf-8'))
+                    password = md5.hexdigest()
+                else:
+                    # 明文密码，直接做 MD5
+                    md5 = hashlib.md5()
+                    md5.update(password.encode('utf-8'))
+                    password = md5.hexdigest()
+
+                # 获取用户名
+                admin_username = settings.admin.get('user_name')
+
+                # 创建 admin 用户（不硬编码 user_id，让数据库自增）
+                user = User(
+                    user_name=admin_username,
+                    password=password,
+                )
+                session.add(user)
+                await session.commit()
+                await session.refresh(user)
+                await UserRoleDao.set_admin_user(user.user_id)
+                logger.info(f"Admin user '{admin_username}' created with user_id={user.user_id}")
 
                 component_db = await session.exec(select(Component).limit(1))
                 component_db = component_db.all()
@@ -138,8 +175,8 @@ async def init_default_data():
             # Initialize Databaseconfig
             await settings.init_config()
 
-            # init dashboard data
-            await init_dashboard_datasets()
+            # init dashboard data (disabled: telemetry_search module unavailable)
+            # await init_dashboard_datasets()
         except Exception as exc:
             # if the exception involves tables already existing
             # we can ignore it
@@ -147,7 +184,10 @@ async def init_default_data():
                 logger.exception(f'Error creating DB and tables: {exc}')
                 raise RuntimeError('Error creating DB and tables') from exc
         finally:
-            await redis_client.adelete('init_default_data')
+            try:
+                await redis_client.adelete('init_default_data')
+            except Exception as e:
+                logger.warning(f"Failed to release init lock: {e}")
 
 
 def read_from_conf(file_path: str) -> str:

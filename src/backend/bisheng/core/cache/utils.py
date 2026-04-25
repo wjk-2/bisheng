@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any, Dict
 from urllib.parse import unquote, urlparse
 
-import cchardet
+import chardet as cchardet
 import requests
 from appdirs import user_cache_dir
 from fastapi import UploadFile
@@ -22,7 +22,7 @@ from bisheng.core.storage.minio.minio_manager import get_minio_storage, get_mini
 
 CACHE: Dict[str, Any] = {}
 
-CACHE_DIR = user_cache_dir('bisheng', 'bisheng')
+CACHE_DIR = user_cache_dir('eagent', 'eagent')
 
 
 def create_cache_folder(func):
@@ -79,7 +79,7 @@ def memoize_dict(maxsize=128):
     return decorator
 
 
-PREFIX = 'bisheng_cache'
+PREFIX = 'eagent_cache'
 
 
 @create_cache_folder
@@ -215,6 +215,10 @@ async def save_file_to_folder(file: UploadFile, folder_name: str, file_name: str
     return str(file_path)
 
 
+# Maximum allowed file size: 100MB
+MAX_UPLOAD_FILE_SIZE = 100 * 1024 * 1024
+
+
 @create_cache_folder
 async def save_uploaded_file(file: UploadFile, folder_name, file_name, bucket_name: str = None):
     """
@@ -228,6 +232,13 @@ async def save_uploaded_file(file: UploadFile, folder_name, file_name, bucket_na
     Returns:
         The path to the saved file.
     """
+    # Security: Check file size before processing
+    file_content = await file.read()
+    file_size = len(file_content)
+    if file_size > MAX_UPLOAD_FILE_SIZE:
+        raise ValueError(f'File size ({file_size / (1024 * 1024):.2f}MB) exceeds the maximum allowed size (100MB)')
+    # Reset file cursor for subsequent operations
+    await file.seek(0)
 
     minio_client = await get_minio_storage()
 
@@ -325,7 +336,7 @@ def file_download(file_path: str):
                 filename = unquote(content_disposition).split('filename=')[-1].strip("\"'")
             file_content = r.content
 
-        file_path = save_download_file(file_content, 'bisheng', filename)
+        file_path = save_download_file(file_content, 'eagent', filename)
         return file_path, filename
 
     # <g id="Bold">Medical Treatment:</g> MinIO Relative path (In / Starts with a signature parameter)
@@ -348,7 +359,7 @@ def file_download(file_path: str):
                 file_content = minio_client.get_object_sync(bucket_name, object_name)
 
                 filename = unquote(object_name.split('/')[-1])
-                file_path = save_download_file(file_content, 'bisheng', filename)
+                file_path = save_download_file(file_content, 'eagent', filename)
                 return file_path, filename
         except Exception as e:
             # If the parsing fails, print the log and let the program continue to throw down ValueError
@@ -396,7 +407,7 @@ async def async_file_download(file_path: str):
             if content_disposition:
                 filename = unquote(content_disposition).split('filename=')[-1].strip("\"'")
             file_content = r.body
-        file_path = save_download_file(file_content, 'bisheng', filename)
+        file_path = save_download_file(file_content, 'eagent', filename)
         return file_path, filename
 
     # <g id="Bold">Medical Treatment:</g> MinIO Relative path (In / Starts with a signature parameter)
@@ -416,7 +427,7 @@ async def async_file_download(file_path: str):
                 file_content = await minio_client.get_object(bucket_name, object_name)
 
                 filename = unquote(object_name.split('/')[-1])
-                file_path = save_download_file(file_content, 'bisheng', filename)
+                file_path = save_download_file(file_content, 'eagent', filename)
                 return file_path, filename
         except Exception as e:
             # If parsing or downloading fails, log or drop it below ValueError

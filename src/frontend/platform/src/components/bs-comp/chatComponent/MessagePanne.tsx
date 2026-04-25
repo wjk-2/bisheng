@@ -55,7 +55,6 @@ export default function MessagePanne({ debug = false, mark = false, logo, useNam
             scrollLockRef.current = (scrollHeight - scrollTop - clientHeight) > 400
 
             if (messagesRef.current.scrollTop <= 90) {
-                console.log('请求 :>> ', 1);
                 queryLockRef.current = true
                 loadMore()
                 // TODO 翻页定位

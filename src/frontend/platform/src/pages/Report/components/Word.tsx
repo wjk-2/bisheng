@@ -32,7 +32,7 @@ export default function Word({ data, workflow }) {
             // 文档地址，绝对路径
             url: data.path,
             // 文档标题
-            title: 'bisheng.docx',
+            title: 'eagent.docx',
             permissions: {
                 changeHistory: true,
                 comment: true,
@@ -63,8 +63,8 @@ export default function Word({ data, workflow }) {
                 unit: "cm",
                 uiTheme: "theme-dark",
                 logo: {
-                    "image": location.origin + __APP_ENV__.BASE_URL + "/assets/bisheng/logo.jpeg",
-                    "imageDark": location.origin + __APP_ENV__.BASE_URL + "/assets/bisheng/logo.jpeg",
+                    "image": location.origin + __APP_ENV__.BASE_URL + "/assets/eagent/logo.jpeg",
+                    "imageDark": location.origin + __APP_ENV__.BASE_URL + "/assets/eagent/logo.jpeg",
                     "url": "https://example.com"
                 }
             },
@@ -111,7 +111,6 @@ export default function Word({ data, workflow }) {
         }
 
         return () => {
-            console.log('destroyEditor :>> ');
             window.editor?.destroyEditor();
         }
     }, [])

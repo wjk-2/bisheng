@@ -517,7 +517,6 @@ export default function useEventHandlers({
         return;
       }
 
-      console.log('Error:', data);
       const errorResponse = tMessageSchema.parse({
         ...data,
         error: true,
@@ -541,7 +540,6 @@ export default function useEventHandlers({
   const abortConversation = useCallback(
     async (conversationId = '', submission: EventSubmission, messages?: TMessage[]) => {
       const runAbortKey = `${conversationId}:${messages?.[messages.length - 1]?.messageId ?? ''}`;
-      console.log({ conversationId, submission, messages, runAbortKey });
       const { endpoint: _endpoint, endpointType } =
         (submission.conversation as TConversation | null) ?? {};
       const endpoint = endpointType ?? _endpoint;
@@ -562,7 +560,6 @@ export default function useEventHandlers({
         const contentType = response.headers.get('content-type');
         if (contentType != null && contentType.includes('application/json')) {
           const data = await response.json();
-          console.log(`[aborted] RESPONSE STATUS: ${response.status}`, data);
           if (response.status === 404) {
             setIsSubmitting(false);
             return;
@@ -582,7 +579,6 @@ export default function useEventHandlers({
             responseMessage: responseMessage,
             conversation: submission.conversation,
           };
-          console.log(`[aborted] RESPONSE STATUS: ${response.status}`, data);
           setIsSubmitting(false);
         } else {
           throw new Error(

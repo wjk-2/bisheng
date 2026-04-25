@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import ApiAccess from './ApiAccess';
 import ApiAccessFlow from './ApiAccessFlow';
 import ApiAccessSkill from './ApiAccessSkill';
-import ChatLink from './ChatLink';
+import WebPublish from './WebPublish';
 
 enum API_TYPE {
     ASSISTANT = 'assistant',
@@ -29,7 +29,6 @@ const ApiMainPage = ({ type = API_TYPE.ASSISTANT }: ApiMainPageProps) => {
     const { t } = useTranslation();
     const [activeMenu, setActiveMenu] = useState('api-access');
 
-    // 菜单配置项
     const menuItems = useMemo((): MenuItem[] => [
         {
             key: 'api-access',
@@ -37,14 +36,9 @@ const ApiMainPage = ({ type = API_TYPE.ASSISTANT }: ApiMainPageProps) => {
             component: getApiAccessComponent(type)
         },
         {
-            key: 'no-login-link',
-            labelKey: t('api.noLoginLink'),
-            component: <ChatLink noLogin type={type} />
-        },
-        {
-            key: 'login-link',
-            labelKey: t('api.loginLink'),
-            component: <ChatLink type={type} />
+            key: 'web-publish',
+            labelKey: t('api.webPublish'),
+            component: <WebPublish type={type} />
         }
     ], [type]);
 

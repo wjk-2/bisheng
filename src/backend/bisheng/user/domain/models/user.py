@@ -16,7 +16,8 @@ from bisheng.user.domain.models.user_role import UserRole
 
 
 class UserBase(SQLModelSerializable):
-    user_name: str = Field(index=True, unique=True)
+    user_name: str = Field(index=True, unique=True, max_length=30, description='Login username')
+    nickname: Optional[str] = Field(default=None, max_length=50, description='Display name')
     email: Optional[str] = Field(default=None, index=True)
     phone_number: Optional[str] = Field(default=None, index=True)
     dept_id: Optional[str] = Field(default=None, index=True)

@@ -139,7 +139,8 @@ module.exports = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ["var(--font-sans)", ...fontFamily.sans],
+        sans: ["AlibabaPuHuiTi", "Inter", "sans-serif"],
+        mono: ["Roboto Mono", "monospace"],
       },
     },
   },

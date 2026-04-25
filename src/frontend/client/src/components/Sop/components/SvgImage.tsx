@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import FileIcon from '~/components/ui/icon/File';
 import { useLocalize } from '~/hooks';
+import { sanitizeSvg } from '~/utils/sanitizeSvg';
 
 interface SvgImageProps {
   fileUrl: string;
@@ -106,7 +107,7 @@ export const SvgImage = ({ fileUrl, alt, className = "" }: SvgImageProps) => {
   return (
     <div 
       className={className}
-      dangerouslySetInnerHTML={{ __html: svgContent }}
+      dangerouslySetInnerHTML={{ __html: sanitizeSvg(svgContent) }}
     />
   );
 };

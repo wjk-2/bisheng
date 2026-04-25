@@ -1,4 +1,4 @@
-// bisheng iframe.js 内嵌脚本
+// eagent iframe.js 内嵌脚本
 (function () {
     const iframeId = "chatbot-iframe";
     const buttonId = "chatbot-button";

@@ -40,7 +40,6 @@ const useFileDeletion = ({
         assistant_id,
         tool_resource,
       });
-      console.log('Deleting files:', filesToDelete, payload);
       mutateAsync({ files: filesToDelete, ...payload });
       setFileDeleteBatch([]);
     },

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import mermaid from 'mermaid';
+import DOMPurify from 'dompurify';
 import { TransformWrapper, TransformComponent, ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
 // import { Button } from '/components/ui/Button'; // Live component
 import { Button } from '~/components/ui/Button';
@@ -19,7 +20,7 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ content }) => {
     mermaid.initialize({
       startOnLoad: false,
       theme: 'base',
-      securityLevel: 'sandbox',
+      securityLevel: 'strict',
       themeVariables: {
         background: '#282C34',
         primaryColor: '#333842',
@@ -45,7 +46,7 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ content }) => {
         nodeSpacing: 50,
         rankSpacing: 50,
         diagramPadding: 8,
-        htmlLabels: true,
+        htmlLabels: false,
         useMaxWidth: true,
         padding: 15,
         wrappingWidth: 200,
@@ -56,7 +57,8 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ content }) => {
       if (mermaidRef.current) {
         try {
           const { svg } = await mermaid.render('mermaid-diagram', content);
-          mermaidRef.current.innerHTML = svg;
+          // DOMPurify 净化 SVG 输出，防止 mermaid 潜在漏洞
+          mermaidRef.current.innerHTML = DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true } });
 
           const svgElement = mermaidRef.current.querySelector('svg');
           if (svgElement) {

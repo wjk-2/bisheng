@@ -7,7 +7,7 @@ import { message } from "@/components/bs-ui/toast/use-toast";
 import SimpleUpload from "@/components/bs-ui/upload/simple";
 import { getQaFile, getQaFilePreview, postImportQaFile } from "@/controllers/API";
 import { captureAndAlertRequestErrorHoc } from "@/controllers/request";
-import { downloadFile } from "@/util/utils";
+import { downloadFile, safeJsonParse } from "@/util/utils";
 import { generateUUID } from "@/utils";
 import { forwardRef, useImperativeHandle, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -83,7 +83,7 @@ function QaTable({ dataList }) {
                     {dataList.map(el => {
                         const questions = el.questions.filter(item => !!item);
                         const mainQuestion = questions.shift() || '';
-                        const answers = JSON.parse(el.answers);
+                        const answers = safeJsonParse(el.answers, []) as string[];
                         const answer = answers[0] || '';
                         return (
                             <TableRow key={generateUUID(4)}>
@@ -220,7 +220,6 @@ export const ImportQa = forwardRef(function ({ knowlageId, onChange }: any, ref)
             url: form.fileUrl
         }));
         const errorLines = res.errors[0];
-        console.log('errors', errorLines);
         if (errorLines.length) {
             message({ variant: 'warning', description: t('errorMsg', { value: errorLines.length }) });
         } else {
@@ -251,7 +250,7 @@ export const ImportQa = forwardRef(function ({ knowlageId, onChange }: any, ref)
                 </DialogHeader>
                 <div>
                     <div className="flex justify-between items-center">
-                        <label htmlFor="dataSetName" className="bisheng-label">
+                        <label htmlFor="dataSetName" className="eagent-label">
                             <span className="text-red-500">*</span>{t('upFile')}
                         </label>
                         <div className="flex gap-2 items-center">
@@ -279,7 +278,7 @@ export const ImportQa = forwardRef(function ({ knowlageId, onChange }: any, ref)
                     </div>
                 </div>
                 {!!dataList.length && <div>
-                    <label htmlFor="dataSetName" className="bisheng-label">
+                    <label htmlFor="dataSetName" className="eagent-label">
                         {t('importPreview')}
                     </label>
                     <div className="flex flex-col gap-4 py-2 max-h-[36vh] overflow-y-auto">

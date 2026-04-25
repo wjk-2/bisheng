@@ -20,7 +20,7 @@ import { useToastContext } from '~/Providers/ToastContext';
 import { useChatContext } from '~/Providers/ChatContext';
 import { logger, validateFiles } from '~/utils';
 import useUpdateFiles from './useUpdateFiles';
-import { bishengConfState } from '~/pages/appChat/store/atoms';
+import { eagentConfState } from '~/pages/appChat/store/atoms';
 import { useRecoilState } from 'recoil';
 
 type UseFileHandling = {
@@ -94,7 +94,6 @@ const useFileHandling = (params?: UseFileHandling) => {
     {
       onSuccess: (data) => {
         clearUploadTimer(data.temp_file_id);
-        console.log('upload success', data);
         if (agent_id) {
           queryClient.refetchQueries([QueryKeys.agent, agent_id]);
           return;
@@ -129,7 +128,6 @@ const useFileHandling = (params?: UseFileHandling) => {
       },
       onError: (_error, body) => {
         const error = _error as TError | undefined;
-        console.log('upload error', error);
         const file_id = body.get('file_id');
         const file_name = body.get('file_name');
         clearUploadTimer(file_id as string);
@@ -239,7 +237,7 @@ const useFileHandling = (params?: UseFileHandling) => {
     img.src = preview;
   };
 
-  const [config] = useRecoilState(bishengConfState)
+  const [config] = useRecoilState(eagentConfState)
   const handleFiles = async (_files: FileList | File[], _toolResource?: string) => {
     // abortControllerRef.current = new AbortController();
     const fileList = Array.from(_files);
@@ -308,7 +306,6 @@ const useFileHandling = (params?: UseFileHandling) => {
         await startUpload(extendedFile);
       } catch (error) {
         deleteFileById(file_id);
-        console.log('file handling error', error);
         setError('com_error_files_process');
       }
     }

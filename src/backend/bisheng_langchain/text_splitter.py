@@ -102,9 +102,9 @@ class ElemCharacterTextSplitter(RecursiveCharacterTextSplitter):
             keep_separator=keep_separator,
             **kwargs
         )
-        self._separators = separators or ['\n\n', '\n', ' ', '']
-        self._separator_rule = separator_rule or ['after' for _ in range(4)]
-        self.separator_rule = {one: self._separator_rule[index] for index, one in enumerate(separators)}
+        self._separators = separators or ['\n\n', '\n', '。', '！', '？', '；', ' ', '']
+        self._separator_rule = separator_rule or ['after' for _ in self._separators]
+        self.separator_rule = {one: self._separator_rule[index] for index, one in enumerate(self._separators)}
         self._is_separator_regex = is_separator_regex
         self._chunk_overlap = kwargs.get('chunk_overlap', 0)
 

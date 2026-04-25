@@ -1,13 +1,15 @@
 from bisheng.api.v1.base import (Code, CodeValidationResponse, PromptValidationResponse,
                                  ValidatePromptRequest, validate_prompt)
 from bisheng.api.v1.schemas import UnifiedResponseModel, resp_200
+from bisheng.common.dependencies.ip_whitelist import verify_internal_request
 from bisheng.template.field.base import TemplateField
 from loguru import logger
 from bisheng.utils.validate import validate_code
 from fastapi import APIRouter, HTTPException
+from fastapi.params import Depends
 
 # build router
-router = APIRouter(prefix='/validate', tags=['Validate'])
+router = APIRouter(prefix='/validate', tags=['Validate'], dependencies=[Depends(verify_internal_request)])
 
 
 @router.post('/code', status_code=200)

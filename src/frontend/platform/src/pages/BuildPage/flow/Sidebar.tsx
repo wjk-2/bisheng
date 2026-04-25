@@ -9,7 +9,7 @@ import { cloneDeep } from "lodash-es";
 import { ListVideo } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "react-query";
+import { useQuery } from '@tanstack/react-query';
 import NodeLogo from "./FlowNode/NodeLogo";
 
 const ToolItem = ({ temp, index, dropdown, onDragStart, onClick }) => {
@@ -23,7 +23,7 @@ const ToolItem = ({ temp, index, dropdown, onDragStart, onClick }) => {
     }, [temp.children]);
 
     return <AccordionItem key={temp.name} value={temp.name + index} className="border-none">
-        <AccordionTrigger className="py-2 bisheng-label">
+        <AccordionTrigger className="py-2 eagent-label">
             <span className="break-all text-left">{temp.is_preset === 1 ? t(`categories.${temp.name}.name`) : temp.name}</span>
         </AccordionTrigger>
         <AccordionContent className="pb-2">
@@ -74,9 +74,9 @@ const ToolItem = ({ temp, index, dropdown, onDragStart, onClick }) => {
 export default function Sidebar({ dropdown = false, disabledNodes = [], onInitStartNode = (node: any) => { }, onClick = (k) => { } }) {
     const { t } = useTranslation('flow')
     const { data: tempData, refetch } = useQuery({
-        queryKey: "QueryWorkFlowTempKey",
+        queryKey: ["QueryWorkFlowTempKey"],
         queryFn: () => getWorkflowNodeTemplate(),
-        cacheTime: 0
+        gcTime: 0
     });
 
     const getNodeDataByTemp = (temp) => {
@@ -118,9 +118,9 @@ export default function Sidebar({ dropdown = false, disabledNodes = [], onInitSt
 
     // tool
     const { data: toolTempData } = useQuery({
-        queryKey: "QueryToolsKey",
+        queryKey: ["QueryToolsKey"],
         queryFn: () => getToolsApi('all'),
-        cacheTime: 0
+        gcTime: 0
     });
 
     const toolTemps = useMemo(() => {

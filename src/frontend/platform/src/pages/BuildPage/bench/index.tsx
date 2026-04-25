@@ -10,6 +10,7 @@ import { userContext } from "@/contexts/userContext";
 import { getWorkstationConfigApi, setWorkstationConfigApi } from "@/controllers/API";
 import { captureAndAlertRequestErrorHoc } from "@/controllers/request";
 import { t } from "i18next";
+import isEqual from "lodash-es/isEqual";
 import { Settings } from "lucide-react";
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -28,6 +29,7 @@ export interface FormErrors {
     welcomeMessage: string;
     functionDescription: string;
     inputPlaceholder: string;
+    maxTokens: string;
     modelNames: string[] | string[][];
     webSearch?: Record<string, string>;
     systemPrompt: string;
@@ -38,7 +40,6 @@ export interface FormErrors {
 }
 
 export interface ChatConfigForm {
-    menuShow: boolean;
     systemPrompt: string;
     sidebarIcon: {
         enabled: boolean;
@@ -65,37 +66,10 @@ export interface ChatConfigForm {
     webSearch: {
         enabled: boolean;
         tool: string;
-        bing: {
-            type: string;
-            config: {
-                api_key: string;
-                base_url: string;
-            };
-        };
-        bocha: {
-            type: string;
-            config: {
-                api_key: string;
-            };
-        };
-        jina: {
-            type: string;
-            config: {
-                api_key: string;
-            };
-        };
-        serp: {
-            type: string;
-            config: {
-                api_key: string;
-                engine: string;
-            };
-        };
-        tavily: {
-            type: string;
-            config: {
-                api_key: string;
-            };
+        params: {
+            api_key: string;
+            base_url?: string;
+            engine?: string;
         };
         prompt: string;
     };
@@ -186,7 +160,6 @@ export default function index({ formData: parentFormData, setFormData: parentSet
     };
     // Add this method in the parent component
     const handleWebSearchChange = useCallback((field: string, value: any) => {
-        console.log('Updating field:', field, 'New value:', value);
 
         // Update local state
         setFormData(prev => ({
@@ -203,11 +176,6 @@ export default function index({ formData: parentFormData, setFormData: parentSet
             <div className="pt-4 relative">
                 <CardContent className="pt-4 relative  ">
                     <div className="w-full  max-h-[calc(100vh-180px)] overflow-y-scroll scrollbar-hide">
-                        <ToggleSection
-                            title={t('chatConfig.workstationEntry')}
-                            enabled={formData.menuShow}
-                            onToggle={(enabled) => setFormData(prev => ({ ...prev, menuShow: enabled }))}
-                        >{null}</ToggleSection>
                         {/* Icon Uploads */}
                         <p className="text-lg font-bold mb-2">{t('chatConfig.iconUpload')}</p>
                         <div className="flex gap-8 mb-6">
@@ -228,7 +196,7 @@ export default function index({ formData: parentFormData, setFormData: parentSet
                         </div>
                         <div ref={sidebarSloganRef}>
                             <FormInput
-                                label={<Label className="bisheng-label">{t('chatConfig.sidebarSlogan')}</Label>}
+                                label={<Label className="eagent-label">{t('chatConfig.sidebarSlogan')}</Label>}
                                 value={formData.sidebarSlogan}
                                 error={errors.sidebarSlogan}
                                 placeholder=""
@@ -310,17 +278,17 @@ export default function index({ formData: parentFormData, setFormData: parentSet
                                 />
                             </div>
                             <FormInput
-                                label={<Label className="bisheng-label block pt-2">{t('chatConfig.maxTokens')}</Label>}
+                                label={<Label className="eagent-label block pt-2">{t('chatConfig.maxTokens')}</Label>}
                                 type="number"
                                 value={formData.maxTokens}
-                                error={''}
+                                error={errors.maxTokens}
                                 placeholder={t('chatConfig.maxTokensPlaceholder')}
                                 maxLength={1000}
                                 onChange={(v) => handleInputChange('maxTokens', v, 100)}
                             />
                             <div ref={systemPromptRef}>
                                 <FormInput
-                                    label={<Label className="bisheng-label">{t('chatConfig.systemPrompt')}</Label>}
+                                    label={<Label className="eagent-label">{t('chatConfig.systemPrompt')}</Label>}
                                     isTextarea
                                     value={formData.systemPrompt}
                                     error={errors.systemPrompt}
@@ -337,7 +305,7 @@ export default function index({ formData: parentFormData, setFormData: parentSet
                             enabled={formData.voiceInput.enabled}
                             onToggle={(enabled) => toggleFeature('voiceInput', enabled)}
                         >
-                            <Label className="bisheng-label">Voice Input Model Selection</Label>
+                            <Label className="eagent-label">Voice Input Model Selection</Label>
                             <div className="mt-3">
                                 <Select value={""} onValueChange={(val) => { }}>
                                     <SelectTrigger>
@@ -378,7 +346,7 @@ export default function index({ formData: parentFormData, setFormData: parentSet
                             onToggle={(enabled) => toggleFeature('knowledgeBase', enabled)}
                         >
                             <FormInput
-                                label={<Label className="bisheng-label">{t('chatConfig.knowledgeBasePrompt')}</Label>}
+                                label={<Label className="eagent-label">{t('chatConfig.knowledgeBasePrompt')}</Label>}
                                 isTextarea
                                 value={formData.knowledgeBase.prompt}
                                 error={errors.kownledgeBase}
@@ -397,7 +365,7 @@ export default function index({ formData: parentFormData, setFormData: parentSet
                             onToggle={(enabled) => toggleFeature('fileUpload', enabled)}
                         >
                             <FormInput
-                                label={<Label className="bisheng-label">{t('chatConfig.fileUploadPrompt')}</Label>}
+                                label={<Label className="eagent-label">{t('chatConfig.fileUploadPrompt')}</Label>}
                                 isTextarea
                                 value={formData.fileUpload.prompt}
                                 error={''}
@@ -448,7 +416,6 @@ const useChatConfig = (refs: UseChatConfigProps, parentFormData, parentSetFormDa
     const { t } = useTranslation()
 
     const [formData, setFormData] = useState<ChatConfigForm>(parentFormData || {
-        menuShow: true,
         systemPrompt: t('chatConfig.systemPrompt2'),
         sidebarIcon: { enabled: true, image: '', relative_path: '' },
         assistantIcon: { enabled: true, image: '', relative_path: '' },
@@ -483,11 +450,8 @@ const useChatConfig = (refs: UseChatConfigProps, parentFormData, parentSetFormDa
 
     // Simple deep comparison to avoid circular refresh caused by parent-child mutual setting
     const isDeepEqual = (a: any, b: any) => {
-        try {
-            return JSON.stringify(a) === JSON.stringify(b);
-        } catch {
-            return a === b;
-        }
+        // 使用 lodash 的 isEqual 进行深度比较，避免循环引用问题
+        return isEqual(a, b);
     };
 
     useEffect(() => {
@@ -504,7 +468,6 @@ const useChatConfig = (refs: UseChatConfigProps, parentFormData, parentSetFormDa
 
     useEffect(() => {
         if (!parentFormData) {
-            console.log('parentFormData :>> ', parentFormData);
 
             getWorkstationConfigApi().then((res) => {
                 if (res) {
@@ -513,7 +476,15 @@ const useChatConfig = (refs: UseChatConfigProps, parentFormData, parentSetFormDa
                     const systemPrompt = res.systemPrompt || defaultSystemPrompt;
 
                     setFormData((prev) => {
-                        return 'menuShow' in res ? res : { ...prev, ...res, systemPrompt }
+                        // 用 API 返回的数据覆盖，但对 null 字段保留默认值
+                        const merged = { ...prev };
+                        for (const key of Object.keys(res)) {
+                            if (res[key] !== null && res[key] !== undefined) {
+                                merged[key] = res[key];
+                            }
+                        }
+                        merged.systemPrompt = systemPrompt;
+                        return merged;
                     })
                 }
             });
@@ -559,6 +530,7 @@ const useChatConfig = (refs: UseChatConfigProps, parentFormData, parentSetFormDa
             welcomeMessage: '',
             functionDescription: '',
             inputPlaceholder: '',
+            maxTokens: '',
             kownledgeBase: '',
             model: '',
             modelNames: [],
@@ -617,6 +589,15 @@ const useChatConfig = (refs: UseChatConfigProps, parentFormData, parentSetFormDa
             if (!firstErrorRef) firstErrorRef = refs.appCenterDescriptionRef;
             isValid = false;
         }
+
+        // Validate maxTokens - 必须是非负整数，且在合理范围内
+        const maxTokensValue = Number(formData.maxTokens);
+        if (isNaN(maxTokensValue) || maxTokensValue < 0 || maxTokensValue > 200000) {
+            newErrors.maxTokens = t('chatConfig.errors.maxTokensInvalid');
+            if (!firstErrorRef) firstErrorRef = refs.systemPromptRef; // 使用附近的 ref
+            isValid = false;
+        }
+
         // Validate models
         if (formData.models.length === 0) {
             newErrors.model = t('chatConfig.errors.atLeastOneModel');
@@ -744,18 +725,40 @@ const useChatConfig = (refs: UseChatConfigProps, parentFormData, parentSetFormDa
             }
             return false;
         }
+
+        // 先从 API 获取最新配置，避免覆盖另一个 tab 的修改
+        let latestConfig = {};
+        try {
+            latestConfig = await getWorkstationConfigApi() || {};
+        } catch (error) {
+            console.warn('Failed to fetch latest config, using local data:', error);
+        }
+
+        // 构建当前 tab 修改的字段
         const dataToSave = {
-            ...formData,
+            // 保留最新配置中的其他字段（包括灵思 tab 的配置）
+            ...latestConfig,
+            // 当前 tab（日常）修改的字段
+            systemPrompt: formData.systemPrompt,
+            sidebarIcon: formData.sidebarIcon,
+            assistantIcon: formData.assistantIcon,
             sidebarSlogan: formData.sidebarSlogan.trim(),
             welcomeMessage: formData.welcomeMessage.trim(),
             functionDescription: formData.functionDescription.trim(),
             inputPlaceholder: formData.inputPlaceholder.trim(),
             applicationCenterWelcomeMessage: formData.applicationCenterWelcomeMessage.trim() || t('chatConfig.appCenterWelcomePlaceholder'),
             applicationCenterDescription: formData.applicationCenterDescription.trim() || t('chatConfig.appCenterDescriptionPlaceholder'),
-            maxTokens: formData.maxTokens || 15000,
+            models: formData.models,
+            maxTokens: formData.maxTokens ?? 15000,
+            webSearch: formData.webSearch,
+            knowledgeBase: formData.knowledgeBase,
+            fileUpload: formData.fileUpload,
+            // 保留灵思 tab 的配置
+            linsightConfig: latestConfig.linsightConfig || formData.linsightConfig || {
+                input_placeholder: '',
+                tools: []
+            }
         };
-
-        console.log('Saving data:', dataToSave);
 
         captureAndAlertRequestErrorHoc(setWorkstationConfigApi(dataToSave)).then((res) => {
             if (res) {

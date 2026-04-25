@@ -146,7 +146,6 @@ export const useMessageStore = create<State & Actions>((set, get) => ({
         set({ chatId: '', messages: [] })
     },
     createSendMsg(inputs, inputKey) {
-        console.log('change createSendMsg', inputs, inputKey);
 
         set((state) => ({
             messages:
@@ -165,7 +164,6 @@ export const useMessageStore = create<State & Actions>((set, get) => ({
     },
     // start
     createWsMsg(data) {
-        console.log('change createWsMsg');
         set((state) => {
             let newChat = cloneDeep(state.messages);
             newChat.push({
@@ -189,7 +187,6 @@ export const useMessageStore = create<State & Actions>((set, get) => ({
         // if (wsdata.end) {
         //     debugger
         // }
-        console.log('change updateCurrentMessage');
         const messages = get().messages
         const isRunLog = runLogsTypes.includes(wsdata.category);
         // run log类型存在嵌套情况，使用 extra 匹配 currentMessage; 否则取最近

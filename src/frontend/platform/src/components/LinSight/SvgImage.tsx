@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import DOMPurify from 'dompurify';
 import { FileIcon } from '../bs-icons/file';
 
 interface SvgImageProps {
@@ -102,7 +103,7 @@ export const SvgImage = ({ fileUrl, alt, className = "" }: SvgImageProps) => {
   return (
     <div
       className={className}
-      dangerouslySetInnerHTML={{ __html: svgContent }}
+      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(svgContent, { USE_PROFILES: { svg: true } }) }}
     />
   );
 };

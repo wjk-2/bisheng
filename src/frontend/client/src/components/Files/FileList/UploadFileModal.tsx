@@ -72,7 +72,6 @@ const UploadFileModal = ({ open, onOpenChange }) => {
               <Button
                 className="w-full rounded-md border border-black bg-black p-0 text-white"
                 onClick={() => {
-                  console.log('upload file');
                 }}
               >
                 Upload

@@ -191,7 +191,6 @@ const ParagraphEdit = ({
                 prevPartId = part_id
             }
         })
-        console.log('JSON. :>> ', JSON.stringify(str));
         setValue(str)
         markDownRef.current.setValue(str) // fouceupdate
         prevOvergapData.current = data

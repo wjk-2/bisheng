@@ -1,5 +1,3 @@
-//ThemeContext.js
-// source: https://plainenglish.io/blog/light-and-dark-mode-in-react-web-application-with-tailwind-css-89674496b942
 import { useSetRecoilState } from 'recoil';
 import React, { createContext, useState, useEffect } from 'react';
 import { getInitialTheme, applyFontSize } from '~/utils';
@@ -18,41 +16,22 @@ const defaultContextValue: ProviderValue = {
 };
 
 export const isDark = (theme: string): boolean => {
-  if (theme === 'system') {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
-  }
   return theme === 'dark';
 };
 
 export const ThemeContext = createContext<ProviderValue>(defaultContextValue);
 
-export const ThemeProvider = ({ initialTheme, children }) => {
+export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const [theme, setTheme] = useState(getInitialTheme);
   const setFontSize = useSetRecoilState(store.fontSize);
 
   const rawSetTheme = (rawTheme: string) => {
     const root = window.document.documentElement;
-    const darkMode = false // isDark(rawTheme);
-
+    const darkMode = isDark(rawTheme);
     root.classList.remove(darkMode ? 'light' : 'dark');
     root.classList.add(darkMode ? 'dark' : 'light');
-
     localStorage.setItem('color-theme', rawTheme);
   };
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const changeThemeOnSystemChange = () => {
-      // rawSetTheme(mediaQuery.matches ? 'dark' : 'light');
-      rawSetTheme('light');
-    };
-
-    mediaQuery.addEventListener('change', changeThemeOnSystemChange);
-
-    return () => {
-      mediaQuery.removeEventListener('change', changeThemeOnSystemChange);
-    };
-  }, []);
 
   useEffect(() => {
     const fontSize = localStorage.getItem('fontSize');
@@ -66,10 +45,6 @@ export const ThemeProvider = ({ initialTheme, children }) => {
     // Reason: This effect should only run once, and `setFontSize` is a stable function
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  if (initialTheme) {
-    rawSetTheme(initialTheme);
-  }
 
   useEffect(() => {
     rawSetTheme(theme);

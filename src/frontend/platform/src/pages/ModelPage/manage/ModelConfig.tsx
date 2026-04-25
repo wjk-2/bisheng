@@ -287,7 +287,7 @@ function ModelItem({ data, type, onDelete, onInput, onConfig }) {
             </div>
             <div className="space-y-2 mt-2">
                 <div>
-                    <Label className="bisheng-label">
+                    <Label className="eagent-label">
                         <span>{t('model.modelName')}</span>
                         <QuestionTooltip
                             className="relative top-0.5 ml-1"
@@ -298,7 +298,7 @@ function ModelItem({ data, type, onDelete, onInput, onConfig }) {
                     {error && <span className="text-red-500 text-xs">{error}</span>}
                 </div>
                 <div>
-                    <Label className="bisheng-label">{t('model.modelType')}</Label>
+                    <Label className="eagent-label">{t('model.modelType')}</Label>
                     <Select value={model.model_type} onValueChange={handleSelectChange}>
                         <SelectTrigger className="h-8">
                             <SelectValue placeholder="" />
@@ -320,7 +320,7 @@ function ModelItem({ data, type, onDelete, onInput, onConfig }) {
                 </div>
                 {model.model_type === 'tts' && (
                     <div>
-                        <Label className="bisheng-label">
+                        <Label className="eagent-label">
                             <span>{t('model.voiceType')}</span>
                             <span className="text-red-500">*</span>
                             <QuestionTooltip
@@ -340,13 +340,13 @@ function ModelItem({ data, type, onDelete, onInput, onConfig }) {
                 {model.model_type === 'llm' && (
                     <>
                         {['qwen', 'tencent', 'moonshot'].includes(type) && <div className="flex gap-2 items-center">
-                            <Label className="bisheng-label">
+                            <Label className="eagent-label">
                                 {t('model.webSearch')}
                             </Label>
                             <Switch checked={isWebSearchEnabled} onCheckedChange={handleSwitchChange} />
                         </div>}
                         <div>
-                            <Label className="bisheng-label">
+                            <Label className="eagent-label">
                                 {type === 'qianfan' ? 'max_output_tokens' : (type === 'ollama' ? 'num_ctx' : 'max_tokens')}
                             </Label>
                             <Input
@@ -383,7 +383,7 @@ export const modelProvider = [
     { "name": "Anthropic", "value": "anthropic" },
     { "name": "MindIE", "value": "MindIE" },
 ]
-const bishengModelProvider = { "name": "bishengRT", "value": "bisheng_rt" }
+const eagentModelProvider = { "name": "eagentRT", "value": "eagent_rt" }
 
 const defaultForm = {
     id: null as any,
@@ -557,7 +557,8 @@ export default function ModelConfig({ id, onGetName, onBack, onReload, onBerforS
 
             if (id === -1) {
                 await captureAndAlertRequestErrorHoc(addLLmServer(saveData).then(res => {
-                    onAfterSave(res.code === 10803 ? res.msg : t('model.addSuccess'))
+                    // B++: 传递返回的 server 数据用于引导弹窗
+                    onAfterSave(res.code === 10803 ? res.msg : t('model.addSuccess'), res)
                     onBack()
                 }))
             } else {
@@ -589,7 +590,7 @@ export default function ModelConfig({ id, onGetName, onBack, onReload, onBerforS
     }
 
     const _modelProvider = useMemo(() => {
-        return id === -1 ? modelProvider : [...modelProvider, bishengModelProvider]
+        return id === -1 ? modelProvider : [...modelProvider, eagentModelProvider]
     }, [id])
 
     const providerInfo = useModelProviderInfo(formData.type)
@@ -609,7 +610,7 @@ export default function ModelConfig({ id, onGetName, onBack, onReload, onBerforS
         </div>
         <div className="w-[50%] min-w-64 px-4 pb-10 mx-auto mt-6 h-[calc(100vh-220px)] overflow-y-auto">
             <div className="mb-2">
-                <Label className="bisheng-label"> {t('model.interModelFormat')}</Label>
+                <Label className="eagent-label"> {t('model.interModelFormat')}</Label>
                 <Select value={formData.type} disabled={id !== -1} onValueChange={handleTypeChange}>
                     <SelectTrigger>
                         <SelectValue placeholder="" />
@@ -622,7 +623,7 @@ export default function ModelConfig({ id, onGetName, onBack, onReload, onBerforS
                 </Select>
             </div>
             <div className="mb-2">
-                <Label className="bisheng-label">
+                <Label className="eagent-label">
                     <span>{t('model.serviceProviderName')}</span>
                     <QuestionTooltip className="relative top-0.5 ml-1" content={t('model.serviceProviderNameTooltip')}><span /></QuestionTooltip>
                 </Label>
@@ -646,7 +647,7 @@ export default function ModelConfig({ id, onGetName, onBack, onReload, onBerforS
             <div className={formData.type ? 'visible' : 'invisible'}>
                 <div className="mb-2">
                     <div className="flex items-center gap-x-6">
-                        <Label className="bisheng-label">
+                        <Label className="eagent-label">
                             {t('model.dailyCallLimit')}
                         </Label>
                         <Switch checked={formData.limit_flag} onCheckedChange={(val) => setFormData(form => ({ ...form, limit_flag: val }))} />
@@ -659,7 +660,7 @@ export default function ModelConfig({ id, onGetName, onBack, onReload, onBerforS
                     </div>
                 </div>
                 <div className="mb-2">
-                    <Label className="bisheng-label">
+                    <Label className="eagent-label">
                         {t('model.model')}
                         {providerInfo && <a href={providerInfo.modelUrl} target="_blank" rel="noreferrer" className="ml-1 text-primary/80">({t('model.visitOfficialWebsiteToViewAvailableModels')})</a>}
                     </Label>

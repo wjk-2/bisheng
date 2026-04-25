@@ -2,7 +2,7 @@
  * 接收ws event 滚动
  */
 import { useEffect, useRef } from "react";
-import { useParams } from "react-router";
+import { useParams } from "react-router-dom";
 import { useRecoilState, useRecoilValue } from "recoil";
 import { getChatHistoryApi } from "~/api/apps";
 import { useAutoScroll } from "~/hooks/useAutoScroll";
@@ -76,7 +76,6 @@ const useLoadMessage = ({ chatId, chatState, messageScrollRef, shareToken }
             const { scrollTop } = scrollElement
 
             if (scrollTop <= 90) {
-                console.log('请求 :>> ', 1);
                 queryLockRef.current = true
                 loadMore(chatId)
                 // 临时处理防抖

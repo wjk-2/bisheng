@@ -103,7 +103,7 @@ export default function SqlConfigItem({ data, onChange, onValidate }) {
             {open && (
                 <>
                     {/* 数据库类型下拉框 */}
-                    <Label className="flex items-center bisheng-label">{t("dbType")}</Label>
+                    <Label className="flex items-center eagent-label">{t("dbType")}</Label>
                     <Select
                         value={database_engine}
                         onValueChange={(value) => handleChange("database_engine", value)}
@@ -121,7 +121,7 @@ export default function SqlConfigItem({ data, onChange, onValidate }) {
                     </Select>
 
                     {/* 数据库地址 */}
-                    <Label className="flex items-center bisheng-label">{t("dbAddress")}</Label> {/* 数据库地址 */}
+                    <Label className="flex items-center eagent-label">{t("dbAddress")}</Label> {/* 数据库地址 */}
                     <Input
                         className={`mt-2 nodrag ${errors.db_address ? "border-red-500" : ""}`}
                         value={db_address}
@@ -130,7 +130,7 @@ export default function SqlConfigItem({ data, onChange, onValidate }) {
                     />
 
                     {/* 数据库名称 */}
-                    <Label className="flex items-center bisheng-label mt-4">{t("dbName")}</Label> {/* 数据库名称 */}
+                    <Label className="flex items-center eagent-label mt-4">{t("dbName")}</Label> {/* 数据库名称 */}
                     <Input
                         className={`mt-2 nodrag ${errors.db_name ? "border-red-500" : ""}`}
                         value={db_name}
@@ -139,7 +139,7 @@ export default function SqlConfigItem({ data, onChange, onValidate }) {
                     />
 
                     {/* 数据库用户名 */}
-                    <Label className="flex items-center bisheng-label mt-4">{t("dbUsername")}</Label> {/* 数据库用户名 */}
+                    <Label className="flex items-center eagent-label mt-4">{t("dbUsername")}</Label> {/* 数据库用户名 */}
                     <Input
                         className={`mt-2 nodrag ${errors.db_username ? "border-red-500" : ""}`}
                         value={db_username}
@@ -148,7 +148,7 @@ export default function SqlConfigItem({ data, onChange, onValidate }) {
                     />
 
                     {/* 数据库密码 */}
-                    <Label className="flex items-center bisheng-label mt-4">{t("dbPassword")}</Label> {/* 数据库密码 */}
+                    <Label className="flex items-center eagent-label mt-4">{t("dbPassword")}</Label> {/* 数据库密码 */}
                     <Input
                         className={`mt-2 nodrag ${errors.db_password ? "border-red-500" : ""}`}
                         value={db_password}

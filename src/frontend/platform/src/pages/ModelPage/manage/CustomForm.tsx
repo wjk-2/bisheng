@@ -256,7 +256,7 @@ const modelProviders = {
             key: "anthropic_api_url",
         },
     ],
-    bisheng_rt: [
+    eagent_rt: [
         {
             label: "Api Host",
             type: "text",
@@ -347,7 +347,7 @@ const FormField = ({ showDefault, field, value, providerName, apiKeySite, onChan
 
     return (
         <div className="mb-2">
-            <Label className="bisheng-label">
+            <Label className="eagent-label">
                 {field.label}
                 {apiKeySite && field.label.indexOf('API Key') !== -1 && <a href={apiKeySite} target="_blank" rel="noreferrer" className="ml-1 text-primary">(获取{providerName} API Key)</a>}
             </Label>

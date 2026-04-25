@@ -88,8 +88,8 @@ print(response.text)# 输出工作流的响应`
                 </CardHeader>
                 <CardContent>
                     <div className='w-[700px] mx-auto'><img src={__APP_ENV__.BASE_URL + '/assets/api/flow.png'} className='size-full' alt="" /></div>
-                    <p className='bisheng-label pb-2'>如时序图所示，在对接工作流 API 时，一般会经历以下步骤：</p>
-                    <p className="bisheng-label pb-2"><span className="font-semibold">1. 第一步：</span>发起工作流执行。通过/invoke 接口让工作流从开始节点开始运行：</p>
+                    <p className='eagent-label pb-2'>如时序图所示，在对接工作流 API 时，一般会经历以下步骤：</p>
+                    <p className="eagent-label pb-2"><span className="font-semibold">1. 第一步：</span>发起工作流执行。通过/invoke 接口让工作流从开始节点开始运行：</p>
                     <div className='relative  max-w-[80vw]'>
                         <button
                             className="absolute right-0 flex items-center gap-1.5 rounded bg-none p-1 text-xs text-gray-500 dark:text-gray-300"
@@ -105,7 +105,7 @@ print(response.text)# 输出工作流的响应`
                             {firstCode}
                         </SyntaxHighlighter>
                     </div>
-                    <p className="bisheng-label py-2"><span className="font-semibold">2. 第二步：</span>获取并解析工作流返回的事件。（一定要保留 session_id 等上下文信息，以便后续继续请求）</p>
+                    <p className="eagent-label py-2"><span className="font-semibold">2. 第二步：</span>获取并解析工作流返回的事件。（一定要保留 session_id 等上下文信息，以便后续继续请求）</p>
                     <SyntaxHighlighter
                         className="w-full max-w-[80vw] overflow-auto custom-scroll text-sm"
                         language={'json'}
@@ -160,13 +160,13 @@ print(response.text)# 输出工作流的响应`
 }`}
                     </SyntaxHighlighter>
                     <div className="mb-6">
-                        <p className="bisheng-label py-2"><span className="font-semibold">3. 第三步：</span>根据事件类型渲染前端，并收集用户输入。</p>
-                        <ul className="list-disc list-inside pl-4 mt-2 bisheng-label pb-2">
+                        <p className="eagent-label py-2"><span className="font-semibold">3. 第三步：</span>根据事件类型渲染前端，并收集用户输入。</p>
+                        <ul className="list-disc list-inside pl-4 mt-2 eagent-label pb-2">
                             <li className='mt-2 leading-6'>如果事件是 <strong>普通输出</strong>（比如 <code className="bg-gray-200 py-1 rounded">event="output_msg"</code>），则直接展示内容。</li>
                             <li className='mt-2 leading-6'>如果事件是 <strong>等待用户交互输入</strong>（比如 <code className="bg-gray-200 p-1 rounded">event="input"</code> 或 <code className="bg-gray-200 p-1 rounded">event="output_with_input_msg"</code> 或 <code class="bg-gray-200 p-1 rounded">event="output_with_choose_msg"</code>），则需要渲染对应的界面（对话框、表单等）。</li>
                         </ul>
                     </div>
-                    <p className="bisheng-label py-2"><span className="font-semibold">4. 第四步：</span>带着用户输入再次调用 <code className="bg-gray-200 p-1 rounded">/invoke</code> 接口。</p>
+                    <p className="eagent-label py-2"><span className="font-semibold">4. 第四步：</span>带着用户输入再次调用 <code className="bg-gray-200 p-1 rounded">/invoke</code> 接口。</p>
                     <SyntaxHighlighter
                         className="w-full max-w-[80vw] overflow-auto custom-scroll text-sm"
                         language={'json'}
@@ -183,7 +183,7 @@ print(response.text)# 输出工作流的响应`
 })
 `}
                     </SyntaxHighlighter>
-                    <p className="bisheng-label py-2"><span className="font-semibold">5. 第五步：</span>继续获取并解析返回的事件……直到返回 <code className="bg-gray-100 p-1 rounded">close</code> 事件（非必须）结束工作流运行，也可调用 <code className="bg-gray-100 p-1 rounded">POST /workflow/stop</code> 接口手动终止工作流。</p>
+                    <p className="eagent-label py-2"><span className="font-semibold">5. 第五步：</span>继续获取并解析返回的事件……直到返回 <code className="bg-gray-100 p-1 rounded">close</code> 事件（非必须）结束工作流运行，也可调用 <code className="bg-gray-100 p-1 rounded">POST /workflow/stop</code> 接口手动终止工作流。</p>
                 </CardContent>
             </Card>
 
@@ -243,7 +243,7 @@ print(response.text)# 输出工作流的响应`
                     <CardTitle id="guide-t3">返回事件类型与处理方式</CardTitle>
                 </CardHeader>
                 <CardContent className='relative'>
-                    <p className='bisheng-label py-2'>工作流返回的响应 JSON 通常包含一个或多个事件对象（数组形式），每个事件的字段可能不一样，以下枚举全部字段情况（非真实值，仅供参考）：</p>
+                    <p className='eagent-label py-2'>工作流返回的响应 JSON 通常包含一个或多个事件对象（数组形式），每个事件的字段可能不一样，以下枚举全部字段情况（非真实值，仅供参考）：</p>
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -342,7 +342,7 @@ print(response.text)# 输出工作流的响应`
         "name": "测试图片.png"
       }
     ],
-    "source_url": "",  # 知识库问答溯源页面地址，需要自己拼接毕昇的前端地址。具体是否支持溯源请参考产品文档
+    "source_url": "",  # 知识库问答溯源页面地址，需要自己拼接 E-Agent 的前端地址。具体是否支持溯源请参考产品文档
     "extra": "{\"qa\": \"本答案来源于已有问答库: QA 知识库\", \"url\": null}"  # QA知识库溯源内容
   },
 }`}
@@ -406,10 +406,10 @@ print(response.text)# 输出工作流的响应`
                             </TableRow>
                         </TableBody>
                     </Table>
-                    <p className='bisheng-label mt-2'>处理逻辑：将 output_schema.message 展示给用户即可。</p>
+                    <p className='eagent-label mt-2'>处理逻辑：将 output_schema.message 展示给用户即可。</p>
 
                     <h3 className='mt-8' id="guide-2">引导问题事件</h3>
-                    <p className='bisheng-label mt-2'>事件数据示例</p>
+                    <p className='eagent-label mt-2'>事件数据示例</p>
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -444,15 +444,15 @@ print(response.text)# 输出工作流的响应`
                             </TableRow>
                         </TableBody>
                     </Table>
-                    <p className='bisheng-label mt-2'>处理逻辑：向用户展示引导问题列表，将用户选中的问题作为输入，继续调用工作流接口。</p>
+                    <p className='eagent-label mt-2'>处理逻辑：向用户展示引导问题列表，将用户选中的问题作为输入，继续调用工作流接口。</p>
 
 
                     <h3 className='mt-8' id="guide-3">等待输入事件-对话框形式</h3>
                     <div className='border border-red-200 rounded-sm bg-orange-100 p-4 text-sm'>
-                        <p className='bisheng-label'>当工作流返回 <span className="bg-orange-50">event="input"</span> 且 <span className="bg-orange-50">input_type="dialog_input"</span>时，表示后端希望前端在对话框中接收用户输入以及上传文件（非必须）。</p>
-                        <p className='bisheng-label mt-2'>下一次请求 <span className="bg-orange-50">/invoke</span> 接口必带的关键字段是 <span className="bg-orange-50">node_id</span>,<span className="bg-orange-50">message_id</span>,<span className="bg-orange-50">session_id</span> 以及对话框输入。</p>
+                        <p className='eagent-label'>当工作流返回 <span className="bg-orange-50">event="input"</span> 且 <span className="bg-orange-50">input_type="dialog_input"</span>时，表示后端希望前端在对话框中接收用户输入以及上传文件（非必须）。</p>
+                        <p className='eagent-label mt-2'>下一次请求 <span className="bg-orange-50">/invoke</span> 接口必带的关键字段是 <span className="bg-orange-50">node_id</span>,<span className="bg-orange-50">message_id</span>,<span className="bg-orange-50">session_id</span> 以及对话框输入。</p>
                     </div>
-                    <p className='bisheng-label mt-2'>事件数据示例</p>
+                    <p className='eagent-label mt-2'>事件数据示例</p>
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -500,8 +500,8 @@ print(response.text)# 输出工作流的响应`
                         </TableBody>
                     </Table>
                     <div className="mb-6">
-                        <p className="bisheng-label py-2">处理逻辑：</p>
-                        <ul className="list-disc list-inside pl-4 mt-2 bisheng-label pb-2">
+                        <p className="eagent-label py-2">处理逻辑：</p>
+                        <ul className="list-disc list-inside pl-4 mt-2 eagent-label pb-2">
                             <li className='mt-2 leading-6'>绘制对话框，接收用户输入内容</li>
                             <li className='mt-2 leading-6'>携带 <code className="bg-gray-200 p-1 rounded">node_id</code>、<code className="bg-gray-200 p-1 rounded">session_id</code>、<code className="bg-gray-200 p-1 rounded">message_id</code> 再次请求 /workflow/invoke</li>
                             <li className='mt-2 leading-6'>如果用户没有在对话框内上传文件，请求示例如下</li>
@@ -526,10 +526,10 @@ print(response.text)# 输出工作流的响应`
                     </SyntaxHighlighter>
 
                     <div className="mb-6">
-                        <ul className="list-disc list-inside pl-4 mt-2 bisheng-label pb-2">
+                        <ul className="list-disc list-inside pl-4 mt-2 eagent-label pb-2">
                             <li className='mt-2 leading-6'>如果用户在对话框内上传了文件</li>
-                            <ul className="list-disc list-inside pl-4 mt-2 bisheng-label pb-2">
-                                <li className='mt-2 leading-6'>如果有文件类型，调用毕昇文件上传接口获取到文件url，示例如下：</li>
+                            <ul className="list-disc list-inside pl-4 mt-2 eagent-label pb-2">
+                                <li className='mt-2 leading-6'>如果有文件类型，调用 E-Agent 文件上传接口获取到文件url，示例如下：</li>
                             </ul>
                         </ul>
                     </div>
@@ -553,8 +553,8 @@ def upload_file(local_path: str):
                     </SyntaxHighlighter>
 
                     <div className="mb-6">
-                        <ul className="list-disc list-inside pl-4 mt-2 bisheng-label pb-2">
-                            <ul className="list-disc list-inside pl-4 mt-2 bisheng-label pb-2">
+                        <ul className="list-disc list-inside pl-4 mt-2 eagent-label pb-2">
+                            <ul className="list-disc list-inside pl-4 mt-2 eagent-label pb-2">
                                 <li className='mt-2 leading-6'>成功获取用户的输入和上传文件的url后，拼接为如下格式的接口入参</li>
                             </ul>
                         </ul>
@@ -583,10 +583,10 @@ def upload_file(local_path: str):
 
                     <h3 className='mt-8' id="guide-5">等待输入事件-表单形式</h3>
                     <div className='border border-red-200 rounded-sm bg-orange-100 p-4 text-sm'>
-                        <p className='bisheng-label'>当工作流返回 <span className="bg-orange-50">event="input"</span> 且 <span className="bg-orange-50">input_type="form_input"</span>时，后端希望前端渲染一个表单，让用户填写内容。</p>
-                        <p className='bisheng-label mt-2'>下一次请求 <span className="bg-orange-50">/invoke</span> 接口必带的字段是 <span className="bg-orange-50">node_id</span>, <span className="bg-orange-50">message_id</span>, <span className="bg-orange-50">session_id</span> 以及用户填写的表单值。</p>
+                        <p className='eagent-label'>当工作流返回 <span className="bg-orange-50">event="input"</span> 且 <span className="bg-orange-50">input_type="form_input"</span>时，后端希望前端渲染一个表单，让用户填写内容。</p>
+                        <p className='eagent-label mt-2'>下一次请求 <span className="bg-orange-50">/invoke</span> 接口必带的字段是 <span className="bg-orange-50">node_id</span>, <span className="bg-orange-50">message_id</span>, <span className="bg-orange-50">session_id</span> 以及用户填写的表单值。</p>
                     </div>
-                    <p className='bisheng-label mt-2'>事件数据示例</p>
+                    <p className='eagent-label mt-2'>事件数据示例</p>
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -657,10 +657,10 @@ def upload_file(local_path: str):
                         </TableBody>
                     </Table>
                     <div className="mb-6">
-                        <p className="bisheng-label py-2">处理逻辑：</p>
-                        <ul className="list-disc list-inside pl-4 mt-2 bisheng-label pb-2">
+                        <p className="eagent-label py-2">处理逻辑：</p>
+                        <ul className="list-disc list-inside pl-4 mt-2 eagent-label pb-2">
                             <li className='mt-2 leading-6'>解析<code className="bg-gray-200 p-1 rounded">input_schema.value</code> 中的表单元素，在前端渲染表单样式</li>
-                            <li className='mt-2 leading-6'>如果有文件类型，调用毕昇文件上传接口获取到文件url，示例如下：</li>
+                            <li className='mt-2 leading-6'>如果有文件类型，调用 E-Agent 文件上传接口获取到文件url，示例如下：</li>
                         </ul>
                     </div>
                     <SyntaxHighlighter
@@ -681,7 +681,7 @@ def upload_file(local_path: str):
  financeA = upload_file("caibao.pdf")
  financeB = upload_file("caibao2.pdf")`}
                     </SyntaxHighlighter>
-                    <p className='mt-4 bisheng-label'>3. 提交时，JSON 中要和返回的 <code className="bg-gray-200 p-1 rounded">key</code> 对应，并带上 <code className="bg-gray-200 p-1 rounded">session_id</code>、<code className="bg-gray-200 p-1 rounded">message_id</code>、<code className="bg-gray-200 p-1 rounded">node_id</code> 等必备信息。</p>
+                    <p className='mt-4 eagent-label'>3. 提交时，JSON 中要和返回的 <code className="bg-gray-200 p-1 rounded">key</code> 对应，并带上 <code className="bg-gray-200 p-1 rounded">session_id</code>、<code className="bg-gray-200 p-1 rounded">message_id</code>、<code className="bg-gray-200 p-1 rounded">node_id</code> 等必备信息。</p>
                     <SyntaxHighlighter
                         className="w-full max-w-[80vw] overflow-auto custom-scroll"
                         language={'json'}
@@ -705,7 +705,7 @@ def upload_file(local_path: str):
 
 
                     <h3 className='mt-8' id="guide-6">输出事件</h3>
-                    <p className="bisheng-label py-2">事件数据示例</p>
+                    <p className="eagent-label py-2">事件数据示例</p>
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -749,20 +749,20 @@ def upload_file(local_path: str):
                         </TableBody>
                     </Table>
                     <div className="mb-6">
-                        <p className="bisheng-label py-2">处理逻辑：</p>
-                        <ul className="list-disc list-inside pl-4 mt-2 bisheng-label pb-2">
+                        <p className="eagent-label py-2">处理逻辑：</p>
+                        <ul className="list-disc list-inside pl-4 mt-2 eagent-label pb-2">
                             <li className='mt-2 leading-6'>将 <code className="bg-gray-200 p-1 rounded">output_schema.message</code> 展示给用户</li>
                             <li className='mt-2 leading-6'>如果 <code className="bg-gray-200 p-1 rounded">files</code> 不为空，则提供文件下载按钮或预览功能</li>
-                            <li className='mt-2 leading-6'><code className="bg-gray-200 p-1 rounded">source_url</code> 基于毕昇服务根路径，需要拼接毕昇访问地址才可访问</li>
+                            <li className='mt-2 leading-6'><code className="bg-gray-200 p-1 rounded">source_url</code> 基于 E-Agent 服务根路径，需要拼接 E-Agent 访问地址才可访问</li>
                         </ul>
                     </div>
 
 
                     <h3 className='mt-8' id="guide-7">输出事件-需输入类型</h3>
                     <div className='border border-red-200 rounded-sm bg-orange-100 p-4 text-sm'>
-                        <p className='bisheng-label'>此时工作流处于待输入状态</p>
+                        <p className='eagent-label'>此时工作流处于待输入状态</p>
                     </div>
-                    <p className='bisheng-label mt-2'>事件数据示例</p>
+                    <p className='eagent-label mt-2'>事件数据示例</p>
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -816,8 +816,8 @@ def upload_file(local_path: str):
                         </TableBody>
                     </Table>
                     <div className="mb-6">
-                        <p className="bisheng-label py-2">处理逻辑：</p>
-                        <ul className="list-disc list-inside pl-4 mt-2 bisheng-label pb-2">
+                        <p className="eagent-label py-2">处理逻辑：</p>
+                        <ul className="list-disc list-inside pl-4 mt-2 eagent-label pb-2">
                             <li className='mt-2 leading-6'>展示 <code className="bg-gray-200 p-1 rounded">output_schema</code> 内容</li>
                             <li className='mt-2 leading-6'>根据 <code className="bg-gray-200 p-1 rounded">input_schema</code> 在消息体中绘制输入框，<code className="bg-gray-200 p-1 rounded">input_schema.value.value</code> 为输入框内的默认值，用户可在其基础上二次编辑</li>
                             <li className='mt-2 leading-6'>用户编辑或确认后，再次调用 API 提交。示例如下：</li>
@@ -846,9 +846,9 @@ def upload_file(local_path: str):
 
                     <h3 className='mt-8' id="guide-8">输出事件-选择类型</h3>
                     <div className='border border-red-200 rounded-sm bg-orange-100 p-4 text-sm'>
-                        <p className='bisheng-label'>此时工作流处于待输入状态</p>
+                        <p className='eagent-label'>此时工作流处于待输入状态</p>
                     </div>
-                    <p className='bisheng-label mt-2'>事件数据示例</p>
+                    <p className='eagent-label mt-2'>事件数据示例</p>
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -914,8 +914,8 @@ def upload_file(local_path: str):
                         </TableBody>
                     </Table>
                     <div className="mb-6">
-                        <p className="bisheng-label py-2">处理逻辑：</p>
-                        <ul className="list-disc list-inside pl-4 mt-2 bisheng-label pb-2">
+                        <p className="eagent-label py-2">处理逻辑：</p>
+                        <ul className="list-disc list-inside pl-4 mt-2 eagent-label pb-2">
                             <li className='mt-2 leading-6'>展示 <code className="bg-gray-200 p-1 rounded">output_schema</code> 内容</li>
                             <li className='mt-2 leading-6'>根据 <code className="bg-gray-200 p-1 rounded">input_schema</code> 在消息体中绘制选项</li>
                             <li className='mt-2 leading-6'>接收到用户选择动作后，拼接接口的入参，再次调用 API，示例如下：</li>
@@ -943,7 +943,7 @@ def upload_file(local_path: str):
 
 
                     <h3 className='mt-8' id='guide-9'>流式输出事件-输出中</h3>
-                    <p className='bisheng-label mt-2'>事件数据示例</p>
+                    <p className='eagent-label mt-2'>事件数据示例</p>
                     <SyntaxHighlighter
                         className="w-full overflow-auto custom-scroll"
                         language={'json'}
@@ -962,8 +962,8 @@ def upload_file(local_path: str):
 }`}
                     </SyntaxHighlighter>
                     <div className="mb-6">
-                        <p className="bisheng-label py-2">调用方处理示例</p>
-                        <ul className="list-disc list-inside pl-4 mt-2 bisheng-label pb-2">
+                        <p className="eagent-label py-2">调用方处理示例</p>
+                        <ul className="list-disc list-inside pl-4 mt-2 eagent-label pb-2">
                             <li className='mt-2 leading-6'><code className="bg-gray-200 p-1 rounded">status="stream"</code> 代表当处于流式输出中，需要根据 <code className="bg-gray-200 p-1 rounded">node_execution_id</code> 和 <code className="bg-gray-200 p-1 rounded">output_schema.output_key</code> 来确定流式内容是否属于同一条消息（节点批量运行模式下，会共用同一个 <code className="bg-gray-200 p-1 rounded">node_execution_id</code>，所以需要根据 <code className="bg-gray-200 p-1 rounded">output_key</code> 来区分是否是不同的消息）。</li>
                             <li className='mt-2 leading-6'>如果找到对应的消息，则将 <code className="bg-gray-200 p-1 rounded">message</code> 内容添加到对应的消息里。</li>
                             <li className='mt-2 leading-6'>如果未找到对应的消息，则开启一条新的消息，并将 <code className="bg-gray-200 p-1 rounded">message</code> 和后续此消息的 <code className="bg-gray-200 p-1 rounded">message</code> 拼接在一起。</li>
@@ -972,7 +972,7 @@ def upload_file(local_path: str):
 
 
                     <h3 className='mt-8' id="guide-10">流式输出事件-结束</h3>
-                    <p className='bisheng-label mt-2'>事件数据示例</p>
+                    <p className='eagent-label mt-2'>事件数据示例</p>
                     <SyntaxHighlighter
                         className="w-full overflow-auto custom-scroll"
                         language={'json'}
@@ -992,8 +992,8 @@ def upload_file(local_path: str):
 }`}
                     </SyntaxHighlighter>
                     <div className="mb-6">
-                        <p className="bisheng-label py-2">处理逻辑</p>
-                        <ul className="list-disc list-inside pl-4 mt-2 bisheng-label pb-2">
+                        <p className="eagent-label py-2">处理逻辑</p>
+                        <ul className="list-disc list-inside pl-4 mt-2 eagent-label pb-2">
                             <li className='mt-2 leading-6'>1. <code className="bg-gray-200 p-1 rounded">status="end"</code>代表流式输出完成，此时根据 node_execution_id 和 output_schema.output_key 找到对应的<code className="bg-gray-200 p-1 rounded">message</code></li>
                             <li className='mt-2 leading-6'>2. 使用 <code className="bg-gray-200 p-1 rounded">message</code> 内容覆盖之前流式输出的结果，显示最终完整答案</li>
                         </ul>
@@ -1003,9 +1003,9 @@ def upload_file(local_path: str):
 
                     <h3 className='mt-8' id="guide-11">结束事件</h3>
                     <div className='border border-red-200 rounded-sm bg-orange-100 p-4 text-sm'>
-                        <p className='bisheng-label'>当接收到 <span className="bg-orange-50">event="close"</span> 时，代表工作流已运行结束</p>
+                        <p className='eagent-label'>当接收到 <span className="bg-orange-50">event="close"</span> 时，代表工作流已运行结束</p>
                     </div>
-                    <p className='bisheng-label mt-2'>事件数据示例</p>
+                    <p className='eagent-label mt-2'>事件数据示例</p>
                     <SyntaxHighlighter
                         className="w-full overflow-auto custom-scroll"
                         language={'json'}
@@ -1024,8 +1024,8 @@ def upload_file(local_path: str):
 }`}
                     </SyntaxHighlighter>
                     <div className="mb-6">
-                        <p className="bisheng-label py-2">处理逻辑</p>
-                        <ul className="list-disc list-inside pl-4 mt-2 bisheng-label pb-2">
+                        <p className="eagent-label py-2">处理逻辑</p>
+                        <ul className="list-disc list-inside pl-4 mt-2 eagent-label pb-2">
                             <li className='mt-2 leading-6'>判断message是否为空，为空则告知用户工作流运行结束</li>
                             <li className='mt-2 leading-6'>如果message不为空，则告知用户工作流运行失败，并把报错信息抛出给用户或者自行处理</li>
                         </ul>

@@ -13,6 +13,7 @@ from bisheng.common.errcode.finetune import (CancelJobError, ChangeModelNameErro
                                              TrainDataNoneError, UnExportJobError, GetModelError)
 from bisheng.common.errcode.model_deploy import NotFoundModelError
 from bisheng.common.errcode.server import NoSftServerError
+from bisheng.common.errcode.http_error import UnAuthorizedError
 from bisheng.common.schemas.api import UnifiedResponseModel
 from bisheng.core.cache import InMemoryCache
 from bisheng.core.storage.minio.minio_manager import get_minio_storage_sync, get_minio_storage
@@ -26,7 +27,7 @@ from ...utils import parse_gpus, parse_server_host
 
 
 class FinetuneService:
-    ServerCache: InMemoryCache = InMemoryCache()
+    ServerCache: InMemoryCache = InMemoryCache(max_size=100)
 
     @classmethod
     def validate_params(cls, finetune: Finetune) -> UnifiedResponseModel | None:
@@ -150,17 +151,20 @@ class FinetuneService:
         finetune.base_model_name = base_model.model
         finetune.root_model_name = root_model_name
 
-        # RecallSFT-backendright of privacyAPIAdd New
+        # Insert into Database first to ensure a stable record before calling external SFT API.
+        # This guarantees the job is always traceable even if the SFT call fails.
+        finetune = await FinetuneDao.insert_one(finetune)
         logger.info(f'start create sft job: {finetune.id}')
-        # Required for stitching instructionscommandParameters
+
+        # Call SFT backend API; compensate (delete DB record) on failure
         command_params = cls.parse_command_params(finetune, base_model)
         sft_ret = await SFTBackend.create_job(host=parse_server_host(finetune.sft_endpoint),
                                               job_id=finetune.id, params=command_params)
         if not sft_ret[0]:
             logger.error(f'create sft job error: job_id: {finetune.id}, err: {sft_ret[1]}')
+            await FinetuneDao.delete_job(finetune)
             raise CreateFinetuneError()
-        # Insert into Database
-        finetune = await FinetuneDao.insert_one(finetune)
+
         logger.info('create sft job success')
         return finetune
 
@@ -288,6 +292,17 @@ class FinetuneService:
         finetune.model_id = published_model.id
         await FinetuneDao.update_job(finetune)
         logger.info('export sft job success')
+
+        # B++: 注册到 LLM 表，使微调模型可用于对话系统
+        try:
+            llm_server_id = await cls._register_finetune_to_llm(finetune)
+            if llm_server_id:
+                finetune.llm_server_id = llm_server_id
+                await FinetuneDao.update_job(finetune)
+                logger.info(f'Registered finetune {job_id} to LLM as server_id={llm_server_id}')
+        except Exception as e:
+            logger.warning(f'register finetune to llm failed (non-blocking): {e}')
+
         return finetune
 
     @classmethod
@@ -312,9 +327,16 @@ class FinetuneService:
         # Delete published model information
         logger.info(f'delete published model: {finetune.model_id}')
         await ModelDeployDao.delete_model_by_id(finetune.model_id)
+        # B++: 从 LLM 表注销，同时清理对话配置
+        try:
+            await cls._unregister_finetune_from_llm(finetune)
+        except Exception as e:
+            logger.warning(f'unregister finetune from llm failed (non-blocking): {e}')
+
         logger.info('update finetune status')
         finetune.status = new_status
         finetune.model_id = 0
+        finetune.llm_server_id = None
         await FinetuneDao.update_job(finetune)
         logger.info('cancel export sft job success')
         return finetune
@@ -345,12 +367,16 @@ class FinetuneService:
             await cls.sync_job_status(finetune, finetune.sft_endpoint)
 
     @classmethod
-    async def get_job_info(cls, job_id: str) -> Dict[str, Any]:
+    async def get_job_info(cls, job_id: str, login_user: UserPayload) -> Dict[str, Any]:
         """ Get real-time information on tasks in training """
         # ViewjobTask Information
         finetune = await FinetuneDao.find_job(job_id)
         if not finetune:
             raise NotFoundJobError()
+
+        # Admin can view all jobs, regular users can only view their own
+        if not login_user.is_admin() and finetune.user_id != login_user.user_id:
+            raise UnAuthorizedError()
 
         # Sync Task Execution
         await cls.sync_job_status(finetune, finetune.sft_endpoint)
@@ -378,11 +404,15 @@ class FinetuneService:
         for elem in contents:
             if elem.strip() == '':
                 continue
-            sub_data = {'step': None, 'loss': None}
             elem = elem.strip()
-            elem_data = json.loads(elem)
+            try:
+                elem_data = json.loads(elem)
+            except json.JSONDecodeError:
+                # 跳过非 JSON 格式的日志行（如警告、错误信息）
+                continue
             if elem_data.get('loss', None) is None:
                 continue
+            sub_data = {'step': None, 'loss': None}
             sub_data['step'] = elem_data['current_steps']
             sub_data['loss'] = elem_data['loss']
             res_data.append(sub_data)
@@ -535,3 +565,75 @@ class FinetuneService:
                 one['server'] = server.server
                 res.append(one)
         return res
+
+    # ===== B++ 新增：微调模型 LLM 表桥接 =====
+
+    @classmethod
+    async def _register_finetune_to_llm(cls, finetune) -> int:
+        """将微调发布的模型注册到 LLM 表，使其可用于对话系统"""
+        from bisheng.llm.domain.models import LLMDao, LLMServer, LLMModel
+        from bisheng.llm.domain.const import LLMModelType
+
+        # 幂等检查：通过 config._source=sft 和 _finetune_job_id 查找
+        servers = await LLMDao.aget_all_server()
+        for server in servers:
+            cfg = server.config or {}
+            if cfg.get('_source') == 'sft' and cfg.get('_finetune_job_id') == finetune.id:
+                logger.info(f'Finetune {finetune.id} already registered as LLMServer id={server.id}')
+                return server.id
+
+        # 构造 server name（防重名）
+        base_name = f'SFT - {finetune.model_name}'
+        existing = await LLMDao.aget_server_by_name(base_name)
+        server_name = f'{base_name} ({finetune.id[:8]})' if existing else base_name
+
+        # 构造 LLMServer（type=eagent_rt，使用 HostChatGLM 客户端）
+        rt_endpoint = finetune.rt_endpoint  # e.g. "192.168.1.100:9001"
+        server_config = {
+            'host_base_url': f'http://{rt_endpoint}',
+            '_source': 'sft',
+            '_finetune_job_id': finetune.id,
+            '_finetune_model_name': finetune.model_name,
+            '_rt_server_id': str(finetune.server),
+        }
+
+        server = LLMServer(
+            name=server_name,
+            description=f'Auto-registered from SFT finetune: {finetune.model_name}',
+            type='eagent_rt',
+            config=server_config,
+        )
+
+        model = LLMModel(
+            name=finetune.model_name,
+            model_name=finetune.model_name,
+            model_type=LLMModelType.LLM.value,
+            online=True,
+            status=0,
+        )
+
+        server = await LLMDao.ainsert_server_with_models(server, [model])
+        logger.info(f'Registered SFT finetune {finetune.id} as LLMServer id={server.id}')
+        return server.id
+
+    @classmethod
+    async def _unregister_finetune_from_llm(cls, finetune):
+        """从 LLM 表注销微调模型，同时清理对话配置"""
+        from bisheng.llm.domain.models import LLMDao
+        from bisheng.llm.domain.services.llm import LLMService
+
+        servers = await LLMDao.aget_all_server()
+        for server in servers:
+            cfg = server.config or {}
+            if cfg.get('_source') == 'sft' and cfg.get('_finetune_job_id') == finetune.id:
+                # 先清理对话配置
+                models = await LLMDao.aget_model_by_server_ids([server.id])
+                for model in models:
+                    try:
+                        await LLMService.disable_model_chat(model.id)
+                    except Exception:
+                        pass
+                # 删除 server（级联删除 model）
+                await LLMDao.adelete_server_by_id(server.id)
+                logger.info(f'Unregistered LLMServer id={server.id} for SFT finetune {finetune.id}')
+                return

@@ -1,6 +1,6 @@
 import functools
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, Optional, Union
 from uuid import UUID
 
@@ -16,13 +16,22 @@ from bisheng.core.logger import trace_id_var
 from bisheng.llm.domain.const import LLMModelStatus
 
 
+def _seconds_until_midnight() -> int:
+    """返回距今天午夜（00:00:00）的剩余秒数，用于日配额 Redis key 的 TTL。
+    保证计数器在自然日结束时过期，不会因空闲超过 1 小时而提前重置。
+    """
+    now = datetime.now()
+    midnight = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+    return max(int((midnight - now).total_seconds()), 1)
+
+
 async def bisheng_model_limit_check(self: 'BishengBase'):
     now = datetime.now().strftime("%Y-%m-%d")
     if self.server_info.limit_flag:
-        # Number of calls checked
+        # Number of calls checked — TTL 设为今天剩余秒数，确保日配额计数器在午夜自动过期
         cache_key = f"model_limit:{now}:{self.server_info.id}"
         redis_client = await get_redis_client()
-        use_num = await redis_client.aincr(cache_key)
+        use_num = await redis_client.aincr(cache_key, expiration=_seconds_until_midnight())
         if use_num > self.server_info.limit:
             raise Exception(f'{self.server_info.name}/{self.model_info.model_name} Quota used up')
 
@@ -30,9 +39,9 @@ async def bisheng_model_limit_check(self: 'BishengBase'):
 def sync_bisheng_model_limit_check(self: 'BishengBase'):
     now = datetime.now().strftime("%Y-%m-%d")
     if self.server_info.limit_flag:
-        # Number of calls checked
+        # Number of calls checked — TTL 设为今天剩余秒数，确保日配额计数器在午夜自动过期
         cache_key = f"model_limit:{now}:{self.server_info.id}"
-        use_num = get_redis_client_sync().incr(cache_key)
+        use_num = get_redis_client_sync().incr(cache_key, expiration=_seconds_until_midnight())
         if use_num > self.server_info.limit:
             raise Exception(f'{self.server_info.name}/{self.model_info.model_name} Quota used up')
 
@@ -138,7 +147,7 @@ def upload_telemetry_log(self: 'BishengBase', start_time: float, end_time: float
         logger.exception(f"upload telemetry log failed")
 
 
-def wrapper_bisheng_model_limit_check(func):
+def wrapper_eagent_model_limit_check(func):
     """
     Number of calls to check the decorator
     """
@@ -176,7 +185,7 @@ def wrapper_bisheng_model_limit_check(func):
     return wrapper
 
 
-def wrapper_bisheng_model_limit_check_async(func):
+def wrapper_eagent_model_limit_check_async(func):
     """
     Number of calls to check the decorator
     """
@@ -212,7 +221,7 @@ def wrapper_bisheng_model_limit_check_async(func):
     return wrapper
 
 
-def wrapper_bisheng_model_generator(func):
+def wrapper_eagent_model_generator(func):
     """
     Number of calls to check the decorator  Decorative Synchronization Builder Functions
     """
@@ -246,7 +255,7 @@ def wrapper_bisheng_model_generator(func):
     return wrapper
 
 
-def wrapper_bisheng_model_generator_async(func):
+def wrapper_eagent_model_generator_async(func):
     """
     Number of calls to check the decorator  Decorative Asynchronous Builder Functions
     """

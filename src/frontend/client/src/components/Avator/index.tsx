@@ -1,12 +1,13 @@
 import { useMemo } from "react";
 import { cn } from "~/utils"
 
+// 品牌蓝紫色系渐变，5个色阶
 const gradients = [
-    'bg-amber-500',
-    'bg-orange-600',
-    'bg-teal-500',
-    'bg-purple-600',
-    'bg-blue-700'
+    'bg-gradient-to-br from-[#4658FF] to-[#6B7FFF]',
+    'bg-gradient-to-br from-[#5B6FFF] to-[#8B9DFF]',
+    'bg-gradient-to-br from-[#3A4FE8] to-[#5B70FF]',
+    'bg-gradient-to-br from-[#6674FF] to-[#9BA8FF]',
+    'bg-gradient-to-br from-[#4050F0] to-[#7080FF]',
 ]
 
 export default function AppAvator({ id = 1, flowType = '', url = '', className = '' }) {
@@ -28,7 +29,7 @@ export default function AppAvator({ id = 1, flowType = '', url = '', className =
             <g id="Group 628">
                 <g id="Group 625">
                     <ellipse id="Ellipse 17" cx="13.0622" cy="13.4282" rx="6" ry="3" transform="rotate(-30 13.0622 13.4282)"
-                        stroke="url(#paint0_linear_410_134)" stroke-width="2" />
+                        stroke="url(#paint0_linear_410_134)" strokeWidth="2" />
                     <ellipse id="Ellipse 18" cx="11.0622" cy="9.9641" rx="7" ry="4" transform="rotate(-30 11.0622 9.9641)"
                         fill="url(#paint1_linear_410_134)" />
                 </g>
@@ -36,13 +37,13 @@ export default function AppAvator({ id = 1, flowType = '', url = '', className =
             <defs>
                 <linearGradient id="paint0_linear_410_134" x1="13.0622" y1="9.42815" x2="13.0622" y2="17.4282"
                     gradientUnits="userSpaceOnUse">
-                    <stop stop-color="white" stop-opacity="0.1" />
-                    <stop offset="1" stop-color="white" />
+                    <stop stopColor="white" stopOpacity="0.1" />
+                    <stop offset="1" stopColor="white" />
                 </linearGradient>
                 <linearGradient id="paint1_linear_410_134" x1="11.0622" y1="5.9641" x2="11.0622" y2="13.9641"
                     gradientUnits="userSpaceOnUse">
-                    <stop stop-color="white" stop-opacity="0.82" />
-                    <stop offset="1" stop-color="white" />
+                    <stop stopColor="white" stopOpacity="0.82" />
+                    <stop offset="1" stopColor="white" />
                 </linearGradient>
             </defs>
         </svg>,

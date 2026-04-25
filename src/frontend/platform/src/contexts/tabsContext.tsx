@@ -200,7 +200,6 @@ export function TabsProvider({ children }: { children: ReactNode }) {
         .map((e) => ({ ...e, selected: false }))
         .concat({ ...newNode, selected: false });
     });
-    console.log(nodes)
     reactFlowInstance.setNodes(nodes);
 
     selectionInstance.edges.forEach((e) => {

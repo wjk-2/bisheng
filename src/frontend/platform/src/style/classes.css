@@ -1,7 +1,119 @@
-body {
+@font-face {
+  font-display: swap;
+  font-family: "AlibabaPuHuiTi";
+  font-weight: 400;
+  src: url("/fonts/AlibabaPuHuiTi-3-55-Regular.woff") format("woff");
+}
+
+@font-face {
+  font-display: swap;
+  font-family: "AlibabaPuHuiTi";
+  font-weight: 500;
+  src: url("/fonts/AlibabaPuHuiTi-3-65-Medium.woff") format("woff");
+}
+
+@font-face {
+  font-display: swap;
+  font-family: "AlibabaPuHuiTi";
+  font-weight: 600;
+  src: url("/fonts/AlibabaPuHuiTi-3-75-SemiBold.woff") format("woff");
+}
+
+@font-face {
+  font-display: swap;
+  font-family: "AlibabaPuHuiTi";
+  font-weight: 700;
+  src: url("/fonts/AlibabaPuHuiTi-3-85-Bold.woff") format("woff");
+}
+
+@font-face {
+  font-display: swap;
+  font-family: Inter;
+  font-style: normal;
+  font-weight: 400;
+  src: url("/fonts/Inter-Regular.woff2") format("woff2");
+  size-adjust: 94%;
+}
+
+@font-face {
+  font-display: swap;
+  font-family: Inter;
+  font-style: italic;
+  font-weight: 400;
+  src: url("/fonts/Inter-Italic.woff2") format("woff2");
+  size-adjust: 94%;
+}
+
+@font-face {
+  font-display: swap;
+  font-family: Inter;
+  font-style: normal;
+  font-weight: 500;
+  src: url("/fonts/Inter-SemiBold.woff2") format("woff2");
+  size-adjust: 94%;
+}
+
+@font-face {
+  font-display: swap;
+  font-family: Inter;
+  font-style: italic;
+  font-weight: 500;
+  src: url("/fonts/Inter-SemiBoldItalic.woff2") format("woff2");
+  size-adjust: 94%;
+}
+
+@font-face {
+  font-display: swap;
+  font-family: Inter;
+  font-style: normal;
+  font-weight: 600;
+  src: url("/fonts/Inter-Bold.woff2") format("woff2");
+  size-adjust: 94%;
+}
+
+@font-face {
+  font-display: swap;
+  font-family: Inter;
+  font-style: italic;
+  font-weight: 600;
+  src: url("/fonts/Inter-BoldItalic.woff2") format("woff2");
+  size-adjust: 94%;
+}
+
+@font-face {
+  font-display: swap;
+  font-family: Roboto Mono;
+  font-style: normal;
+  font-weight: 400;
+  src: url("/fonts/roboto-mono-latin-400-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-display: swap;
+  font-family: Roboto Mono;
+  font-style: normal;
+  font-weight: 700;
+  src: url("/fonts/roboto-mono-latin-700-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-display: swap;
+  font-family: Roboto Mono;
+  font-style: italic;
+  font-weight: 400;
+  src: url("/fonts/roboto-mono-latin-400-italic.woff2") format("woff2");
+}
+
+body,
+html {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
-    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+  font-family:
+    "AlibabaPuHuiTi",
+    "PingFang SC",
+    "Hiragino Sans GB",
+    "Microsoft YaHei",
+    "Helvetica Neue",
+    Arial,
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

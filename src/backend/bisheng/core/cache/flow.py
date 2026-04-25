@@ -40,7 +40,7 @@ class InMemoryCache(BaseCache):
             expiration_time (int, optional): Time in seconds after which a cached item expires. Default is 1 hour.
         """
         self._cache = OrderedDict()
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         self.max_size = max_size
         self.expiration_time = expiration_time
 
@@ -111,8 +111,8 @@ class InMemoryCache(BaseCache):
         Args:
             key: The key of the item to remove.
         """
-        # with self._lock:
-        self._cache.pop(key, None)
+        with self._lock:
+            self._cache.pop(key, None)
 
     def clear(self):
         """
@@ -123,7 +123,8 @@ class InMemoryCache(BaseCache):
 
     def __contains__(self, key):
         """Check if the key is in the cache."""
-        return key in self._cache
+        with self._lock:
+            return key in self._cache
 
     def __getitem__(self, key):
         """Retrieve an item from the cache using the square bracket notation."""
@@ -139,7 +140,8 @@ class InMemoryCache(BaseCache):
 
     def __len__(self):
         """Return the number of items in the cache."""
-        return len(self._cache)
+        with self._lock:
+            return len(self._cache)
 
     def __repr__(self):
         """Return a string representation of the InMemoryCache instance."""

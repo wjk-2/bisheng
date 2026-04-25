@@ -48,7 +48,6 @@ export interface AssistantState {
     summary_model: string;
 }
 export interface ChatConfigForm {
-    menuShow: boolean;
     systemPrompt: string;
     sidebarIcon: {
         enabled: boolean;
@@ -128,7 +127,6 @@ export default function index({ formData: parentFormData, setFormData: parentSet
         isBatch: false
     });
     const defaultFormValues = {
-        menuShow: false,
         systemPrompt: '',
         sidebarIcon: {
             enabled: true,
@@ -370,17 +368,17 @@ export default function index({ formData: parentFormData, setFormData: parentSet
                     config = parentFormData;
                 }
 
-                if (config && 'menuShow' in config) {
+                if (config) {
                     setFormData({
                         ...defaultFormValues,
                         ...config,
+                        // 兼容旧配置：优先使用 inputPlaceholder，其次使用 linsightConfig.input_placeholder
                         inputPlaceholder: config.inputPlaceholder ||
                             config.linsightConfig?.input_placeholder ||
                             defaultFormValues.inputPlaceholder,
                         linsightConfig: {
                             ...defaultFormValues.linsightConfig,
                             ...config.linsightConfig,
-                            input_placeholder: config.linsightConfig?.input_placeholder || '',
                         }
                     });
 
@@ -560,29 +558,25 @@ export default function index({ formData: parentFormData, setFormData: parentSet
         try {
             await sopApi.batchDeleteSop(selectedItems);
 
-            // Calculate new total
+            // 修复分页计算逻辑：批量删除后正确计算新的页数
             const newTotal = total - selectedItems.length;
-            const newTotalPages = Math.ceil(newTotal / pageSize);
-
-            // Determine new current page
+            const newTotalPages = newTotal > 0 ? Math.ceil(newTotal / pageSize) : 1;
             let newPage = page;
 
-            if (datalist.length === selectedItems.length) {
-                if (page > 1) {
-                    newPage = page - 1;
-                }
-                else if (newTotal > 0) {
-                    newPage = 1;
-                }
+            // 如果当前页超过最大页数，则跳到最大页数
+            if (page > newTotalPages) {
+                newPage = Math.max(1, newTotalPages);
             }
-            if (newPage > newTotalPages && newTotalPages > 0) {
-                newPage = newTotalPages;
+
+            // 如果当前页全部被删除且不是第一页，则跳到前一页
+            if (datalist.length === selectedItems.length && page > 1) {
+                newPage = page - 1;
             }
 
             // Update state
             setTotal(newTotal);
             setSelectedItems([]);
-            setPage(newPage);  // Ensure page state is updated
+            setPage(newPage);
             setPageInputValue(newPage.toString());
 
             // Re-fetch data
@@ -709,23 +703,28 @@ export default function index({ formData: parentFormData, setFormData: parentSet
 
                         setSelectedItems(prevItems => prevItems.filter(itemId => itemId !== id));
 
-                        // Fix here - ensure correct parameters are passed
-                        if (datalist.length === 1 && page > 1) {
-                            setPage(page - 1);
-                            fetchData({
-                                page: page - 1,
-                                pageSize: pageSize,
-                                keyword: keywords,
-                                showcase: showcaseFilter,
-                            });
-                        } else {
-                            fetchData({
-                                page: page,
-                                pageSize: pageSize,
-                                keyword: keywords,
-                                showcase: showcaseFilter,
-                            });
+                        // 修复分页计算逻辑：删除后正确计算新的页数
+                        const newTotal = total - 1;
+                        const newTotalPages = newTotal > 0 ? Math.ceil(newTotal / pageSize) : 1;
+                        let newPage = page;
+
+                        // 如果当前页超过最大页数，则跳到最大页数
+                        if (page > newTotalPages) {
+                            newPage = Math.max(1, newTotalPages);
                         }
+
+                        // 如果当前页只有一条记录且不是第一页，则跳到前一页
+                        if (datalist.length === 1 && page > 1) {
+                            newPage = page - 1;
+                        }
+
+                        setPage(newPage);
+                        fetchData({
+                            page: newPage,
+                            pageSize: pageSize,
+                            keyword: keywords,
+                            showcase: showcaseFilter,
+                        });
                         next();
                     })
                     .catch(error => {
@@ -785,7 +784,6 @@ export default function index({ formData: parentFormData, setFormData: parentSet
 
             setImportFilesData([importFiles[0]]); // Only save one file
             const result = await sopApi.UploadSopRecord(formData);
-            console.log('API Response:', result); // For debugging
             const { error_rows, success_rows, repeat_rows } = result
             if (error_rows.length) {
                 setValidationDialog({
@@ -804,7 +802,6 @@ export default function index({ formData: parentFormData, setFormData: parentSet
                     formData.append('save_new', 'false');
                     const res = await sopApi.UploadSopRecord(formData);
 
-                    console.log(res, repeat_rows);
                     setImportDialogOpen(true)
                     setDuplicateNames(repeat_rows);
                     setDuplicateDialogOpen(true);
@@ -866,17 +863,13 @@ export default function index({ formData: parentFormData, setFormData: parentSet
                     <div className="w-full  max-h-[calc(100vh-180px)] overflow-y-scroll scrollbar-hide">
                         <FormInput
                             label={t('chatConfig.inputPlaceholder')}
-                            value={formData.linsightConfig?.input_placeholder}
+                            value={formData.inputPlaceholder}
                             placeholder={t('chatConfig.linsightPlaceholder')}
                             maxLength={100}
                             onChange={(v) => {
                                 setFormData(prev => ({
                                     ...prev,
-                                    linsightConfig: {
-                                        ...prev.linsightConfig,
-                                        input_placeholder: v
-                                    }
-
+                                    inputPlaceholder: v
                                 }));
                             }} error={""} />
                         <div className="mb-6">
@@ -1037,14 +1030,22 @@ const useChatConfig = (
             }))
         }));
 
+        // 先从 API 获取最新配置，避免覆盖另一个 tab 的修改
+        let latestConfig = {};
+        try {
+            latestConfig = await getWorkstationConfigApi() || {};
+        } catch (error) {
+            console.warn('Failed to fetch latest config, using local data:', error);
+        }
+
+        // 只更新灵思 tab 的字段，保留其他 tab 的配置
         const dataToSave = {
-            ...formData,
-            // Application center welcome/description: If not provided, use multilingual placeholder default
-            applicationCenterWelcomeMessage: (formData.applicationCenterWelcomeMessage?.trim?.() || t('chatConfig.appCenterWelcomePlaceholder')),
-            applicationCenterDescription: (formData.applicationCenterDescription?.trim?.() || t('chatConfig.appCenterDescriptionPlaceholder')),
+            // 保留最新配置中的所有字段（包括日常 tab 的配置）
+            ...latestConfig,
+            // 当前 tab（灵思）修改的字段
+            inputPlaceholder: formData.inputPlaceholder,  // 统一使用顶层 inputPlaceholder
             linsightConfig: {
-                input_placeholder: formData.linsightConfig?.input_placeholder || '',
-                tools: processedTools
+                tools: processedTools  // 只保存 tools，不再保存 input_placeholder
             }
         };
 

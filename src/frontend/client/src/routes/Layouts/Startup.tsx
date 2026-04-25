@@ -38,7 +38,7 @@ export default function StartupLayout({ isAuthenticated }: { isAuthenticated?: b
   }, [isAuthenticated, navigate, data]);
 
   useEffect(() => {
-    // document.title = startupConfig?.appTitle || 'BISHENG';
+    // document.title = startupConfig?.appTitle || 'E-Agent';
   }, [startupConfig?.appTitle]);
 
   useEffect(() => {

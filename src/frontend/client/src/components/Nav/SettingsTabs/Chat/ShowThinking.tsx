@@ -4,16 +4,16 @@ import { Switch } from '~/components/ui';
 import useLocalize from '~/hooks/useLocalize';
 import store from '~/store';
 
-export default function SaveDraft({
+export default function ShowThinking({
   onCheckedChange,
 }: {
   onCheckedChange?: (value: boolean) => void;
 }) {
-  const [showThinking, setSaveDrafts] = useRecoilState<boolean>(store.showThinking);
+  const [showThinking, setShowThinking] = useRecoilState<boolean>(store.showThinking);
   const localize = useLocalize();
 
   const handleCheckedChange = (value: boolean) => {
-    setSaveDrafts(value);
+    setShowThinking(value);
     if (onCheckedChange) {
       onCheckedChange(value);
     }

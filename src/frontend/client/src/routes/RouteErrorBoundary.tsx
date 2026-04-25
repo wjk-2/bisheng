@@ -79,7 +79,7 @@ export default function RouteErrorBoundary() {
   };
 
   const errorDetails = {
-    message: typedError.message ?? 'An unexpected error occurred',
+    message: typedError.message ?? '发生未知错误',
     stack: typedError.stack,
     status: typedError.status,
     statusText: typedError.statusText,
@@ -129,12 +129,12 @@ export default function RouteErrorBoundary() {
     >
       <div className="bg-surface-primary/60 mx-4 w-11/12 max-w-4xl rounded-2xl border border-border-light p-8 shadow-2xl backdrop-blur-xl">
         <h2 className="mb-6 text-center text-3xl font-medium tracking-tight text-text-primary">
-          Oops! Something Unexpected Occurred
+          页面加载出错
         </h2>
 
         {/* Error Message */}
         <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-sm text-gray-600 dark:text-gray-200">
-          <h3 className="mb-2 font-medium">Error Message:</h3>
+          <h3 className="mb-2 font-medium">错误信息：</h3>
           <pre className="whitespace-pre-wrap text-sm font-light leading-relaxed text-text-primary">
             {errorDetails.message}
           </pre>
@@ -144,7 +144,7 @@ export default function RouteErrorBoundary() {
         {(typeof errorDetails.status === 'number' ||
           typeof errorDetails.statusText === 'string') && (
           <div className="mb-4 rounded-xl border border-yellow-500/20 bg-yellow-500/5 p-4 text-sm text-text-primary">
-            <h3 className="mb-2 font-medium">Status:</h3>
+            <h3 className="mb-2 font-medium">状态：</h3>
             <p className="text-text-primary">
               {typeof errorDetails.status === 'number' && `${errorDetails.status} `}
               {typeof errorDetails.statusText === 'string' && errorDetails.statusText}
@@ -156,7 +156,7 @@ export default function RouteErrorBoundary() {
         {errorDetails.stack != null && errorDetails.stack.trim() !== '' && (
           <details className="group mb-4 rounded-xl border border-border-light p-4">
             <summary className="mb-2 flex cursor-pointer items-center justify-between text-sm font-medium text-text-primary">
-              <span>Stack Trace</span>
+              <span>堆栈追踪</span>
               <div className="flex items-center">
                 <Button
                   variant="outline"
@@ -164,7 +164,7 @@ export default function RouteErrorBoundary() {
                   onClick={handleCopyStack}
                   className="ml-2 px-2 py-1 text-xs"
                 >
-                  Copy
+                  复制
                 </Button>
               </div>
             </summary>
@@ -187,7 +187,7 @@ export default function RouteErrorBoundary() {
         {errorDetails.data != null && (
           <details className="group mb-4 rounded-xl border border-border-light p-4">
             <summary className="mb-2 flex cursor-pointer items-center justify-between text-sm font-medium text-text-primary">
-              <span>Additional Details</span>
+              <span>详细信息</span>
               <span className="transition-transform group-open:rotate-90">{'>'}</span>
             </summary>
             <pre className="whitespace-pre-wrap text-xs font-light leading-relaxed text-text-primary">
@@ -197,12 +197,12 @@ export default function RouteErrorBoundary() {
         )}
 
         <div className="mt-6 flex flex-col gap-4">
-          <p className="text-sm font-light text-text-secondary">Please try one of the following:</p>
+          <p className="text-sm font-light text-text-secondary">请尝试以下操作：</p>
           <ul className="list-inside list-disc text-sm text-text-secondary">
-            <li>Refresh the page</li>
-            <li>Clear your browser cache</li>
-            <li>Check your internet connection</li>
-            <li>Contact the Admin if the issue persists</li>
+            <li>刷新页面</li>
+            <li>清除浏览器缓存</li>
+            <li>检查网络连接</li>
+            <li>如问题持续请联系管理员</li>
           </ul>
           <div className="mt-4 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <Button
@@ -210,10 +210,10 @@ export default function RouteErrorBoundary() {
               onClick={() => window.location.reload()}
               className="w-full sm:w-auto"
             >
-              Refresh Page
+              刷新页面
             </Button>
             <Button variant="outline" onClick={handleDownloadLogs} className="w-full sm:w-auto">
-              Download Error Logs
+              下载错误日志
             </Button>
           </div>
         </div>

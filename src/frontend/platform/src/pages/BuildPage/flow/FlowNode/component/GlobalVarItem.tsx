@@ -121,7 +121,7 @@ export default function GlobalVarItem({ data, onChange, i18nPrefix }) {
         <div className="w-full max-w-3xl">
             <div className="space-y-4">
                 {/* Header */}
-                <Label className="flex items-center bisheng-label">
+                <Label className="flex items-center eagent-label">
                     {t(`${i18nPrefix}label`)}
                     {data.help && <QuestionTooltip content={t(`${i18nPrefix}help`)} />}
                 </Label>
@@ -207,7 +207,7 @@ export default function GlobalVarItem({ data, onChange, i18nPrefix }) {
                         {/* Variable Name */}
                         <div className="space-y-2">
                             <div className="flex items-center gap-2">
-                                <Label className="flex items-center bisheng-label">
+                                <Label className="flex items-center eagent-label">
                                     {t('flow.variableName', { ns: 'bs' })}
                                     <QuestionTooltip content={t('variableNameRuleTip')} />
                                 </Label>
@@ -230,7 +230,7 @@ export default function GlobalVarItem({ data, onChange, i18nPrefix }) {
                         {/* Variable Value */}
                         <div className="space-y-2">
                             <div className="flex items-center gap-2">
-                                <Label className="flex items-center bisheng-label">
+                                <Label className="flex items-center eagent-label">
                                     {t('variableValue')}
                                     <QuestionTooltip content={t('variableValueRuleTip')} />
                                 </Label>

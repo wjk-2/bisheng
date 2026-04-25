@@ -1,11 +1,13 @@
 import functools
 import json
+import uuid
 from datetime import datetime, timezone
 from functools import cached_property
 from typing import List, Dict, Any, Optional
 
 import jwt
 from fastapi import Request, Response, Depends
+from loguru import logger
 from pydantic import BaseModel, Field
 from starlette.websockets import WebSocket
 from typing_extensions import Self
@@ -17,6 +19,7 @@ from bisheng.database.constants import AdminRole
 from bisheng.database.models.group import GroupDao
 from bisheng.database.models.role_access import AccessType, RoleAccessDao, WebMenuResource
 from bisheng.database.models.user_group import UserGroupDao
+from bisheng.utils.constants import JWT_BLACKLIST_PREFIX
 from ..models.user import User
 from ..models.user_role import UserRoleDao
 
@@ -32,13 +35,14 @@ class AuthJwt:
         self._decode_algorithms = [self._encode_algorithm]
 
     def create_access_token(self, subject: dict) -> str:
-        """ create jwt token """
+        """ create jwt token with jti for revocation support """
         if isinstance(subject, dict):
             subject = json.dumps(subject)
         payload = {
             'sub': subject,
             'exp': int(datetime.now(timezone.utc).timestamp()) + self.cookie_conf.jwt_token_expire_time,
-            'iss': self.cookie_conf.jwt_iss
+            'iss': self.cookie_conf.jwt_iss,
+            'jti': str(uuid.uuid4()),
         }
         token = jwt.encode(payload, self.jwt_secret, algorithm=self._encode_algorithm)
         return token
@@ -77,19 +81,65 @@ class AuthJwt:
                 token = websocket.cookies.get(self._access_cookie_key)
         elif auth_from == "headers":
             if not token:
-                token = self.req.headers.get("Authorization").split(" ")[-1]
+                auth_header = self.req.headers.get("Authorization")
+                if not auth_header or " " not in auth_header:
+                    raise JWTDecodeError(status_code=401, message="Missing or invalid Authorization header")
+                token = auth_header.split(" ", 1)[-1]
         else:
             raise ValueError("unsupported auth_from value")
         return self.decode_jwt_token(token)
 
     def decode_jwt_token(self, token: str) -> Dict:
-        """ decode jwt token """
+        """ decode jwt token, checks blacklist for revoked tokens """
         try:
             payload = jwt.decode(token, self.jwt_secret, issuer=self.cookie_conf.jwt_iss,
                                  algorithms=self._decode_algorithms)
+            # Check if token has been revoked via blacklist
+            jti = payload.get('jti')
+            if jti and self._is_token_revoked_sync(jti):
+                raise JWTDecodeError(status_code=401, message="Token has been revoked")
             return json.loads(payload.get('sub'))
+        except JWTDecodeError:
+            raise
         except Exception as e:
-            raise JWTDecodeError(status_code=422, message=str(e))
+            logger.warning(f"JWT decode failed: {e}")
+            raise JWTDecodeError(status_code=401, message="Invalid or expired token")
+
+    @staticmethod
+    def _is_token_revoked_sync(jti: str) -> bool:
+        """ Check if a token jti is in the Redis blacklist (sync) """
+        try:
+            from bisheng.core.cache.redis_manager import get_redis_client_sync
+            redis_client = get_redis_client_sync()
+            return redis_client.exists(JWT_BLACKLIST_PREFIX.format(jti)) > 0
+        except Exception as e:
+            logger.warning(f"Failed to check token blacklist: {e}")
+            # Fail-open: if Redis is down, allow the token through
+            # This is a deliberate trade-off for availability over strict security
+            return False
+
+    @staticmethod
+    async def revoke_token(token: str) -> None:
+        """ Revoke a JWT token by adding its jti to the Redis blacklist.
+        TTL is set to the remaining validity time of the token. """
+        try:
+            # Decode without verification to extract jti and exp
+            # (we just need the claims, the token was already validated on the request)
+            unverified = jwt.decode(token, options={"verify_signature": False, "verify_exp": False})
+            jti = unverified.get('jti')
+            if not jti:
+                return  # Old tokens without jti cannot be revoked, graceful skip
+            exp = unverified.get('exp', 0)
+            now = int(datetime.now(timezone.utc).timestamp())
+            ttl = max(exp - now, 0)
+            if ttl <= 0:
+                return  # Token already expired, no need to blacklist
+            from bisheng.core.cache.redis_manager import get_redis_client
+            redis_client = await get_redis_client()
+            await redis_client.aset(JWT_BLACKLIST_PREFIX.format(jti), True, expiration=ttl)
+            logger.info(f"Token revoked: jti={jti}, ttl={ttl}s")
+        except Exception as e:
+            logger.warning(f"Failed to revoke token: {e}")
 
 
 class LoginUser(BaseModel):
@@ -312,26 +362,22 @@ class LoginUser(BaseModel):
         return login_user
 
     @classmethod
-    async def get_roles_web_menu(cls, user: User) -> (List[int] | str, List[str]):
-        """ get user roles and web menu """
+    async def get_roles_web_menu(cls, user: User) -> (str, List[str]):
+        """
+        简化版：获取用户角色和可访问菜单
+
+        权限规则：
+        - 超级管理员 (AdminRole=1)：所有菜单，包括系统设置
+        - 普通用户 (DefaultRole=2)：除系统设置外的所有菜单
+        """
         db_user_role = await UserRoleDao.aget_user_roles(user.user_id)
-        role = ''
-        role_ids = []
-        for user_role in db_user_role:
-            if user_role.role_id == AdminRole:
-                role = 'admin'
-            else:
-                role_ids.append(user_role.role_id)
-        if role != 'admin':
-            # is user group admin ?
-            db_user_groups = await UserGroupDao.aget_user_admin_group(user.user_id)
-            if len(db_user_groups) > 0:
-                role = 'group_admin'
-            else:
-                role = role_ids
-            # Get a list of a user's menu bar permissions
-            web_menu = await RoleAccessDao.aget_role_access(role_ids, AccessType.WEB_MENU)
-            web_menu = list(set([one.third_id for one in web_menu]))
-        else:
+        is_admin = any(user_role.role_id == AdminRole for user_role in db_user_role)
+
+        if is_admin:
+            # 超级管理员：所有菜单权限
             web_menu = [one.value for one in WebMenuResource]
-        return role, web_menu
+            return 'admin', web_menu
+        else:
+            # 普通用户：除 'backend'(系统设置) 外的所有菜单
+            web_menu = [one.value for one in WebMenuResource if one.value != 'backend']
+            return 'user', web_menu

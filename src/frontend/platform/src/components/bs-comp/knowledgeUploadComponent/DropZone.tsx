@@ -30,11 +30,10 @@ export default function DropZone({ onDrop }) {
             });
 
             if (disAcceptedFiles.length > 0) {
-                // @ts-ignore
-                const uniqueExtensions = [...new Set(
+                const uniqueExtensions: string[] = [...new Set(
                     disAcceptedFiles
                         .map(f => f.file.name.split('.').pop()?.toLowerCase())
-                        .filter(Boolean)
+                        .filter((ext): ext is string => Boolean(ext))
                 )];
                 message({
                     title: t('prompt'),
@@ -59,7 +58,7 @@ export default function DropZone({ onDrop }) {
             <input {...getInputProps()} />
             <UploadIcon className="group-hover:text-primary size-5" />
             <p className="text-sm">{t('code.clickOrDragHere')}</p>
-            <p className="bisheng-label px-4 text-center">{formatText}</p>
+            <p className="eagent-label px-4 text-center">{formatText}</p>
         </div>
     );
 };

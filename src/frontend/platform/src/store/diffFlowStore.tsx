@@ -231,6 +231,7 @@ const runTest = ({ questions, questionIndexs, nodeId, versionIds, inputs, refs }
             if (!type) {
                 refs[`${questionIndexs[question_index]}-${version_id}`].current.setData(answer)
             } else if (type === 'end') {
+                eventSource.close();
                 resolve('')
             }
         }

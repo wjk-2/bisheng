@@ -14,7 +14,7 @@ const VditorEditor = forwardRef(({ edit, markdown, hidden }, ref) => {
     useEffect(() => {
         // console.log('markdown :>> ', markdown);
         const processedMarkdown = markdown.replace(/^( {4,})/gm, '   ')
-            .replaceAll('(bisheng/', '(/bisheng/')
+            .replaceAll('(eagent/', '(/eagent/')
 
         if (!hidden && vditorRef.current && readyRef.current) {
             vditorRef.current.setValue(processedMarkdown);
@@ -57,7 +57,6 @@ const VditorEditor = forwardRef(({ edit, markdown, hidden }, ref) => {
                 enable: false,
             },
             after: () => {
-                console.log('Vditor is ready');
                 readyRef.current = true;
 
                 if (valurCacheRef.current) {

@@ -5,12 +5,11 @@ import type { Plugin } from 'vite';
 import { defineConfig } from 'vite';
 import { compression } from 'vite-plugin-compression2';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
-import { VitePWA } from 'vite-plugin-pwa';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 
 const app_env = {
   BASE_URL: '/workspace',
-  BISHENG_HOST: '/admin'
+  EAGENT_HOST: '/platform'
 }
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => ({
@@ -28,7 +27,7 @@ export default defineConfig(({ command }) => ({
       //   // target: 'http://localhost:3080',
       //   changeOrigin: true,
       // },
-      '^(/workspace)?/bisheng': {
+      '^(/workspace)?/eagent': {
         target: "http://192.168.106.120:3002",
         changeOrigin: true,
         secure: false,
@@ -65,65 +64,7 @@ export default defineConfig(({ command }) => ({
   envPrefix: ['VITE_', 'SCRIPT_', 'DOMAIN_', 'ALLOW_'],
   plugins: [
     react(),
-    nodePolyfills(),
-    VitePWA({
-      injectRegister: 'auto', // 'auto' | 'manual' | 'disabled'
-      registerType: 'autoUpdate', // 'prompt' | 'autoUpdate'
-      devOptions: {
-        enabled: false, // disable service worker registration in development mode
-      },
-      useCredentials: true,
-      includeManifestIcons: false,
-      workbox: {
-        globPatterns: [
-          '**/*.{js,css,html}',
-          'assets/favicon*.png',
-          'assets/icon-*.png',
-          'assets/apple-touch-icon*.png',
-          'assets/maskable-icon.png',
-          'manifest.webmanifest',
-        ],
-        globIgnores: ['images/**/*', '**/*.map', 'index.html'],
-        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
-        navigateFallbackDenylist: [/^\/oauth/],
-      },
-      includeAssets: [],
-      // manifest: {
-      //   name: 'Deepseek',
-      //   short_name: 'Deepseek',
-      //   display: 'standalone',
-      //   background_color: '#000000',
-      //   theme_color: '#009688',
-      //   icons: [
-      //     {
-      //       src: 'assets/favicon-32x32.png',
-      //       sizes: '32x32',
-      //       type: 'image/png',
-      //     },
-      //     {
-      //       src: 'assets/favicon-16x16.png',
-      //       sizes: '16x16',
-      //       type: 'image/png',
-      //     },
-      //     {
-      //       src: 'assets/apple-touch-icon-180x180.png',
-      //       sizes: '180x180',
-      //       type: 'image/png',
-      //     },
-      //     {
-      //       src: 'assets/icon-192x192.png',
-      //       sizes: '192x192',
-      //       type: 'image/png',
-      //     },
-      //     {
-      //       src: 'assets/maskable-icon.png',
-      //       sizes: '512x512',
-      //       type: 'image/png',
-      //       purpose: 'maskable',
-      //     },
-      //   ],
-      // },
-    }),
+    nodePolyfills({ protocolImports: false }),
     sourcemapExclude({ excludeNodeModules: true }),
     compression({
       threshold: 10240,
@@ -163,7 +104,7 @@ export default defineConfig(({ command }) => ({
               return 'i18n';
             }
             if (normalizedId.includes('lodash')) {
-              return 'utilities';
+              return 'vendor';
             }
             if (normalizedId.includes('date-fns')) {
               return 'date-utils';
@@ -218,14 +159,14 @@ export default defineConfig(({ command }) => ({
               normalizedId.includes('yup') ||
               normalizedId.includes('joi')
             ) {
-              return 'validation';
+              return 'vendor';
             }
             if (
               normalizedId.includes('axios') ||
               normalizedId.includes('ky') ||
               normalizedId.includes('fetch')
             ) {
-              return 'http-client';
+              return 'vendor';
             }
             if (
               normalizedId.includes('react-spring') ||
@@ -247,7 +188,11 @@ export default defineConfig(({ command }) => ({
             if (normalizedId.includes('framer-motion')) {
               return 'framer-motion';
             }
-            if (normalizedId.includes('node_modules/highlight.js')) {
+            if (
+              normalizedId.includes('node_modules/highlight.js') ||
+              normalizedId.includes('node_modules/lowlight') ||
+              normalizedId.includes('node_modules/rehype-highlight')
+            ) {
               return 'markdown_highlight';
             }
             if (normalizedId.includes('katex') || normalizedId.includes('node_modules/katex')) {
@@ -277,7 +222,7 @@ export default defineConfig(({ command }) => ({
         chunkFileNames: 'assets/[name].[hash].js',
         assetFileNames: (assetInfo) => {
           if (assetInfo.names?.[0] && /\.(woff|woff2|eot|ttf|otf)$/.test(assetInfo.names[0])) {
-            return 'assets/fonts/[name][extname]';
+            return 'assets/fonts/[name]-[hash][extname]';
           }
           return 'assets/[name].[hash][extname]';
         },

@@ -21,7 +21,6 @@ export default function useDeleteFilesFromTable(callback?: () => void) {
       return { filesToDeleteMap };
     },
     onSuccess: (data, variables, context) => {
-      console.log('Files deleted');
       const { filesToDeleteMap } = context as { filesToDeleteMap: Map<string, BatchFile> };
 
       queryClient.setQueryData([QueryKeys.files], (oldFiles: TFile[] | undefined) => {
@@ -33,7 +32,6 @@ export default function useDeleteFilesFromTable(callback?: () => void) {
       callback?.();
     },
     onError: (error) => {
-      console.log('Error deleting files:', error);
       callback?.();
     },
   });

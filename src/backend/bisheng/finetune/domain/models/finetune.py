@@ -41,6 +41,7 @@ class FinetuneBase(SQLModelSerializable):
     base_model_name: str = Field(max_length=50, description='Base Model Name')
     root_model_name: str = Field(default='', description='Root underlying model name, which is the initial model name')
     model_id: int = Field(default=0, index=True, description='Published Training ModelsID')
+    llm_server_id: Optional[int] = Field(default=None, description='B++: 关联的 LLM Server ID，用于启用到对话')
     model_name: str = Field(index=True, max_length=50, description='Name of the training model')
     method: str = Field(default=TrainMethod.FULL.value, nullable=False, max_length=20, description='Training Methods')
     extra_params: Dict = Field(sa_column=Column(JSON), description='Additional parameters required for training tasks')

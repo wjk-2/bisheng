@@ -115,7 +115,6 @@ export default function VarInput({
     }
 
     useEffect(() => {
-        console.log('!!!value :>> ', value);
         if (valueRef.current && valueRef.current !== value) {
             valueRef.current = value;
         }
@@ -259,7 +258,6 @@ export default function VarInput({
             if (rawData) {
                 try {
                     const parsedData = JSON.parse(decodeURIComponent(rawData));
-                    console.log('Cross-window data detected:', parsedData);
 
                     if (paramItem.varZh) {
                         paramItem.varZh = { ...paramItem.varZh, ...parsedData };
@@ -304,7 +302,6 @@ export default function VarInput({
         // 4. Execute the processing
         const cleanHtml = processNodes(doc.body);
 
-        console.log('Cleaned mixed content:', cleanHtml);
 
         // 5. Insert the content
         // Note: Since the span tags are retained, you still need to use insertHTML
@@ -327,7 +324,7 @@ export default function VarInput({
                     </SelectVar>
                 </div>
                 : <div className="flex justify-between gap-1 border-b dark:border-gray-600 px-2 py-1" onClick={() => textareaRef.current.focus()}>
-                    <Label className="bisheng-label text-xs" onClick={validateVarAvailble}>
+                    <Label className="eagent-label text-xs" onClick={validateVarAvailble}>
                         {paramItem.required && <span className="text-red-500">*</span>}
                         {label ?? paramItem.label}
                     </Label>
@@ -423,7 +420,7 @@ export default function VarInput({
                     }
                     e.stopPropagation()
                 }}
-                className={`${heightClass} nowheel bisheng-richtext px-3 py-2 cursor-text whitespace-pre-line overflow-y-auto overflow-x-hidden border-none outline-none bg-search-input rounded-md dark:text-gray-50 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50`}
+                className={`${heightClass} nowheel eagent-richtext px-3 py-2 cursor-text whitespace-pre-line overflow-y-auto overflow-x-hidden border-none outline-none bg-search-input rounded-md dark:text-gray-50 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50`}
             ></div>
             {children}
             {/* drag size */}

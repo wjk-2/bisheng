@@ -46,7 +46,7 @@ export const ChatToolDown = ({
     setSearchType("");
   }, []);
 
-  if (!linsi && !config?.webSearch.enabled) return null;
+  if (!linsi && !config?.webSearch?.enabled) return null;
   if (linsi) return <LinsiTools tools={tools} setTools={setTools} />;
 
   return (
@@ -70,7 +70,7 @@ export const ChatToolDown = ({
         </div>
       </SelectTrigger>
       <SelectContent className="bg-white rounded-xl p-2 w-52">
-        {config?.webSearch.enabled && (
+        {config?.webSearch?.enabled && (
           <div className="flex justify-between">
             <div className="flex gap-2 items-center">
               <GlobeIcon className="" size="16" />

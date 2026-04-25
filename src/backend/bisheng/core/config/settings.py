@@ -2,6 +2,7 @@ import ast
 import json
 import os
 import re
+import secrets
 from typing import Dict, List, Optional, Union
 
 from celery.schedules import crontab
@@ -9,7 +10,15 @@ from cryptography.fernet import Fernet
 from loguru import logger
 from pydantic import ConfigDict, BaseModel, Field, field_validator, model_validator
 
-secret_key = 'TI31VYJ-ldAq-FXo5QNPKV_lqGTFfp-MIdbK2Hm5F1E='
+secret_key = os.getenv('EAGENT_FERNET_KEY', 'TI31VYJ-ldAq-FXo5QNPKV_lqGTFfp-MIdbK2Hm5F1E=')
+
+# 启动时警告
+if secret_key == 'TI31VYJ-ldAq-FXo5QNPKV_lqGTFfp-MIdbK2Hm5F1E=':
+    import warnings
+    warnings.warn(
+        'Using default Fernet key. Set EAGENT_FERNET_KEY environment variable in production!',
+        UserWarning
+    )
 
 
 def encrypt_token(token: str):
@@ -17,7 +26,10 @@ def encrypt_token(token: str):
 
 
 def decrypt_token(token: str):
-    return Fernet(secret_key).decrypt(token).decode()
+    try:
+        return Fernet(secret_key).decrypt(token).decode()
+    except Exception:
+        return token
 
 
 class LoggerConf(BaseModel):
@@ -44,7 +56,19 @@ class LoggerConf(BaseModel):
         for one in value:
             one['sink'] = cls.parse_logger_sink(one['sink'])
             if one.get('filter'):
-                one['filter'] = eval(one['filter'])
+                # 安全解析 filter，只允许简单的 key='value' 格式
+                filter_str = one['filter']
+                # 支持格式: {'key': 'value'} 或 key='value'
+                match = re.match(r"^\{'(\w+)':\s*'([^']+)'\}$", filter_str)
+                if match:
+                    one['filter'] = {match.group(1): match.group(2)}
+                elif re.match(r'^[\w]+=[\w\s]+$', filter_str):
+                    # 简单 key=value 格式
+                    k, v = filter_str.split('=', 1)
+                    one['filter'] = {k.strip(): v.strip()}
+                else:
+                    logger.warning(f'Invalid filter format, skipping: {filter_str}')
+                    one['filter'] = None
         return value
 
 
@@ -57,7 +81,7 @@ class PasswordConf(BaseModel):
 
 class SystemLoginMethod(BaseModel):
     """ System Login Method Config """
-    bisheng_pro: bool = Field(default=False, description='Whether it is a commercial version, Verify Configuredlicense')
+    eagent_pro: bool = Field(default=False, description='Whether it is a commercial version, Verify Configuredlicense')
     admin_username: Optional[str] = Field(default=None, description='Admin username registered via web')
     allow_multi_login: bool = Field(default=True, description='Whether to allow multi-sign-on')
 
@@ -141,22 +165,22 @@ class CeleryConf(BaseModel):
         if 'telemetry_mid_user_increment' not in self.beat_schedule:
             self.beat_schedule['telemetry_mid_user_increment'] = {
                 'task': 'bisheng.worker.telemetry.mid_table.sync_mid_user_increment',
-                'schedule': crontab('*/30 0 * * *'),  # 00:30 exec every day
+                'schedule': crontab(minute=30, hour=0),  # 00:30 exec every day
             }
         if 'telemetry_mid_knowledge_increment' not in self.beat_schedule:
             self.beat_schedule['telemetry_mid_knowledge_increment'] = {
                 'task': 'bisheng.worker.telemetry.mid_table.sync_mid_knowledge_increment',
-                'schedule': crontab('*/30 0 * * *'),  # 00:30 exec every day
+                'schedule': crontab(minute=30, hour=0),  # 00:30 exec every day
             }
         if 'telemetry_sync_mid_app_increment' not in self.beat_schedule:
             self.beat_schedule['telemetry_sync_mid_app_increment'] = {
                 'task': 'bisheng.worker.telemetry.mid_table.sync_mid_app_increment',
-                'schedule': crontab('*/30 0 * * *'),  # 00:30 exec every day
+                'schedule': crontab(minute=30, hour=0),  # 00:30 exec every day
             }
         if 'telemetry_sync_mid_user_interact_dtl' not in self.beat_schedule:
             self.beat_schedule['telemetry_sync_mid_user_interact_dtl'] = {
                 'task': 'bisheng.worker.telemetry.mid_table.sync_mid_user_interact_dtl',
-                'schedule': crontab('*/30 0 * * *'),  # 00:30 exec every day
+                'schedule': crontab(minute=30, hour=0),  # 00:30 exec every day
             }
 
         # convert str to crontab
@@ -184,12 +208,12 @@ class LinsightConf(BaseModel):
 
 class CookieConf(BaseModel):
     """ Cookie Configure """
-    max_age: Optional[int] = Field(default=None, description="Cookie Maximum survival time in seconds")
+    max_age: Optional[int] = Field(default=86400, description="Cookie存活时间（秒），默认与JWT保持一致为24小时")
     path: str = Field(default='/', description="Cookie Path Properties for")
     domain: Optional[str] = Field(default=None, description="Cookie Domain Properties for")
     secure: bool = Field(default=False, description="enabled secure Property")
     httponly: bool = Field(default=True, description="enabled HttpOnly Property")
-    samesite: str = Field(default=None, description="SameSite property, optional value is 'lax', 'strict', 'none'")
+    samesite: str = Field(default='lax', description="SameSite属性，可选值: 'lax'、'strict'、'none'")
 
     jwt_token_expire_time: int = Field(default=86400, description="JwtTokenExpiration time in seconds")
     jwt_iss: str = Field(default='bisheng', description="JwtTokenIssuer of")
@@ -242,7 +266,7 @@ class Settings(BaseModel):
     remove_api_keys: bool = False
     bisheng_rt: dict = {}
     default_llm: dict = {}
-    jwt_secret: str = 'secret'
+    jwt_secret: str = os.getenv('EAGENT_JWT_SECRET', 'eagent_jwt_' + secrets.token_hex(32))
     gpts: dict = {}
     openai_conf: dict = {}
     minio_conf: dict = {}
@@ -257,7 +281,9 @@ class Settings(BaseModel):
     cookie_conf: CookieConf = CookieConf()
     telemetry_elasticsearch: ElasticsearchConf = ElasticsearchConf()
 
+    cors_origins: Optional[List[str]] = None  # CORS allowed origins, None or ['*'] means allow all
     license_str: Optional[str] = None  # license Contents
+    gpustack: dict = {}  # GPUStack configuration (url, token, etc.)
 
     @field_validator('database_url')
     @classmethod

@@ -78,7 +78,6 @@ const EditPresetDialog = ({
     }
 
     if (!models.includes(preset.model ?? '')) {
-      console.log('setting model', models[0]);
       setOption('model')(models[0]);
     }
 
@@ -91,7 +90,6 @@ const EditPresetDialog = ({
       preset.agentOptions.model &&
       !models.includes(preset.agentOptions.model)
     ) {
-      console.log('setting agent model', models[0]);
       setAgentOption('model')(models[0]);
     }
   }, [preset, queryClient, setOption, setAgentOption]);

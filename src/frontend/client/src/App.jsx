@@ -1,5 +1,6 @@
 import * as RadixToast from '@radix-ui/react-toast';
 import { QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { RouterProvider } from 'react-router-dom';
@@ -10,18 +11,25 @@ import { ScreenshotProvider, ThemeProvider, useApiErrorBoundary } from './hooks'
 import { ToastProvider } from './Providers';
 import { router } from './routes';
 
+// P-08: 模块作用域单例 — 避免组件 re-render 时重建导致缓存丢失
+let _setErrorRef = null;
+const queryClient = new QueryClient({
+  queryCache: new QueryCache({
+    onError: (error) => {
+      if (error?.response?.status === 401 && _setErrorRef) {
+        _setErrorRef(error);
+      }
+    },
+  }),
+});
+
 const App = () => {
   const { setError } = useApiErrorBoundary();
 
-  const queryClient = new QueryClient({
-    queryCache: new QueryCache({
-      onError: (error) => {
-        if (error?.response?.status === 401) {
-          setError(error);
-        }
-      },
-    }),
-  });
+  useEffect(() => {
+    _setErrorRef = setError;
+    return () => { _setErrorRef = null; };
+  }, [setError]);
 
   return (
     <QueryClientProvider client={queryClient}>

@@ -1,4 +1,5 @@
 import { CircleHelp, Import } from "lucide-react";
+import DOMPurify from "dompurify";
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getSourceChunksApi, splitWordApi } from "~/api/apps";
@@ -7,6 +8,14 @@ import FileViewPanne from "~/components/PreviewFile";
 import { LoadingIcon } from "~/components/ui/icon/Loading";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "~/components/ui/Tooltip2";
 import { downloadFile } from "~/utils";
+
+/**
+ * 转义正则表达式特殊字符
+ * 防止关键词中的特殊字符破坏正则语法或导致 ReDoS
+ */
+function escapeRegExp(str: string): string {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 // 顶部答案区
 const Anwser = ({ id, msg, onInit, onAdd, fullScreen = false }) => {
@@ -25,9 +34,13 @@ const Anwser = ({ id, msg, onInit, onAdd, fullScreen = false }) => {
                         loadData()
                     }, 1800);
                 }
+                // 转义正则特殊字符，防止 ReDoS 和正则语法错误
+                const escapedKeywords = data.map(escapeRegExp)
                 // 匹配
-                const reg = new RegExp(`(${data.join('|')})`, 'g')
-                setHtml(msg.replace(reg, '<span>$1</span>'))
+                const reg = new RegExp(`(${escapedKeywords.join('|')})`, 'g')
+                const rawHtml = msg.replace(reg, '<span>$1</span>')
+                // DOMPurify 净化，防止 XSS
+                setHtml(DOMPurify.sanitize(rawHtml))
                 onInit(data)
             })
         }
@@ -171,10 +184,10 @@ const ResultPanne = ({ chatId, words, data, onClose, onAdd, children, fullScreen
                             <div className="absolute right-1 top-1 gap-2 hidden group-hover:flex">
                                 {
                                     _file.parse_type === 'uns' && _file.fileUrl && <Tooltip delayDuration={200}>
-                                        <TooltipTrigger >
-                                            <a href="javascript:;" onClick={(event) => { downloadFile(changeMinioUrl(_file.fileUrl), _file.fileName.replace(/\.[\w\d]+$/, '.pdf')); event.stopPropagation() }} >
+                                        <TooltipTrigger asChild>
+                                            <button type="button" className="p-1" onClick={(event) => { downloadFile(changeMinioUrl(_file.fileUrl), _file.fileName.replace(/\.[\w\d]+$/, '.pdf')); event.stopPropagation() }} >
                                                 <Import color="rgba(53,126,249,1)" size={22} strokeWidth={1.5}></Import>
-                                            </a>
+                                            </button>
                                         </TooltipTrigger>
 
                                         <TooltipContent
@@ -188,10 +201,10 @@ const ResultPanne = ({ chatId, words, data, onClose, onAdd, children, fullScreen
                                 }
                                 {
                                     _file.originUrl && <Tooltip delayDuration={200}>
-                                        <TooltipTrigger >
-                                            <a href="javascript:;" onClick={(event) => { downloadFile(changeMinioUrl(_file.originUrl), _file.fileName); event.stopPropagation() }} >
+                                        <TooltipTrigger asChild>
+                                            <button type="button" className="p-1" onClick={(event) => { downloadFile(changeMinioUrl(_file.originUrl), _file.fileName); event.stopPropagation() }} >
                                                 <Import color="rgba(53,126,249,1)" size={22} strokeWidth={1.5}></Import>
-                                            </a>
+                                            </button>
                                         </TooltipTrigger>
 
                                         <TooltipContent

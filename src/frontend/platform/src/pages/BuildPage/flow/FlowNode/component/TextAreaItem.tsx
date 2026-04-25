@@ -8,7 +8,7 @@ export default function TextAreaItem({ data, onChange, i18nPrefix }) {
     const { t } = useTranslation('flow')
 
     return <div className='node-item mb-4' data-key={data.key}>
-        <Label className='bisheng-label'>{t(`${i18nPrefix}label`)}</Label>
+        <Label className='eagent-label'>{t(`${i18nPrefix}label`)}</Label>
         <Textarea value={value}
             className="nodrag mt-2"
             placeholder={t(`${i18nPrefix}placeholder`) || ''}

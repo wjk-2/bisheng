@@ -108,7 +108,7 @@ async def upload_file(
             return resp_500(message='file name must be not empty')
         # Cache Local
         file_byte = await file.read()
-        file_path = save_download_file(file_byte, 'bisheng', file_name)
+        file_path = save_download_file(file_byte, 'eagent', file_name)
     else:
         file_path, file_name = file_download(file_url)
 
@@ -176,7 +176,7 @@ async def post_chunks(request: Request,
     if not file_name:
         return resp_500(message='file name must be not empty')
     file_byte = await file.read()
-    file_path = save_download_file(file_byte, 'bisheng', file_name)
+    file_path = save_download_file(file_byte, 'eagent', file_name)
 
     login_user = get_default_operator()
 
@@ -200,7 +200,7 @@ async def post_string_chunks(request: Request, document: ChunkInput):
     content = '\n\n'.join([doc.page_content for doc in document.documents])
     content_bytes = bytes(content, encoding='utf-8')
     file_name = document.documents[0].metadata.get('source')
-    file_path = save_download_file(content_bytes, 'bisheng', file_name)
+    file_path = save_download_file(content_bytes, 'eagent', file_name)
 
     login_user = get_default_operator()
 
@@ -245,8 +245,15 @@ async def clear_tmp_chunks_data(body: Dict):
 
 
 @router.get('/dump_vector', status_code=200)
-def dump_vector_knowledge(collection_name: str, expr: str = None, store: str = 'Milvus'):
-    # dump vector db
+def dump_vector_knowledge(collection_name: str, store: str = 'Milvus'):
+    # dump vector db (expr parameter removed - was unused but exposed injection risk)
+    # Validate collection_name to prevent injection
+    import re as _re
+    if not _re.match(r'^[a-zA-Z0-9_]+$', collection_name):
+        return resp_500('Invalid collection name')
+    if store not in ('Milvus', 'ElasticSearch'):
+        return resp_500('Invalid store type')
+
     embedding_tmp = FakeEmbedding()
     vector_store = decide_vectorstores(collection_name, store, embedding_tmp)
 
@@ -263,15 +270,17 @@ def dump_vector_knowledge(collection_name: str, expr: str = None, store: str = '
 
 @router.get('/download_statistic')
 def download_statistic_file(file_path: str):
-    suffix = file_path.split('.')[-1]
-    if suffix != 'log':
+    if not file_path.endswith('.log'):
         raise ServerError.http_exception(msg='only .log file supported download')
-    dir_path = file_path.replace('.log', '')
-    if dir_path.find(".") != -1 or not dir_path.startswith("/app/data"):
-        raise ServerError.http_exception(msg='invalid file path, file path must not contain .')
+    # Resolve to absolute path and verify it's under /app/data (prevent path traversal)
+    resolved = os.path.realpath(file_path)
+    if not resolved.startswith('/app/data/'):
+        raise ServerError.http_exception(msg='invalid file path, must be under /app/data/')
+    if not os.path.isfile(resolved):
+        raise ServerError.http_exception(msg='file not found')
 
-    file_name = os.path.basename(file_path)
-    return FileResponse(file_path, filename=file_name)
+    file_name = os.path.basename(resolved)
+    return FileResponse(resolved, filename=file_name)
 
 
 @router.post('/add_qa')
@@ -279,6 +288,10 @@ def add_qa(*,
            knowledge_id: int = Body(embed=True),
            data: List[APIAddQAParam] = Body(embed=True),
            user_id: Optional[int] = Body(default=None, embed=True)):
+    if user_id is not None:
+        if not isinstance(user_id, int) or user_id <= 0:
+            raise HTTPException(status_code=400, detail='user_id must be a positive integer')
+        logger.warning('add_qa called with explicit user_id={}, knowledge_id={}', user_id, knowledge_id)
     user_id = user_id if user_id else settings.get_from_db('default_operator').get('user')
     knowledge = KnowledgeDao.query_by_id(knowledge_id)
     logger.info('add_qa_data knowledge_id={} size={}', knowledge_id, len(data))
@@ -301,6 +314,10 @@ def append_qa(*,
               knowledge_id: int = Body(embed=True),
               data: APIAppendQAParam = Body(embed=True),
               user_id: Optional[int] = Body(default=None, embed=True)):
+    if user_id is not None:
+        if not isinstance(user_id, int) or user_id <= 0:
+            raise HTTPException(status_code=400, detail='user_id must be a positive integer')
+        logger.warning('add_relative_qa called with explicit user_id={}, knowledge_id={}', user_id, knowledge_id)
     user_id = user_id if user_id else settings.get_from_db('default_operator').get('user')
     knowledge = KnowledgeDao.query_by_id(knowledge_id)
     qa_db = QAKnoweldgeDao.get_qa_knowledge_by_primary_id(data.id)

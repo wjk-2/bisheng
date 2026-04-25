@@ -37,7 +37,6 @@ export default function AudioRecorder({
       if (text) {
         const globalAudio = document.getElementById(globalAudioId) as HTMLAudioElement | null;
         if (globalAudio) {
-          console.log('Unmuting global audio');
           globalAudio.muted = false;
         }
         ask({ text });

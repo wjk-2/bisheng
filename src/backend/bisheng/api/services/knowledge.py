@@ -1169,12 +1169,17 @@ class KnowledgeService(KnowledgeUtils):
         return True
 
     @classmethod
-    def get_file_share_url(cls, file_id: int) -> (str, str):
+    def get_file_share_url(cls, login_user: UserPayload, file_id: int) -> (str, str):
         """ Get the original download address of the file And Corresponding preview file download address """
         file = KnowledgeFileDao.get_file_by_ids([file_id])
         if not file:
             raise NotFoundError()
         file = file[0]
+        knowledge = KnowledgeDao.query_by_id(file.knowledge_id)
+        if not knowledge:
+            raise NotFoundError()
+        if not login_user.access_check(knowledge.user_id, str(knowledge.id), AccessType.KNOWLEDGE):
+            raise UnAuthorizedError.http_exception()
         minio_client = get_minio_storage_sync()
         # 130File parsing prior to version
         if file.parse_type in [ParseType.LOCAL.value, ParseType.UNS.value]:
@@ -1206,7 +1211,14 @@ class KnowledgeService(KnowledgeUtils):
             cls, request: Request, login_user: UserPayload, file_id: int
     ) -> Any:
         file_info = KnowledgeFileDao.select_list([file_id])
+        if not file_info:
+            raise NotFoundError()
         file_info = file_info[0]
+        knowledge = KnowledgeDao.query_by_id(file_info.knowledge_id)
+        if not knowledge:
+            raise NotFoundError()
+        if not login_user.access_check(knowledge.user_id, str(knowledge.id), AccessType.KNOWLEDGE):
+            raise UnAuthorizedError.http_exception()
         if not file_info.bbox_object_name:
             return None
 
@@ -1281,18 +1293,17 @@ class KnowledgeService(KnowledgeUtils):
         return target_qa_knowlege
 
     @classmethod
-    def judge_qa_knowledge_write(
-            cls, login_user: UserPayload, qa_knowledge_id: int
+    def judge_qa_knowledge_access(
+            cls, login_user: UserPayload, qa_knowledge_id: int, access_type: AccessType
     ) -> Knowledge:
+        """验证用户对 QA 知识库的访问权限，access_type 由调用方明确传入。"""
         db_knowledge = KnowledgeDao.query_by_id(qa_knowledge_id)
-        # Query the current knowledge base, whether there are write permissions
         if not db_knowledge:
             raise NotFoundError()
         if not login_user.access_check(
-                db_knowledge.user_id, str(qa_knowledge_id), AccessType.KNOWLEDGE
+                db_knowledge.user_id, str(qa_knowledge_id), access_type
         ):
             raise UnAuthorizedError.http_exception()
-
         if db_knowledge.type != KnowledgeTypeEnum.QA.value:
             raise KnowledgeNotQAError()
         return db_knowledge

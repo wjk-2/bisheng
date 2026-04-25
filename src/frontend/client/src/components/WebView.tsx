@@ -27,5 +27,5 @@ export default function WebView() {
         fetchTextFile();
     }, [url]);
 
-    return <iframe srcDoc={content} sandbox="allow-scripts" width="100%" height="100%" style={{ border: "none" }}></iframe>;
+    return <iframe srcDoc={content} sandbox="" width="100%" height="100%" style={{ border: "none" }}></iframe>;
 };

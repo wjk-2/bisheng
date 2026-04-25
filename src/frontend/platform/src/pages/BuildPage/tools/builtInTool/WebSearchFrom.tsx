@@ -381,7 +381,7 @@ const WebSearchForm = ({ formData, onSubmit, isApi = false }: WebSearchFormProps
                 />
 
                 <div className="space-y-4">
-                    <Label className="bisheng-label">{t('chatConfig.webSearch.config')}</Label>
+                    <Label className="eagent-label">{t('chatConfig.webSearch.config')}</Label>
                     {renderParams()}
                 </div>
 

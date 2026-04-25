@@ -34,7 +34,7 @@ export const ModelSelect = ({ required = false, close = false, label, tooltipTex
 
     return (
         <div>
-            <Label className="bisheng-label">
+            <Label className="eagent-label">
                 <span>{label}</span>
                 {required && <span className="text-red-500 text-xs">*</span>}
                 {tooltipText && <QuestionTooltip className="relative top-0.5 ml-1" content={tooltipText} />}
@@ -85,7 +85,7 @@ const PromptDialog = ({ value, onChange, onRestore, onSave, children }) => {
                 <DialogTitle>{t('model.editPrompt')}</DialogTitle>
             </DialogHeader>
             <div>
-                <Label className="bisheng-label">{t('model.docKnowledgeAbstractPrompt')}</Label>
+                <Label className="eagent-label">{t('model.docKnowledgeAbstractPrompt')}</Label>
                 <Textarea
                     value={textValue}
                     onChange={(e) => {

@@ -15,13 +15,27 @@ const enum SelectStatus {
     Check = true,
 }
 
+const _SAFE_EXPRESSION_RE = /^value\.(filter|map|find|reduce|some|every|flatMap|slice)\(/;
+const _DANGEROUS_KEYWORDS_RE = /\b(eval|Function|import|require|fetch|XMLHttpRequest|window|document|globalThis|process|__proto__|constructor|setTimeout|setInterval)\b/;
+
 const isMatch = (obj, expression) => {
     // 临时关闭 file类型表单变量
     if (obj.key === 'form_input') {
         expression = "value.filter(el => el.type !== 'file').map(el => ({ label: el.key, value: el.key }))"
     }
-    const fn = new Function('value', `return ${expression}`);
-    return fn(obj.value);
+    // 安全防护：只允许安全的数组方法调用，拒绝含危险关键词的表达式
+    if (!_SAFE_EXPRESSION_RE.test(expression) || _DANGEROUS_KEYWORDS_RE.test(expression)) {
+        console.warn('[SelectVar] blocked unsafe expression:', expression);
+        return [];
+    }
+    // CVE-2024-4367 修复：增加 try-catch 防止运行时错误
+    try {
+        const fn = new Function('value', `return ${expression}`);
+        return fn(obj.value);
+    } catch (e) {
+        console.warn('[SelectVar] expression evaluation failed:', e.message);
+        return [];
+    }
 };
 
 // 特殊结构提取变量

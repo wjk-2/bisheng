@@ -14,6 +14,7 @@ class LLMModelInfo(LLMModelBase):
 class LLMServerInfo(LLMServerBase):
     id: Optional[int] = None
     models: List[LLMModelInfo] = Field(default_factory=list, description='Model List')
+    source: Optional[str] = Field(default=None, description='Source of the server, e.g. gpustack')
 
     # Sensitive Data Desensitization
     @model_validator(mode='after')

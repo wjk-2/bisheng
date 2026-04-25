@@ -52,7 +52,9 @@ if bisheng_settings.debug:
 
 
     @router.get("/tracemalloc")
-    def tracemalloc_point():
+    def tracemalloc_point(login_user: UserPayload = Depends(UserPayload.get_login_user)):
+        if not login_user.is_admin():
+            raise HTTPException(status_code=403, detail='Admin only')
         snapshot = tracemalloc.take_snapshot()
         process_id = os.getpid()
         thread_id = threading.get_ident()
@@ -91,7 +93,7 @@ def get_env():
     env['dialog_tips'] = bisheng_settings.get_from_db('dialog_tips')
     # add env dict from settings
     env.update(bisheng_settings.get_from_db('env') or {})
-    env['pro'] = bisheng_settings.get_system_login_method().bisheng_pro
+    env['pro'] = bisheng_settings.get_system_login_method().eagent_pro
     env['version'] = __version__
     env['enable_etl4lm'] = bool(etl_for_lm_url)
 
@@ -164,9 +166,10 @@ async def process_flow_old(
         session_id: Annotated[Union[None, str], Body(embed=True)] = None,  # noqa: F821
         task_service: TaskService = Depends(get_task_service),
         sync: Annotated[bool, Body(embed=True)] = True,
+        login_user: UserPayload = Depends(UserPayload.get_login_user),
 ):
     return await process_flow(flow_id, inputs, tweaks, history_count, clear_cache, session_id,
-                              task_service, sync)
+                              task_service, sync, login_user=login_user)
 
 
 # For backwards compatibility we will keep the old endpoint
@@ -182,6 +185,7 @@ async def process_flow(
         task_service: TaskService = Depends(get_task_service),
         sync: Annotated[bool, Body(embed=True)] = True,  # noqa: F821
         sse: Annotated[bool, Body(embed=True)] = False,
+        login_user: UserPayload = Depends(UserPayload.get_login_user),
 ):
     """
     Endpoint to process an input with a given flow_id.
@@ -191,8 +195,6 @@ async def process_flow(
     flow_id = flow_id.hex
     logger.info(
         f'act=api_call sessionid={session_id} flow_id={flow_id} inputs={inputs} tweaks={tweaks}')
-
-    login_user = await get_default_operator_async()
     flow = await FlowDao.aget_flow_by_id(flow_id)
     if flow is None or flow.data is None:
         raise NotFoundError()
@@ -391,7 +393,11 @@ async def upload_icon_workflow(request: Request,
 
 
 @router.post('/upload/{flow_id}')
-async def create_upload_file(file: UploadFile, flow_id: str):
+async def create_upload_file(
+        file: UploadFile,
+        flow_id: str,
+        login_user: UserPayload = Depends(UserPayload.get_login_user)
+):
     # Cache file
     try:
         if len(file.filename) > 80:

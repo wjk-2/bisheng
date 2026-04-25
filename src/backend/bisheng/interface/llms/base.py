@@ -2,7 +2,7 @@ from typing import Dict, List, Optional, Type
 
 from bisheng.interface.base import LangChainTypeCreator
 from bisheng.interface.custom_lists import llm_type_to_cls_dict
-from bisheng.llm.domain.llm import BishengLLM
+from bisheng.llm.domain.llm import EagentLLM
 from bisheng.common.services.config_service import settings
 from bisheng.template.frontend_node.llms import LLMFrontendNode
 from loguru import logger
@@ -21,7 +21,7 @@ class LLMCreator(LangChainTypeCreator):
         if self.type_dict is None:
             self.type_dict = llm_type_to_cls_dict
             self.type_dict.update({
-                'BishengLLM': BishengLLM,
+                'EagentLLM': EagentLLM,
             })
         return self.type_dict
 

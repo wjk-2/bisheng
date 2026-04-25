@@ -36,7 +36,8 @@ class WorkStationService(BaseService):
         """ Update Workstation Default Configuration """
         config = ConfigDao.get_config(ConfigKeyEnum.WORKSTATION)
         if config:
-            config.value = data.model_dump_json()
+            # 使用 json.dumps(data.dict()) 兼容 Pydantic v1/v2
+            config.value = json.dumps(data.dict())
         else:
             config = Config(key=ConfigKeyEnum.WORKSTATION.value, value=json.dumps(data.dict()))
         ConfigDao.insert_config(config)
@@ -85,7 +86,13 @@ class WorkStationService(BaseService):
             # Compatible with olderwebsearchConfigure
             if ret.webSearch and not ret.webSearch.params:
                 ret.webSearch.tool = 'bing'
-                ret.webSearch.params = {'api_key': ret.webSearch.bingKey, 'base_url': ret.webSearch.bingUrl}
+                # 只有当 bingKey 和 bingUrl 都存在时才转换，避免生成 None 值
+                params = {}
+                if ret.webSearch.bingKey:
+                    params['api_key'] = ret.webSearch.bingKey
+                if ret.webSearch.bingUrl:
+                    params['base_url'] = ret.webSearch.bingUrl
+                ret.webSearch.params = params if params else {'api_key': '', 'base_url': ''}
             if ret.linsightConfig:
                 # Determine if the tool was deleted, Synchronization tool latest information name and description, etc.
                 ret.linsightConfig.tools = cls.sync_tool_info(ret.linsightConfig.tools)
@@ -105,7 +112,7 @@ class WorkStationService(BaseService):
         return cls.parse_config(config)
 
     @classmethod
-    def uploadPersonalKnowledge(
+    async def uploadPersonalKnowledge(
             cls,
             request: Request,
             login_user: UserPayload,
@@ -113,10 +120,10 @@ class WorkStationService(BaseService):
             background_tasks: BackgroundTasks,
     ):
         # Check if there is a personal knowledge base
-        knowledge = KnowledgeDao.get_user_knowledge(login_user.user_id, None,
-                                                    KnowledgeTypeEnum.PRIVATE)
+        knowledge = await KnowledgeDao.aget_user_knowledge(login_user.user_id,
+                                                           knowledge_type=KnowledgeTypeEnum.PRIVATE)
         if not knowledge:
-            model = LLMService.get_knowledge_llm()
+            model = await LLMService.aget_knowledge_llm()
             knowledgeCreate = KnowledgeCreate(name='Personal Knowledge Base',
                                               type=KnowledgeTypeEnum.PRIVATE.value,
                                               user_id=login_user.user_id,
@@ -128,7 +135,7 @@ class WorkStationService(BaseService):
         req_data = KnowledgeFileProcess(knowledge_id=knowledge.id,
                                         file_list=[KnowledgeFileOne(file_path=file_path)])
         try:
-            _ = LLMService.get_bisheng_knowledge_embedding(login_user.user_id, int(knowledge.model))
+            _ = await LLMService.get_bisheng_knowledge_embedding(login_user.user_id, int(knowledge.model))
         except Exception as e:
             raise EmbeddingModelStatusError(exception=e)
         res = KnowledgeService.process_knowledge_file(request,

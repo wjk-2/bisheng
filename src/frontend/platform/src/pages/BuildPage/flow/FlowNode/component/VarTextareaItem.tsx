@@ -21,7 +21,7 @@ export default function VarTextareaItem({ node, nodeId, data, onChange, onValida
 
     return (
         <div className='node-item mb-4 max-w-2xl nodrag' data-key={data.key}>
-            {/* <Label className='bisheng-label'>
+            {/* <Label className='eagent-label'>
                 {data.required && <span className="text-red-500">*</span>}
                 {data.label}
             </Label> */}
@@ -37,7 +37,7 @@ export default function VarTextareaItem({ node, nodeId, data, onChange, onValida
                 onVarEvent={onVarEvent}
             >
             </VarInput>
-            <p className="bisheng-label text-xs mt-1">{node.is_preset ? t(`tools.${node.tool_key}.params.${data.label}`, { ns: 'tool' }) : data.desc}</p>
+            <p className="eagent-label text-xs mt-1">{node.is_preset ? t(`tools.${node.tool_key}.params.${data.label}`, { ns: 'tool' }) : data.desc}</p>
         </div>
     );
 }

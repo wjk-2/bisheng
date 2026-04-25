@@ -100,7 +100,7 @@ export default function CardComponent<T>({
   }
 
   // 新建小卡片（sheet）
-  if (!id && type === 'sheet') return <Card className="group w-[320px] cursor-pointer border-dashed border-[#BEC6D6] transition hover:border-primary hover:shadow-none bg-background-new" onClick={onClick}>
+  if (!id && type === 'sheet') return <Card className="group w-[320px] cursor-pointer border-dashed border-[#D9DEE9] transition hover:border-primary hover:shadow-none bg-background-new" onClick={onClick}>
     <CardHeader>
       <CardTitle>
         <div className="flex gap-2 items-center">
@@ -119,7 +119,7 @@ export default function CardComponent<T>({
 
 
   // 新建卡片
-  if (!id) return <Card className="group w-[320px] cursor-pointer border-dashed border-[#BEC6D6] transition hover:border-primary hover:shadow-none bg-background-new" onClick={onClick}>
+  if (!id) return <Card className="group w-[320px] cursor-pointer border-dashed border-[#D9DEE9] transition hover:border-primary hover:shadow-none bg-background-new" onClick={onClick}>
     <CardHeader>
       <div className="flex justify-between pb-2"><PlusIcon className="group-hover:text-primary transition-none" /></div>
       <CardTitle className="">{title}</CardTitle>
@@ -134,7 +134,7 @@ export default function CardComponent<T>({
 
 
   // 侧边弹窗列表（sheet）
-  if (type === 'sheet') return <Card className="group max-h-[146px] w-[316px] cursor-pointer bg-[#F7F9FC] dark:bg-background-main dark:hover:bg-background-login hover:bg-[#EDEFF6] hover:shadow-none relative" onClick={onClick}>
+  if (type === 'sheet') return <Card className="group max-h-[146px] w-[316px] cursor-pointer bg-white dark:bg-background-main dark:hover:bg-background-login hover:bg-[#F1F5FF] hover:shadow-none relative" onClick={onClick}>
     <CardHeader className="pb-2">
       <CardTitle className="truncate-doubleline">
         <div className="flex gap-2 pb-2 items-center">
@@ -153,7 +153,7 @@ export default function CardComponent<T>({
   </Card>
 
   // 助手&技能&工作流列表卡片组件
-  return <Card className="group w-[320px] hover:bg-card/80 cursor-pointer grid" onClick={() => onClick()}>
+  return <Card className="group w-[320px] hover:bg-card/80 cursor-pointer grid shadow-[rgba(122,161,225,0.2)_0px_1px_2px_0px] hover:shadow-[rgba(181,199,235,0.5)_0px_8px_20px_0px]" onClick={() => onClick()}>
     <CardHeader>
       <div className="flex justify-between pb-2">
         {logo}
@@ -161,8 +161,7 @@ export default function CardComponent<T>({
           {headSelecter}
           <Switch
             checked={_checked}
-            className={i18next.language === 'ja' ? 'w-20' : 'w-12'}
-            // @ts-ignore
+            className='w-12'
             texts={[t('skills.online'), t('skills.offline')]}
             onCheckedChange={(b) => edit && handleCheckedChange(b)}
             onClick={e => { e.stopPropagation(); onSwitchClick?.() }}

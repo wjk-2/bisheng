@@ -18,7 +18,7 @@ import {
   INVALID_CHARACTERS,
   TypeModal,
   classNames,
-  getRandomKeyByssmm,
+  getRandomKey,
   regexHighlight,
   varHighlightHTML,
 } from "../../utils";
@@ -255,7 +255,7 @@ export default function GenericModal({
 
                       {wordsHighlight.map((word, index) => (
                         <ShadTooltip
-                          key={getRandomKeyByssmm() + index}
+                          key={getRandomKey() + index}
                           content={word.replace(/[{}]/g, "")}
                           asChild={false}
                         >

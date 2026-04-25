@@ -60,7 +60,7 @@ const Item = ({ nodeId, validate, sameKey, item, index, onUpdateItem, onDeleteIt
                     <div className="no-drag nowheel group flex h-8 w-full items-center justify-between whitespace-nowrap rounded-md border border-input bg-search-input px-3 py-1 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 data-[placeholder]:text-gray-400">
                         {item.label ? <span className="flex items-center">
                             {item.label}
-                        </span> : <span className="bisheng-label">{t('value')}</span>}
+                        </span> : <span className="eagent-label">{t('value')}</span>}
                         <ChevronDown className="h-5 w-5 min-w-5 opacity-80 group-data-[state=open]:rotate-180" />
                     </div>
                 </Tip>

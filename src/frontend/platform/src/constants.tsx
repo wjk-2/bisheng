@@ -170,7 +170,7 @@ export const getPythonCode = (
   const flowName = flow.name;
   const tweaks = buildTweaks(flow);
   const inputs = buildInputs(tabsState, flow.id);
-  return `from bisheng import load_flow_from_json
+  return `from eagent import load_flow_from_json
 TWEAKS = ${tweak && tweak.length > 0
       ? buildTweakObject(tweak)
       : JSON.stringify(tweaks, null, 2)

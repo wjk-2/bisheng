@@ -19,11 +19,10 @@ import { useMessage } from "./useMessages";
 
 export default function ChatMessages({ useName, readOnly, title, logo, disabledSearch = false }) {
     const { messageScrollRef, chatId, messages } = useMessage(readOnly)
-    const { inputForm, guideWord, inputDisabled } = useRecoilValue(currentRunningState)
+    const { inputForm, guideWord, inputDisabled } = useRecoilValue(currentRunningState) ?? {}
     const chatState = useRecoilValue(currentChatState)
     const localize = useLocalize()
 
-    console.log('messages :>> ', chatState, messages, guideWord);
     // 反馈
     const thumbRef = useRef(null)
     // 溯源

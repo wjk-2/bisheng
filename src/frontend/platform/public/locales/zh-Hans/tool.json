@@ -66,7 +66,7 @@
         }
     },
     "tools": {
-        "bisheng_code_interpreter": {
+        "eagent_code_interpreter": {
             "name": "代码执行器",
             "desc": "可以执行 Python  和 shell 代码，并在 600 秒内返回结果，适合处理数学、编程、图片和文件等问题场景。",
             "params": {

@@ -46,7 +46,7 @@ const OutputItem = ({ nodeId, node, data, onChange, onValidate, onVarEvent, i18n
                 return (
                     <div className="node-item mb-2" data-key={data.key}>
                         <div className="flex justify-between items-center">
-                            <Label className="bisheng-label">
+                            <Label className="eagent-label">
                                 {t("userInputLabel")} {/* 用户输入框展示内容 */}
                             </Label>
                             <Badge
@@ -106,7 +106,7 @@ const OutputItem = ({ nodeId, node, data, onChange, onValidate, onVarEvent, i18n
 
     return (
         <div className="node-item mb-4" data-key={data.key}>
-            <Label className="bisheng-label">{t(`${i18nPrefix}label`)}</Label>
+            <Label className="eagent-label">{t(`${i18nPrefix}label`)}</Label>
             {/* 交互类型选择器 */}
             <RadioGroup
                 value={interactionType}

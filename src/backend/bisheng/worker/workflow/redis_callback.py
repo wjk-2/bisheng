@@ -128,7 +128,11 @@ class RedisCallback(BaseCallback):
             self.redis_client.delete(self.workflow_event_key)
             return None
         if response:
-            response = ChatResponse(**json.loads(response))
+            try:
+                response = ChatResponse(**json.loads(response))
+            except Exception as e:
+                logger.error(f"Failed to parse workflow response: {e}, raw: {str(response)[:200]}")
+                return None
         return response
 
     async def async_get_workflow_response(self) -> ChatResponse | None:
@@ -137,7 +141,11 @@ class RedisCallback(BaseCallback):
             await self.redis_client.adelete(self.workflow_event_key)
             return None
         if response:
-            response = ChatResponse(**json.loads(response))
+            try:
+                response = ChatResponse(**json.loads(response))
+            except Exception as e:
+                logger.error(f"Failed to parse workflow response: {e}, raw: {str(response)[:200]}")
+                return None
         return response
 
     def build_chat_response(self, category, category_type, message, extra=None, files=None):

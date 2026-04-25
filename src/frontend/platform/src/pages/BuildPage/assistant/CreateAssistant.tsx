@@ -79,11 +79,9 @@ ${t('build.exampleTwo')}
         const isValid = validateForm();
 
         if (isValid) {
-            console.log('Form data:', formData);
             setLoading(true)
             const res = await captureAndAlertRequestErrorHoc(createAssistantsApi(formData.name, formData.roleAndTasks, formData.url))
             if (res) {
-                //@ts-ignore
                 window.assistantCreate = true // Mark as creating new assistant
                 navigate('/assistant/' + res.id)
             }
@@ -103,17 +101,17 @@ ${t('build.exampleTwo')}
         </DialogHeader>
         <div className="flex flex-col gap-8 py-6">
             <div className="">
-                <label htmlFor="name" className="bisheng-label">{t('build.assistantAvatar')}</label>
+                <label htmlFor="name" className="eagent-label">{t('build.assistantAvatar')}</label>
                 <Avator value={formData.url} className="mt-2" onChange={uploadAvator}><AssistantIcon className="bg-primary w-9 h-9 rounded-sm" /></Avator>
-                {/* {errors.name && <p className="bisheng-tip mt-1">{errors.name}</p>} */}
+                {/* {errors.name && <p className="eagent-tip mt-1">{errors.name}</p>} */}
             </div>
             <div className="">
-                <label htmlFor="name" className="bisheng-label">{t('build.assistantName')}<span className="bisheng-tip">*</span></label>
+                <label htmlFor="name" className="eagent-label">{t('build.assistantName')}<span className="eagent-tip">*</span></label>
                 <Input id="name" name="name" maxLength={50} showCount placeholder={t('build.giveAssistantName')} className="mt-2" value={formData.name} onChange={handleChange} />
-                {errors.name && <p className="bisheng-tip mt-1">{errors.name}</p>}
+                {errors.name && <p className="eagent-tip mt-1">{errors.name}</p>}
             </div>
             <div className="">
-                <label htmlFor="roleAndTasks" className="bisheng-label">{t('build.whatWant')}</label>
+                <label htmlFor="roleAndTasks" className="eagent-label">{t('build.whatWant')}</label>
                 <Textarea
                     id="roleAndTasks"
                     name="roleAndTasks"
@@ -123,7 +121,7 @@ ${t('build.exampleTwo')}
                     value={formData.roleAndTasks}
                     onChange={handleChange}
                 />
-                {errors.roleAndTasks && <p className="bisheng-tip mt-1">{errors.roleAndTasks}</p>}
+                {errors.roleAndTasks && <p className="eagent-tip mt-1">{errors.roleAndTasks}</p>}
             </div>
         </div>
         <DialogFooter>

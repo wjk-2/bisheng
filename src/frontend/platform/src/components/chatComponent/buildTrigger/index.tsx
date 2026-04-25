@@ -1,6 +1,6 @@
 import { Transition } from "@headlessui/react";
 import { Zap } from "lucide-react";
-import { useContext, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import Loading from "../../../components/ui/loading";
 import { useSSE } from "../../../contexts/SSEContext";
 import { alertContext } from "../../../contexts/alertContext";
@@ -29,6 +29,17 @@ export default function BuildTrigger({
   // const [isIconTouched, setIsIconTouched] = useState(false);
   const eventClick = isBuilding ? "pointer-events-none" : "";
   const [progress, setProgress] = useState(0);
+
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const isUnmountedRef = useRef(false);
+
+  useEffect(() => {
+    return () => {
+      isUnmountedRef.current = true;
+      eventSourceRef.current?.close();
+      eventSourceRef.current = null;
+    };
+  }, []);
 
   async function handleBuild(flow: FlowType) {
     try {
@@ -73,6 +84,7 @@ export default function BuildTrigger({
     let buildEnd = false
     const apiUrl = `${__APP_ENV__.BASE_URL}/api/v1/build/stream/${flowId}`;
     const eventSource = new EventSource(apiUrl);
+    eventSourceRef.current = eventSource;
 
     eventSource.onmessage = (event) => {
       // If the event is parseable, return
@@ -118,9 +130,11 @@ export default function BuildTrigger({
     };
     // Step 3: Wait for the stream to finish
     while (!finished) {
+      if (isUnmountedRef.current) { eventSource.close(); break; }
       await new Promise((resolve) => setTimeout(resolve, 100));
       finished = buildEnd // validationResults.length === flow.data.nodes.length;
     }
+    eventSourceRef.current = null;
     // Step 4: Return true if all nodes are valid, false otherwise
     return validationResults.every((result) => result);
   }
@@ -131,7 +145,6 @@ export default function BuildTrigger({
     try {
       updateSSEData({ [parsedData.id]: parsedData });
     } catch (err) {
-      console.log("Error parsing stream data: ", err);
     }
     return parsedData.valid;
   }

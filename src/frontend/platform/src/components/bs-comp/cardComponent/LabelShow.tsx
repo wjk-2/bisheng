@@ -63,7 +63,7 @@ export default function LabelShow({ data, user, all, type, onChange }) {
         // setAllData(pre => pre.filter(a => a.value !== obj.data.value))
         break
       }
-      default: console.log('error：>>事件类型错误！！！')
+      default: break
     }
   }
 

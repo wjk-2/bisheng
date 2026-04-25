@@ -220,11 +220,11 @@ class LLMFrontendNode(FrontendNode):
         if field.name == 'streaming':
             field.show = True
 
-        if name == 'BishengLLM':
+        if name == 'EagentLLM':
             if field.name in ["temperature", "top_p", "cache"]:
                 field.show = True
             if field.name == 'model_id':
-                field.field_type = "bisheng_model"
+                field.field_type = "eagent_model"
                 field.display_name = "Model Name"
             elif field.name in ['model_name', "app_type", "app_id", "app_name", "user_id"]:
                 field.show = False

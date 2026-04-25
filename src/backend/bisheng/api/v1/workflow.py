@@ -1,5 +1,7 @@
+import re
 import time
 from typing import Optional, Union
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, Body, Depends, Query, WebSocket, WebSocketException, Request, \
     status as http_status
@@ -24,9 +26,11 @@ from bisheng.database.models.flow import Flow, FlowCreate, FlowDao, FlowRead, Fl
     FlowStatus
 from bisheng.database.models.flow_version import FlowVersionDao
 from bisheng.database.models.role_access import AccessType
+from bisheng.open_endpoints.domain.utils import get_default_operator
 from bisheng.share_link.api.dependencies import header_share_token_parser
 from bisheng.share_link.domain.models.share_link import ShareLink
 from bisheng.utils import generate_uuid
+from bisheng.common.dependencies.ip_whitelist import verify_internal_request
 from bisheng_langchain.utils.requests import Requests
 
 router = APIRouter(prefix='/workflow', tags=['Workflow'])
@@ -108,7 +112,7 @@ async def copy_report_file(
     })
 
 
-@router.post('/report/callback', status_code=200)
+@router.post('/report/callback', status_code=200, dependencies=[Depends(verify_internal_request)])
 async def upload_report_file(
         request: Request,
         data: dict = Body(...)):
@@ -120,6 +124,19 @@ async def upload_report_file(
     if status not in {2, 6}:
         # Non-saved callbacks are not processed
         return {'error': 0}
+
+    # SSRF防护：验证file_url必须是内部OnlyOffice服务地址
+    _ALLOWED_HOSTS_PATTERN = re.compile(
+        r'^(office|onlyoffice|documentserver|localhost|127\.0\.0\.1)(:\d+)?$', re.IGNORECASE)
+    if file_url:
+        parsed = urlparse(file_url)
+        if not parsed.hostname or not _ALLOWED_HOSTS_PATTERN.match(parsed.hostname + (f':{parsed.port}' if parsed.port else '')):
+            logger.warning(f'SSRF blocked: report callback file_url={file_url} is not an allowed internal host')
+            return {'error': 1}
+    else:
+        logger.warning('report callback missing file_url')
+        return {'error': 1}
+
     logger.info(f'office_callback url={file_url}')
     file = Requests().get(url=file_url)
     version_key = key.split('_', 1)[0]
@@ -141,6 +158,19 @@ def run_once(request: Request, login_user: UserPayload = Depends(UserPayload.get
     result = WorkFlowService.run_once(login_user, node_input, node_data, workflow_id)
 
     return resp_200(data=result)
+
+
+@router.websocket('/chat/share/{workflow_id}')
+async def workflow_share(*,
+                         workflow_id: str,
+                         websocket: WebSocket,
+                         chat_id: Optional[str] = None):
+    login_user = get_default_operator()
+    try:
+        await chat_manager.dispatch_client(websocket, workflow_id, chat_id, login_user, WorkType.WORKFLOW, websocket)
+    except WebSocketException as exc:
+        logger.error(f'Websocket exception: {str(exc)}')
+        await websocket.close(code=http_status.WS_1011_INTERNAL_ERROR, reason=str(exc))
 
 
 @router.websocket('/chat/{workflow_id}')
@@ -287,8 +317,10 @@ async def update_flow(*,
 async def update_flow_status(request: Request, login_user: UserPayload = Depends(UserPayload.get_login_user),
                              flow_id: str = Body(..., description='SkillID'),
                              version_id: int = Body(..., description='VersionID'),
-                             status: int = Body(..., description='Status')):
-    await WorkFlowService.update_flow_status(login_user, flow_id, version_id, status)
+                             status: int = Body(..., description='Status'),
+                             is_public: int = Body(default=0, description='可见范围: 0=仅自己, 1=组内, 2=全部'),
+                             category: str = Body(default='其他', description='分类：助教/助学/助研/助管/助评/其他')):
+    await WorkFlowService.update_flow_status(login_user, flow_id, version_id, status, is_public, category)
     return resp_200()
 
 
@@ -297,13 +329,13 @@ def read_flows(*,
                login_user: UserPayload = Depends(UserPayload.get_login_user),
                name: str = Query(default=None, description='accordingnameFind databases with fuzzy searches for descriptions'),
                tag_id: int = Query(default=None, description='labelID'),
-               flow_type: int = Query(default=None, description='Type 1 flow 5 assitant 10 workflow '),
+               category: str = Query(default=None, description='分类：助教/助学/助研/助管/助评/其他'),
                page_size: int = Query(default=10, description='Items per page'),
                page_num: int = Query(default=1, description='Page'),
                status: int = None,
                managed: bool = Query(default=False, description='Whether to query the list of apps with administrative permissions')):
     """Read all flows."""
-    data, total = WorkFlowService.get_all_flows(login_user, name, status, tag_id, flow_type, page_num, page_size,
+    data, total = WorkFlowService.get_all_flows(login_user, name, status, tag_id, category, page_num, page_size,
                                                 managed)
     return resp_200(data={
         'data': data,

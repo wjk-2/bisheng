@@ -397,7 +397,7 @@
                   "list": false,
                   "name": "model_id",
                   "show": true,
-                  "type": "bisheng_model",
+                  "type": "eagent_model",
                   "value": 5,
                   "dynamic": false,
                   "advanced": false,
@@ -533,7 +533,7 @@
                     "deepseek": "ChatOpenAI",
                     "llamacpp": "ChatOpenAI",
                     "anthropic": "ChatAnthropic",
-                    "bisheng_rt": "HostChatGLM",
+                    "eagent_rt": "HostChatGLM",
                     "xinference": "ChatOpenAI",
                     "azure_openai": "AzureChatOpenAI"
                   },
@@ -566,7 +566,7 @@
                   "model_config": {}
                 }
               },
-              "description": "依赖bisheng后端服务的llm组件",
+              "description": "依赖E-Agent后端服务的llm组件",
               "base_classes": [
                 "BaseLanguageModel",
                 "BaseChatModel",
@@ -1392,7 +1392,7 @@
                   "list": false,
                   "name": "model_id",
                   "show": true,
-                  "type": "bisheng_model",
+                  "type": "eagent_model",
                   "value": 5,
                   "dynamic": false,
                   "advanced": false,
@@ -1528,7 +1528,7 @@
                     "deepseek": "ChatOpenAI",
                     "llamacpp": "ChatOpenAI",
                     "anthropic": "ChatAnthropic",
-                    "bisheng_rt": "HostChatGLM",
+                    "eagent_rt": "HostChatGLM",
                     "xinference": "ChatOpenAI",
                     "azure_openai": "AzureChatOpenAI"
                   },
@@ -1561,7 +1561,7 @@
                   "model_config": {}
                 }
               },
-              "description": "依赖bisheng后端服务的llm组件",
+              "description": "依赖E-Agent后端服务的llm组件",
               "base_classes": [
                 "BaseLanguageModel",
                 "BaseChatModel",
@@ -2471,7 +2471,7 @@
                   "list": false,
                   "name": "model_id",
                   "show": true,
-                  "type": "bisheng_model",
+                  "type": "eagent_model",
                   "value": 5,
                   "dynamic": false,
                   "advanced": false,
@@ -2607,7 +2607,7 @@
                     "deepseek": "ChatOpenAI",
                     "llamacpp": "ChatOpenAI",
                     "anthropic": "ChatAnthropic",
-                    "bisheng_rt": "HostChatGLM",
+                    "eagent_rt": "HostChatGLM",
                     "xinference": "ChatOpenAI",
                     "azure_openai": "AzureChatOpenAI"
                   },
@@ -2640,7 +2640,7 @@
                   "model_config": {}
                 }
               },
-              "description": "依赖bisheng后端服务的llm组件",
+              "description": "依赖E-Agent后端服务的llm组件",
               "base_classes": [
                 "BaseLanguageModel",
                 "BaseChatModel",
@@ -4326,7 +4326,7 @@
                   "list": false,
                   "name": "model_id",
                   "show": true,
-                  "type": "bisheng_model",
+                  "type": "eagent_model",
                   "value": 5,
                   "dynamic": false,
                   "advanced": false,
@@ -4462,7 +4462,7 @@
                     "deepseek": "ChatOpenAI",
                     "llamacpp": "ChatOpenAI",
                     "anthropic": "ChatAnthropic",
-                    "bisheng_rt": "HostChatGLM",
+                    "eagent_rt": "HostChatGLM",
                     "xinference": "ChatOpenAI",
                     "azure_openai": "AzureChatOpenAI"
                   },
@@ -4495,7 +4495,7 @@
                   "model_config": {}
                 }
               },
-              "description": "依赖bisheng后端服务的llm组件",
+              "description": "依赖E-Agent后端服务的llm组件",
               "base_classes": [
                 "BaseLanguageModel",
                 "BaseChatModel",
@@ -5378,7 +5378,7 @@
                   "list": false,
                   "name": "model_id",
                   "show": true,
-                  "type": "bisheng_model",
+                  "type": "eagent_model",
                   "value": 5,
                   "dynamic": false,
                   "advanced": false,
@@ -5514,7 +5514,7 @@
                     "deepseek": "ChatOpenAI",
                     "llamacpp": "ChatOpenAI",
                     "anthropic": "ChatAnthropic",
-                    "bisheng_rt": "HostChatGLM",
+                    "eagent_rt": "HostChatGLM",
                     "xinference": "ChatOpenAI",
                     "azure_openai": "AzureChatOpenAI"
                   },
@@ -5547,7 +5547,7 @@
                   "model_config": {}
                 }
               },
-              "description": "依赖bisheng后端服务的llm组件",
+              "description": "依赖E-Agent后端服务的llm组件",
               "base_classes": [
                 "BaseLanguageModel",
                 "BaseChatModel",
@@ -6594,7 +6594,7 @@
                   "list": false,
                   "name": "model_id",
                   "show": true,
-                  "type": "bisheng_model",
+                  "type": "eagent_model",
                   "value": 5,
                   "dynamic": false,
                   "advanced": false,
@@ -6730,7 +6730,7 @@
                     "deepseek": "ChatOpenAI",
                     "llamacpp": "ChatOpenAI",
                     "anthropic": "ChatAnthropic",
-                    "bisheng_rt": "HostChatGLM",
+                    "eagent_rt": "HostChatGLM",
                     "xinference": "ChatOpenAI",
                     "azure_openai": "AzureChatOpenAI"
                   },
@@ -6763,7 +6763,7 @@
                   "model_config": {}
                 }
               },
-              "description": "依赖bisheng后端服务的llm组件",
+              "description": "依赖E-Agent后端服务的llm组件",
               "base_classes": [
                 "BaseLanguageModel",
                 "BaseChatModel",
@@ -8574,7 +8574,7 @@
                   "list": false,
                   "name": "model_id",
                   "show": true,
-                  "type": "bisheng_model",
+                  "type": "eagent_model",
                   "value": 5,
                   "dynamic": false,
                   "advanced": false,
@@ -8710,7 +8710,7 @@
                     "deepseek": "ChatOpenAI",
                     "llamacpp": "ChatOpenAI",
                     "anthropic": "ChatAnthropic",
-                    "bisheng_rt": "HostChatGLM",
+                    "eagent_rt": "HostChatGLM",
                     "xinference": "ChatOpenAI",
                     "azure_openai": "AzureChatOpenAI"
                   },
@@ -8743,7 +8743,7 @@
                   "model_config": {}
                 }
               },
-              "description": "依赖bisheng后端服务的llm组件",
+              "description": "依赖E-Agent后端服务的llm组件",
               "base_classes": [
                 "BaseLanguageModel",
                 "BaseChatModel",
@@ -8975,7 +8975,7 @@
                   "name": "collection_name",
                   "show": true,
                   "type": "str",
-                  "value": "毕昇产品文档20240421",
+                  "value": "E-Agent 产品文档20240421",
                   "l2_name": "选择知识库",
                   "advanced": false,
                   "password": false,
@@ -9833,7 +9833,7 @@
                   "list": false,
                   "name": "model_id",
                   "show": true,
-                  "type": "bisheng_model",
+                  "type": "eagent_model",
                   "value": 5,
                   "dynamic": false,
                   "advanced": false,
@@ -9969,7 +9969,7 @@
                     "deepseek": "ChatOpenAI",
                     "llamacpp": "ChatOpenAI",
                     "anthropic": "ChatAnthropic",
-                    "bisheng_rt": "HostChatGLM",
+                    "eagent_rt": "HostChatGLM",
                     "xinference": "ChatOpenAI",
                     "azure_openai": "AzureChatOpenAI"
                   },
@@ -10002,7 +10002,7 @@
                   "model_config": {}
                 }
               },
-              "description": "依赖bisheng后端服务的llm组件",
+              "description": "依赖E-Agent后端服务的llm组件",
               "base_classes": [
                 "BaseLanguageModel",
                 "BaseChatModel",
@@ -11538,7 +11538,7 @@
                   "list": false,
                   "name": "model_id",
                   "show": true,
-                  "type": "bisheng_model",
+                  "type": "eagent_model",
                   "value": 5,
                   "dynamic": false,
                   "advanced": false,
@@ -11674,7 +11674,7 @@
                     "deepseek": "ChatOpenAI",
                     "llamacpp": "ChatOpenAI",
                     "anthropic": "ChatAnthropic",
-                    "bisheng_rt": "HostChatGLM",
+                    "eagent_rt": "HostChatGLM",
                     "xinference": "ChatOpenAI",
                     "azure_openai": "AzureChatOpenAI"
                   },
@@ -11707,7 +11707,7 @@
                   "model_config": {}
                 }
               },
-              "description": "依赖bisheng后端服务的llm组件",
+              "description": "依赖E-Agent后端服务的llm组件",
               "base_classes": [
                 "BaseLanguageModel",
                 "BaseChatModel",
@@ -12060,7 +12060,7 @@
                   "name": "collection_name",
                   "show": true,
                   "type": "str",
-                  "value": "毕昇产品文档20240421",
+                  "value": "E-Agent 产品文档20240421",
                   "l2_name": "collection_name",
                   "advanced": false,
                   "password": false,
@@ -12819,7 +12819,7 @@
                   "list": false,
                   "name": "model_id",
                   "show": true,
-                  "type": "bisheng_model",
+                  "type": "eagent_model",
                   "value": 5,
                   "dynamic": false,
                   "advanced": false,
@@ -12955,7 +12955,7 @@
                     "deepseek": "ChatOpenAI",
                     "llamacpp": "ChatOpenAI",
                     "anthropic": "ChatAnthropic",
-                    "bisheng_rt": "HostChatGLM",
+                    "eagent_rt": "HostChatGLM",
                     "xinference": "ChatOpenAI",
                     "azure_openai": "AzureChatOpenAI"
                   },
@@ -12988,7 +12988,7 @@
                   "model_config": {}
                 }
               },
-              "description": "依赖bisheng后端服务的llm组件",
+              "description": "依赖E-Agent后端服务的llm组件",
               "base_classes": [
                 "BaseLanguageModel",
                 "BaseChatModel",
@@ -13154,7 +13154,7 @@
                   "name": "index_name",
                   "show": true,
                   "type": "knowledge_one",
-                  "value": "毕昇产品文档20240421",
+                  "value": "E-Agent 产品文档20240421",
                   "dynamic": false,
                   "advanced": false,
                   "password": false,
@@ -13617,7 +13617,7 @@
                   "list": false,
                   "name": "model_id",
                   "show": true,
-                  "type": "bisheng_model",
+                  "type": "eagent_model",
                   "value": 4,
                   "dynamic": false,
                   "advanced": false,
@@ -13753,7 +13753,7 @@
                     "deepseek": "ChatOpenAI",
                     "llamacpp": "ChatOpenAI",
                     "anthropic": "ChatAnthropic",
-                    "bisheng_rt": "HostChatGLM",
+                    "eagent_rt": "HostChatGLM",
                     "xinference": "ChatOpenAI",
                     "azure_openai": "AzureChatOpenAI"
                   },
@@ -13786,7 +13786,7 @@
                   "model_config": {}
                 }
               },
-              "description": "依赖bisheng后端服务的llm组件",
+              "description": "依赖E-Agent后端服务的llm组件",
               "base_classes": [
                 "BishengLLM",
                 "BaseLanguageModel",
@@ -14459,7 +14459,7 @@
                   "list": false,
                   "name": "model_id",
                   "show": true,
-                  "type": "bisheng_model",
+                  "type": "eagent_model",
                   "value": 5,
                   "dynamic": false,
                   "advanced": false,
@@ -14595,7 +14595,7 @@
                     "deepseek": "ChatOpenAI",
                     "llamacpp": "ChatOpenAI",
                     "anthropic": "ChatAnthropic",
-                    "bisheng_rt": "HostChatGLM",
+                    "eagent_rt": "HostChatGLM",
                     "xinference": "ChatOpenAI",
                     "azure_openai": "AzureChatOpenAI"
                   },
@@ -14628,7 +14628,7 @@
                   "model_config": {}
                 }
               },
-              "description": "依赖bisheng后端服务的llm组件",
+              "description": "依赖E-Agent后端服务的llm组件",
               "base_classes": [
                 "BishengLLM",
                 "BaseLanguageModel",
@@ -15603,7 +15603,7 @@
                   "list": false,
                   "name": "model_id",
                   "show": true,
-                  "type": "bisheng_model",
+                  "type": "eagent_model",
                   "value": 4,
                   "dynamic": false,
                   "advanced": false,
@@ -15739,7 +15739,7 @@
                     "deepseek": "ChatOpenAI",
                     "llamacpp": "ChatOpenAI",
                     "anthropic": "ChatAnthropic",
-                    "bisheng_rt": "HostChatGLM",
+                    "eagent_rt": "HostChatGLM",
                     "xinference": "ChatOpenAI",
                     "azure_openai": "AzureChatOpenAI"
                   },
@@ -15772,7 +15772,7 @@
                   "model_config": {}
                 }
               },
-              "description": "依赖bisheng后端服务的llm组件",
+              "description": "依赖E-Agent后端服务的llm组件",
               "base_classes": [
                 "BishengLLM",
                 "BaseLanguageModel",
@@ -16801,7 +16801,7 @@
                   "name": "index_name",
                   "show": true,
                   "type": "knowledge_one",
-                  "value": "毕昇产品文档20240421",
+                  "value": "E-Agent 产品文档20240421",
                   "dynamic": false,
                   "advanced": false,
                   "password": false,
@@ -17069,7 +17069,7 @@
                   "list": false,
                   "name": "model_id",
                   "show": true,
-                  "type": "bisheng_model",
+                  "type": "eagent_model",
                   "value": 5,
                   "dynamic": false,
                   "advanced": false,
@@ -17205,7 +17205,7 @@
                     "deepseek": "ChatOpenAI",
                     "llamacpp": "ChatOpenAI",
                     "anthropic": "ChatAnthropic",
-                    "bisheng_rt": "HostChatGLM",
+                    "eagent_rt": "HostChatGLM",
                     "xinference": "ChatOpenAI",
                     "azure_openai": "AzureChatOpenAI"
                   },
@@ -17238,7 +17238,7 @@
                   "model_config": {}
                 }
               },
-              "description": "依赖bisheng后端服务的llm组件",
+              "description": "依赖E-Agent后端服务的llm组件",
               "base_classes": [
                 "BishengLLM",
                 "BaseLanguageModel",
@@ -17835,7 +17835,7 @@
                   "list": false,
                   "name": "model_id",
                   "show": true,
-                  "type": "bisheng_model",
+                  "type": "eagent_model",
                   "value": 4,
                   "dynamic": false,
                   "advanced": false,
@@ -17971,7 +17971,7 @@
                     "deepseek": "ChatOpenAI",
                     "llamacpp": "ChatOpenAI",
                     "anthropic": "ChatAnthropic",
-                    "bisheng_rt": "HostChatGLM",
+                    "eagent_rt": "HostChatGLM",
                     "xinference": "ChatOpenAI",
                     "azure_openai": "AzureChatOpenAI"
                   },
@@ -18004,7 +18004,7 @@
                   "model_config": {}
                 }
               },
-              "description": "依赖bisheng后端服务的llm组件",
+              "description": "依赖E-Agent后端服务的llm组件",
               "base_classes": [
                 "BaseLanguageModel",
                 "BaseChatModel",
@@ -18695,7 +18695,7 @@
                   "list": false,
                   "name": "model_id",
                   "show": true,
-                  "type": "bisheng_model",
+                  "type": "eagent_model",
                   "value": 5,
                   "dynamic": false,
                   "advanced": false,
@@ -18831,7 +18831,7 @@
                     "deepseek": "ChatOpenAI",
                     "llamacpp": "ChatOpenAI",
                     "anthropic": "ChatAnthropic",
-                    "bisheng_rt": "HostChatGLM",
+                    "eagent_rt": "HostChatGLM",
                     "xinference": "ChatOpenAI",
                     "azure_openai": "AzureChatOpenAI"
                   },
@@ -18864,7 +18864,7 @@
                   "model_config": {}
                 }
               },
-              "description": "依赖bisheng后端服务的llm组件",
+              "description": "依赖E-Agent后端服务的llm组件",
               "base_classes": [
                 "BaseLanguageModel",
                 "BaseChatModel",
@@ -20302,7 +20302,7 @@
                   "list": false,
                   "name": "model_id",
                   "show": true,
-                  "type": "bisheng_model",
+                  "type": "eagent_model",
                   "value": 9,
                   "dynamic": false,
                   "advanced": false,
@@ -20438,7 +20438,7 @@
                     "deepseek": "ChatOpenAI",
                     "llamacpp": "ChatOpenAI",
                     "anthropic": "ChatAnthropic",
-                    "bisheng_rt": "HostChatGLM",
+                    "eagent_rt": "HostChatGLM",
                     "xinference": "ChatOpenAI",
                     "azure_openai": "AzureChatOpenAI"
                   },
@@ -20471,7 +20471,7 @@
                   "model_config": {}
                 }
               },
-              "description": "依赖bisheng后端服务的llm组件",
+              "description": "依赖E-Agent后端服务的llm组件",
               "base_classes": [
                 "BishengLLM",
                 "BaseLanguageModel",
@@ -20532,7 +20532,7 @@
                   "list": false,
                   "name": "model_id",
                   "show": true,
-                  "type": "bisheng_embedding",
+                  "type": "eagent_embedding",
                   "value": 1,
                   "dynamic": false,
                   "advanced": false,
@@ -20647,7 +20647,7 @@
                     "minimax": "OpenAIEmbeddings",
                     "qianfan": "QianfanEmbeddingsEndpoint",
                     "llamacpp": "OpenAIEmbeddings",
-                    "bisheng_rt": "HostEmbeddings",
+                    "eagent_rt": "HostEmbeddings",
                     "xinference": "OpenAIEmbeddings",
                     "azure_openai": "AzureOpenAIEmbeddings"
                   },
@@ -24035,7 +24035,7 @@
                   "name": "collection_name",
                   "show": true,
                   "type": "str",
-                  "value": "BISHENG产品文档20240529版本",
+                  "value": "E-AGENT产品文档20240529版本",
                   "advanced": false,
                   "password": false,
                   "required": false,
@@ -24212,7 +24212,7 @@
                   "name": "collection_name",
                   "show": true,
                   "type": "str",
-                  "value": "毕昇 QA 知识库",
+                  "value": "E-Agent QA 知识库",
                   "advanced": false,
                   "password": false,
                   "required": false,
@@ -24937,7 +24937,7 @@
                   "list": false,
                   "name": "model_id",
                   "show": true,
-                  "type": "bisheng_model",
+                  "type": "eagent_model",
                   "value": 4,
                   "dynamic": false,
                   "advanced": false,
@@ -25073,7 +25073,7 @@
                     "deepseek": "ChatOpenAI",
                     "llamacpp": "ChatOpenAI",
                     "anthropic": "ChatAnthropic",
-                    "bisheng_rt": "HostChatGLM",
+                    "eagent_rt": "HostChatGLM",
                     "xinference": "ChatOpenAI",
                     "azure_openai": "AzureChatOpenAI"
                   },
@@ -25490,7 +25490,7 @@
                   "list": false,
                   "name": "model_id",
                   "show": true,
-                  "type": "bisheng_model",
+                  "type": "eagent_model",
                   "value": 27,
                   "dynamic": false,
                   "advanced": false,
@@ -25626,7 +25626,7 @@
                     "deepseek": "ChatOpenAI",
                     "llamacpp": "ChatOpenAI",
                     "anthropic": "ChatAnthropic",
-                    "bisheng_rt": "HostChatGLM",
+                    "eagent_rt": "HostChatGLM",
                     "xinference": "ChatOpenAI",
                     "azure_openai": "AzureChatOpenAI"
                   },
@@ -27093,7 +27093,7 @@
                   "list": false,
                   "name": "model_id",
                   "show": true,
-                  "type": "bisheng_model",
+                  "type": "eagent_model",
                   "value": 31,
                   "dynamic": false,
                   "advanced": false,
@@ -27229,7 +27229,7 @@
                     "deepseek": "ChatOpenAI",
                     "llamacpp": "ChatOpenAI",
                     "anthropic": "ChatAnthropic",
-                    "bisheng_rt": "HostChatGLM",
+                    "eagent_rt": "HostChatGLM",
                     "xinference": "ChatOpenAI",
                     "azure_openai": "AzureChatOpenAI"
                   },
@@ -27262,7 +27262,7 @@
                   "model_config": {}
                 }
               },
-              "description": "依赖bisheng后端服务的llm组件",
+              "description": "依赖E-Agent后端服务的llm组件",
               "base_classes": [
                 "BaseLanguageModel",
                 "BaseChatModel",
@@ -27974,7 +27974,7 @@
                   },
                   {
                     "key": "model_id",
-                    "type": "bisheng_model",
+                    "type": "eagent_model",
                     "label": "模型",
                     "value": 272,
                     "required": true,
@@ -28143,7 +28143,7 @@
                     "type": "input_list",
                     "label": "引导问题",
                     "value": [
-                      "毕昇是什么？",
+                      "E-Agent 是什么？",
                       "大模型应用开发平台有哪些？",
                       ""
                     ],
@@ -28475,7 +28475,7 @@
                   },
                   {
                     "key": "model_id",
-                    "type": "bisheng_model",
+                    "type": "eagent_model",
                     "label": "模型",
                     "value": 272,
                     "required": true,
@@ -28958,7 +28958,7 @@
                   },
                   {
                     "key": "model_id",
-                    "type": "bisheng_model",
+                    "type": "eagent_model",
                     "label": "模型",
                     "value": 272,
                     "required": true,
@@ -30075,7 +30075,7 @@
                 "params": [
                   {
                     "key": "model_id",
-                    "type": "bisheng_model",
+                    "type": "eagent_model",
                     "label": "模型",
                     "value": 272,
                     "required": true,
@@ -30201,7 +30201,7 @@
                 "params": [
                   {
                     "key": "model_id",
-                    "type": "bisheng_model",
+                    "type": "eagent_model",
                     "label": "模型",
                     "value": 272,
                     "required": true,
@@ -30327,7 +30327,7 @@
                 "params": [
                   {
                     "key": "model_id",
-                    "type": "bisheng_model",
+                    "type": "eagent_model",
                     "label": "模型",
                     "value": 272,
                     "required": true,
@@ -30728,7 +30728,7 @@
                 "params": [
                   {
                     "key": "model_id",
-                    "type": "bisheng_model",
+                    "type": "eagent_model",
                     "label": "模型",
                     "value": 272,
                     "required": true,
@@ -30854,7 +30854,7 @@
                 "params": [
                   {
                     "key": "model_id",
-                    "type": "bisheng_model",
+                    "type": "eagent_model",
                     "label": "模型",
                     "value": 272,
                     "required": true,
@@ -30981,7 +30981,7 @@
                 "params": [
                   {
                     "key": "model_id",
-                    "type": "bisheng_model",
+                    "type": "eagent_model",
                     "label": "模型",
                     "value": 272,
                     "required": true,
@@ -31107,7 +31107,7 @@
                 "params": [
                   {
                     "key": "model_id",
-                    "type": "bisheng_model",
+                    "type": "eagent_model",
                     "label": "模型",
                     "value": 272,
                     "required": true,
@@ -31235,7 +31235,7 @@
                 "params": [
                   {
                     "key": "model_id",
-                    "type": "bisheng_model",
+                    "type": "eagent_model",
                     "label": "模型",
                     "value": 272,
                     "required": true,
@@ -31865,7 +31865,7 @@
                   },
                   {
                     "key": "model_id",
-                    "type": "bisheng_model",
+                    "type": "eagent_model",
                     "label": "模型",
                     "value": 272,
                     "required": true,
@@ -32010,7 +32010,7 @@
                   },
                   {
                     "key": "model_id",
-                    "type": "bisheng_model",
+                    "type": "eagent_model",
                     "label": "模型",
                     "value": 272,
                     "required": true,
@@ -32111,7 +32111,7 @@
                 "params": [
                   {
                     "key": "model_id",
-                    "type": "bisheng_model",
+                    "type": "eagent_model",
                     "label": "模型",
                     "value": 272,
                     "required": true,
@@ -32865,7 +32865,7 @@
                 "params": [
                   {
                     "key": "model_id",
-                    "type": "bisheng_model",
+                    "type": "eagent_model",
                     "label": "模型",
                     "value": 272,
                     "required": true,
@@ -32991,7 +32991,7 @@
                 "params": [
                   {
                     "key": "model_id",
-                    "type": "bisheng_model",
+                    "type": "eagent_model",
                     "label": "模型",
                     "value": 272,
                     "required": true,
@@ -33117,7 +33117,7 @@
                 "params": [
                   {
                     "key": "model_id",
-                    "type": "bisheng_model",
+                    "type": "eagent_model",
                     "label": "模型",
                     "value": 272,
                     "required": true,
@@ -33243,7 +33243,7 @@
                 "params": [
                   {
                     "key": "model_id",
-                    "type": "bisheng_model",
+                    "type": "eagent_model",
                     "label": "模型",
                     "value": 272,
                     "required": true,
@@ -33369,7 +33369,7 @@
                 "params": [
                   {
                     "key": "model_id",
-                    "type": "bisheng_model",
+                    "type": "eagent_model",
                     "label": "模型",
                     "value": 272,
                     "required": true,
@@ -33971,7 +33971,7 @@
                 "params": [
                   {
                     "key": "model_id",
-                    "type": "bisheng_model",
+                    "type": "eagent_model",
                     "label": "模型",
                     "value": 272,
                     "required": true,
@@ -34097,7 +34097,7 @@
                 "params": [
                   {
                     "key": "model_id",
-                    "type": "bisheng_model",
+                    "type": "eagent_model",
                     "label": "模型",
                     "value": 272,
                     "required": true,
@@ -34607,7 +34607,7 @@
                 "params": [
                   {
                     "key": "model_id",
-                    "type": "bisheng_model",
+                    "type": "eagent_model",
                     "label": "模型",
                     "value": 272,
                     "required": true,
@@ -34733,7 +34733,7 @@
                 "params": [
                   {
                     "key": "model_id",
-                    "type": "bisheng_model",
+                    "type": "eagent_model",
                     "label": "模型",
                     "value": 272,
                     "required": true,
@@ -34859,7 +34859,7 @@
                 "params": [
                   {
                     "key": "model_id",
-                    "type": "bisheng_model",
+                    "type": "eagent_model",
                     "label": "模型",
                     "value": 272,
                     "required": true,
@@ -35699,7 +35699,7 @@
                 "params": [
                   {
                     "key": "model_id",
-                    "type": "bisheng_model",
+                    "type": "eagent_model",
                     "label": "模型",
                     "value": 272,
                     "required": true,
@@ -35825,7 +35825,7 @@
                 "params": [
                   {
                     "key": "model_id",
-                    "type": "bisheng_model",
+                    "type": "eagent_model",
                     "label": "模型",
                     "value": 272,
                     "required": true,
@@ -35951,7 +35951,7 @@
                 "params": [
                   {
                     "key": "model_id",
-                    "type": "bisheng_model",
+                    "type": "eagent_model",
                     "label": "模型",
                     "value": 272,
                     "required": true,
@@ -36078,7 +36078,7 @@
                 "params": [
                   {
                     "key": "model_id",
-                    "type": "bisheng_model",
+                    "type": "eagent_model",
                     "label": "模型",
                     "value": 272,
                     "required": true,

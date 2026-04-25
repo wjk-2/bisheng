@@ -3,15 +3,13 @@ import App from "./App";
 import ContextWrapper from "./contexts";
 import reportWebVitals from "./reportWebVitals";
 import './i18n';
-// @ts-ignore
 import "./style/index.css";
-// @ts-ignore
 import "./style/applies.css";
-// @ts-ignore
 import "./style/classes.css";
-// @ts-ignore
 import "./style/markdown.css";
-import { QueryClient, QueryClientProvider } from "react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import GlobalErrorBoundary from "./components/GlobalErrorBoundary";
+
 const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement
 );
@@ -26,10 +24,12 @@ const queryClient = new QueryClient({
   }
 })
 root.render(
-  <QueryClientProvider client={queryClient}>
-    <ContextWrapper>
-      <App />
-    </ContextWrapper>
-  </QueryClientProvider>
+  <GlobalErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <ContextWrapper>
+        <App />
+      </ContextWrapper>
+    </QueryClientProvider>
+  </GlobalErrorBoundary>
 );
 reportWebVitals();

@@ -125,7 +125,6 @@ export async function batchDownload(data: {
     responseType: 'blob'
   })
 
-  console.log('res :>> ', res);
   const url = window.URL.createObjectURL(new Blob([res]));
   const a = document.createElement('a');
   a.href = url;

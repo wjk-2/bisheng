@@ -49,6 +49,7 @@ class UserService:
         user = User(
             user_name=req_data.user_name,
             password=cls.decrypt_md5_password(req_data.password),
+            nickname=req_data.nickname,  # Display name
         )
         group_ids = []
         role_ids = []
@@ -103,8 +104,8 @@ class UserService:
 
     @classmethod
     async def user_register(cls, user: UserCreate):
-        # Captcha Verification
-        if settings.get_from_db('use_captcha'):
+        # Captcha Verification - 直接从源码配置读取，不依赖数据库
+        if settings.get_from_yaml('use_captcha'):
             if not user.captcha_key or not await verify_captcha(user.captcha, user.captcha_key):
                 raise CaptchaError()
 
@@ -130,7 +131,8 @@ class UserService:
 
     @classmethod
     async def user_login(cls, request: Request, user: UserLogin, auth_jwt: AuthJwt = Depends()):
-        if await settings.aget_from_db('use_captcha'):
+        # Captcha Verification - 直接从源码配置读取，不依赖数据库
+        if settings.get_from_yaml('use_captcha'):
             if not user.captcha_key or not await verify_captcha(user.captcha, user.captcha_key):
                 raise CaptchaError()
 

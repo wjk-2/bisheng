@@ -166,7 +166,6 @@ export const useAreaText = () => {
     // 接收事件的处理
     useEffect(() => {
         const handleEvent = (event: CustomEvent) => {
-            console.log('处理自定义事件:', event.detail);
             const action = event.detail.action;
             switch (action) {
                 case EVENT_TYPE.FILE_ACCEPTS:

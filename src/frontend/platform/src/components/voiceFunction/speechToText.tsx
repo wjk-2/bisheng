@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import PropTypes from 'prop-types';
 import { Mic, Square, Loader, LoaderCircle, Ellipsis } from 'lucide-react';
 import i18next from "i18next";
 import { captureAndAlertRequestErrorHoc } from '@/controllers/request';
@@ -260,7 +259,6 @@ const SpeechToTextComponent = ({ disabled, onChange }) => {
 
       // 解析返回的JSON数据
       const responseData = res.data || res;
-      console.log('responseData', responseData);
 
       // 从data字段中获取识别文本
       const transcript = responseData || '';
@@ -299,11 +297,6 @@ const SpeechToTextComponent = ({ disabled, onChange }) => {
       {isRecording && <div className="pulse-ring"></div>}
     </div>
   );
-};
-
-// 类型定义
-SpeechToTextComponent.propTypes = {
-  onChange: PropTypes.func.isRequired
 };
 
 export default SpeechToTextComponent;

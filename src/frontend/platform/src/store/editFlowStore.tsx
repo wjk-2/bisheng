@@ -24,7 +24,6 @@ type Actions = {
 type Action = ''
 
 const assistantReducer = (state: State, action: Action, data: any) => {
-    console.log('action :>> ', action, data);
     //   return { changed: true, assistantState: { ...state.assistantState, ...data } }
     // switch (action) {
     //   case 'setBaseInfo':

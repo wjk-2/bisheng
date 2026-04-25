@@ -152,7 +152,7 @@ class LinsightWorkflowTask:
         finally:
             # Clean the sandbox of the code interpreter
             for one in tools:
-                if one.name == "bisheng_code_interpreter":
+                if one.name == "eagent_code_interpreter":
                     one.close()
                     break
 

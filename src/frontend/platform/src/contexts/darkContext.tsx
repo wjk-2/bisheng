@@ -1,26 +1,30 @@
 import { createContext, useEffect, useState } from "react";
 
 type darkContextType = {
-  dark: {};
-  setDark: (newState: {}) => void;
+  dark: boolean;
+  setDark: (newState: boolean) => void;
 };
 
 const initialValue = {
-  dark: {},
+  dark: false,
   setDark: () => { },
 };
 
 export const darkContext = createContext<darkContextType>(initialValue);
 
 export function DarkProvider({ children }) {
-  const [dark, setDark] = useState(
-    JSON.parse(window.localStorage.getItem("isDark")) ?? false
-  );
+  const [dark, setDark] = useState<boolean>(() => {
+    try {
+      return JSON.parse(window.localStorage.getItem("isDark")) ?? false;
+    } catch {
+      return false;
+    }
+  });
   useEffect(() => {
     if (dark) {
-      document.getElementById("body").classList.add("dark");
+      document.documentElement.classList.add("dark");
     } else {
-      document.getElementById("body").classList.remove("dark");
+      document.documentElement.classList.remove("dark");
     }
     window.localStorage.setItem("isDark", dark.toString());
   }, [dark]);

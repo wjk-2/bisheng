@@ -1,11 +1,10 @@
 import { useRecoilValue } from 'recoil';
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { FileSources, LocalStorageKeys } from '~/data-provider/data-provider/src';
 import type { ExtendedFile } from '~/common';
 import { useDeleteFilesMutation } from '~/data-provider';
 import DragDropWrapper from '~/components/Chat/Input/Files/DragDropWrapper';
 import Artifacts from '~/components/Artifacts/Artifacts';
-import { SidePanelGroup } from '~/components/SidePanel';
 import { useSetFilesToDelete } from '~/hooks';
 import { EditorProvider } from '~/Providers';
 import store from '~/store';
@@ -18,11 +17,9 @@ export default function Presentation({ isLingsi, children }: { isLingsi: boolean
 
   const { mutateAsync } = useDeleteFilesMutation({
     onSuccess: () => {
-      console.log('Temporary Files deleted');
       setFilesToDelete({});
     },
     onError: (error) => {
-      console.log('Error deleting temporary files:', error);
     },
   });
 
@@ -47,42 +44,18 @@ export default function Presentation({ isLingsi, children }: { isLingsi: boolean
     mutateAsync({ files });
   }, [mutateAsync]);
 
-  const defaultLayout = useMemo(() => {
-    const resizableLayout = localStorage.getItem('react-resizable-panels:layout');
-    return typeof resizableLayout === 'string' ? JSON.parse(resizableLayout) : undefined;
-  }, []);
-  const defaultCollapsed = useMemo(() => {
-    const collapsedPanels = localStorage.getItem('react-resizable-panels:collapsed');
-    return typeof collapsedPanels === 'string' ? JSON.parse(collapsedPanels) : true;
-  }, []);
-  const fullCollapse = useMemo(() => localStorage.getItem('fullPanelCollapse') === 'true', []);
-
-  const layout = () => (
-    <div className="transition-width relative flex h-full w-full flex-1 flex-col items-stretch overflow-hidden bg-presentation pt-0">
-      <div className="flex h-full flex-col" role="presentation">
-        {children}
-      </div>
-    </div>
-  );
-
+  // 右侧面板已移除，功能迁移到左侧导航栏
+  // 仅保留 Artifacts 代码预览功能
   return (
     <DragDropWrapper isLingsi={isLingsi} className="relative flex w-full grow overflow-hidden bg-presentation">
-      <SidePanelGroup
-        defaultLayout={defaultLayout}
-        fullPanelCollapse={fullCollapse}
-        defaultCollapsed={defaultCollapsed}
-        artifacts={
-          artifactsVisible === true && Object.keys(artifacts ?? {}).length > 0 ? (
-            <EditorProvider>
-              <Artifacts />
-            </EditorProvider>
-          ) : null
-        }
-      >
-        <main className="flex h-full flex-col overflow-y-auto" role="main">
-          {children}
-        </main>
-      </SidePanelGroup>
+      {artifactsVisible === true && Object.keys(artifacts ?? {}).length > 0 ? (
+        <EditorProvider>
+          <Artifacts />
+        </EditorProvider>
+      ) : null}
+      <main className="flex h-full w-full flex-1 flex-col overflow-y-auto" role="main">
+        {children}
+      </main>
     </DragDropWrapper>
   );
 }

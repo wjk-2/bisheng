@@ -75,7 +75,7 @@ export default function MarkLabel({ open, home, onClose }) {
 
     const handleDragEnd = (result) => {
         if (!result.destination) return
-        const newData = selected
+        const newData = Array.from(selected)
         const [moveItem] = newData.splice(result.source.index, 1)
         newData.splice(result.destination.index, 0, moveItem)
         setSelected(newData)

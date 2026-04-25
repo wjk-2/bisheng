@@ -53,6 +53,12 @@ class PresetTrainDao(PresetTrainBase):
             return (await session.exec(statement)).first()
 
     @classmethod
+    async def find_by_url(cls, file_url: str) -> PresetTrain | None:
+        async with get_async_db_session() as session:
+            statement = select(PresetTrain).where(PresetTrain.url == file_url)
+            return (await session.exec(statement)).first()
+
+    @classmethod
     async def find_all(cls) -> List[PresetTrain]:
         async with get_async_db_session() as session:
             statement = select(PresetTrain)
@@ -62,10 +68,14 @@ class PresetTrainDao(PresetTrainBase):
     async def search_name(cls,
                           keyword: str = None,
                           page_size: int = None,
-                          page_num: int = None) -> Tuple[List[PresetTrain], int]:
+                          page_num: int = None,
+                          user_id: str = None) -> Tuple[List[PresetTrain], int]:
         async with get_async_db_session() as session:
             statement = select(PresetTrain)
             count = select(func.count(PresetTrain.id))
+            if user_id:
+                statement = statement.where(PresetTrain.user_id == user_id)
+                count = count.where(PresetTrain.user_id == user_id)
             if keyword:
                 statement = statement.where(col(PresetTrain.name).like('%{}%'.format(keyword)))
                 count = count.where(col(PresetTrain.name).like('%{}%'.format(keyword)))

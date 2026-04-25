@@ -6,6 +6,7 @@ from fastapi import APIRouter, Body, Depends, File, Query, UploadFile
 from loguru import logger
 
 from bisheng.common.dependencies.user_deps import UserPayload
+from bisheng.common.errcode.http_error import UnAuthorizedError
 from bisheng.common.schemas.api import resp_200, PageData
 from bisheng.core.cache.utils import async_file_download
 from bisheng.core.storage.minio.minio_manager import get_minio_storage_sync
@@ -16,12 +17,12 @@ from bisheng.knowledge.domain.models.knowledge import KnowledgeDao
 from bisheng.knowledge.domain.models.knowledge_file import QAKnoweldgeDao
 from ..schemas import FinetuneCreateReq
 
-router = APIRouter(prefix='/finetune', tags=['Finetune'], dependencies=[Depends(UserPayload.get_login_user)])
+router = APIRouter(prefix='/finetune', tags=['Finetune'])
 
 
 # create finetune job
 @router.post('/job')
-async def create_job(*, finetune: FinetuneCreateReq, login_user: UserPayload = Depends(UserPayload.get_login_user)):
+async def create_job(*, finetune: FinetuneCreateReq, login_user: UserPayload = Depends(UserPayload.get_admin_user)):
     # get login user
     finetune = Finetune(**finetune.model_dump(exclude={'method'}),
                         method=finetune.method.value,
@@ -33,7 +34,7 @@ async def create_job(*, finetune: FinetuneCreateReq, login_user: UserPayload = D
 
 # Delete training task
 @router.delete('/job')
-async def delete_job(*, job_id: str, login_user: UserPayload = Depends(UserPayload.get_login_user)):
+async def delete_job(*, job_id: str, login_user: UserPayload = Depends(UserPayload.get_admin_user)):
     # get login user
     await FinetuneService.delete_job(job_id, login_user)
     return resp_200(None)
@@ -41,7 +42,7 @@ async def delete_job(*, job_id: str, login_user: UserPayload = Depends(UserPaylo
 
 # Abort training mission
 @router.post('/job/cancel')
-async def cancel_job(*, job_id: str, login_user: UserPayload = Depends(UserPayload.get_login_user)):
+async def cancel_job(*, job_id: str, login_user: UserPayload = Depends(UserPayload.get_admin_user)):
     # get login user
     ret = await FinetuneService.cancel_job(job_id, login_user)
     return resp_200(ret)
@@ -49,14 +50,14 @@ async def cancel_job(*, job_id: str, login_user: UserPayload = Depends(UserPaylo
 
 # Publish Training Tasks
 @router.post('/job/publish')
-async def publish_job(*, job_id: str, login_user: UserPayload = Depends(UserPayload.get_login_user)):
+async def publish_job(*, job_id: str, login_user: UserPayload = Depends(UserPayload.get_admin_user)):
     # get login user
     ret = await FinetuneService.publish_job(job_id, login_user)
     return resp_200(ret)
 
 
 @router.post('/job/publish/cancel')
-async def cancel_publish_job(*, job_id: str, login_user: UserPayload = Depends(UserPayload.get_login_user)):
+async def cancel_publish_job(*, job_id: str, login_user: UserPayload = Depends(UserPayload.get_admin_user)):
     # get login user
     ret = await FinetuneService.cancel_publish_job(job_id, login_user)
     return resp_200(ret)
@@ -92,13 +93,13 @@ async def get_job(*,
 @router.get('/job/info')
 async def get_job_info(*, job_id: str, login_user: UserPayload = Depends(UserPayload.get_login_user)):
     # get login user
-    ret = await FinetuneService.get_job_info(job_id)
+    ret = await FinetuneService.get_job_info(job_id, login_user)
     return resp_200(ret)
 
 
 @router.patch('/job/model')
 async def update_job(*, req_data: FinetuneChangeModelName,
-                     login_user: UserPayload = Depends(UserPayload.get_login_user)):
+                     login_user: UserPayload = Depends(UserPayload.get_admin_user)):
     # get login user
     ret = await FinetuneService.change_job_model_name(req_data)
     return resp_200(ret)
@@ -107,7 +108,7 @@ async def update_job(*, req_data: FinetuneChangeModelName,
 @router.post('/job/file')
 async def upload_file(*,
                       files: list[UploadFile] = File(description='Training File List'),
-                      login_user: UserPayload = Depends(UserPayload.get_login_user)):
+                      login_user: UserPayload = Depends(UserPayload.get_admin_user)):
     ret = await FinetuneFileService.upload_file(files, False, login_user)
     return resp_200(ret)
 
@@ -150,19 +151,28 @@ async def get_preset_file(*,
                           page_num: Optional[int] = None,
                           keyword: Optional[str] = None,
                           login_user: UserPayload = Depends(UserPayload.get_login_user)):
-    ret = await FinetuneFileService.get_preset_file(keyword, page_size, page_num)
+    # admin sees all datasets, regular users see only their own
+    user_id = None if login_user.is_admin() else str(login_user.user_id)
+    ret = await FinetuneFileService.get_preset_file(keyword, page_size, page_num, user_id=user_id)
     return resp_200(ret)
 
 
 @router.delete('/job/file/preset')
 async def delete_preset_file(*, file_id: str, login_user: UserPayload = Depends(UserPayload.get_login_user)):
-    # get login user
     await FinetuneFileService.delete_preset_file(file_id, login_user)
     return resp_200()
 
 
 @router.get('/job/file/download')
 async def get_download_url(*, file_url: str, login_user: UserPayload = Depends(UserPayload.get_login_user)):
+    # Verify that the file belongs to the current user
+    # Admin can download any file, regular users can only download their own
+    if not login_user.is_admin():
+        # Query PresetTrain table by url to verify ownership
+        file_data = await PresetTrainDao.find_by_url(file_url)
+        if not file_data or str(file_data.user_id) != str(login_user.user_id):
+            raise UnAuthorizedError.http_exception(msg='No permission to download this file')
+
     minio_client = get_minio_storage_sync()
     download_url = await minio_client.get_share_link(file_url, clear_host=False)
     return resp_200(data={'url': download_url})

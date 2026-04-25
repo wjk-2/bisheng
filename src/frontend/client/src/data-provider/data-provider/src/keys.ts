@@ -17,7 +17,7 @@ export enum QueryKeys {
   tokenCount = 'tokenCount',
   availablePlugins = 'availablePlugins',
   startupConfig = 'startupConfig',
-  bishengConfig = 'bishengConfig',
+  eagentConfig = 'eagentConfig',
   assistants = 'assistants',
   assistant = 'assistant',
   agents = 'agents',

@@ -36,7 +36,7 @@ export default function VarTextareaUploadItem({ nodeId, data, onChange, onValida
     return (
         <div className='node-item mb-4 nodrag' data-key={data.key}>
             <div className="flex justify-between items-center">
-                <Label className="flex items-center bisheng-label">
+                <Label className="flex items-center eagent-label">
                     {t('messageContentVariable')}
                 </Label>
                 <Badge variant="outline" className="bg-[#E6ECF6] text-[#2B53A0]">{data.key}</Badge>
@@ -95,7 +95,6 @@ export const useFileUpload = (_files, onFilesChange) => {
             const file = (e.target as HTMLInputElement).files?.[0];
             if (file) {
                 uploadFileWithProgress(file, (progress) => {
-                    console.log("Upload Progress:", progress);
                 }, 'icon', '/api/v1/upload/workflow/' + flowId).then(res => {
                     setLoading(false);
                     const newFiles = [...files, { name: file.name, path: res.relative_path }];

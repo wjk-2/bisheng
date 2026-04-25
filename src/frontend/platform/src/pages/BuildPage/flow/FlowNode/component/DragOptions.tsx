@@ -136,7 +136,7 @@ const DragOptions = forwardRef(({ edges = false, edit = false, scroll = false, o
                                                     id={item.id}
                                                     type="source"
                                                     position={Position.Right}
-                                                    className='bisheng-flow-handle group'
+                                                    className='eagent-flow-handle group'
                                                     style={{ right: -30, top: 18 }}
                                                 ><span></span></Handle>
                                             }

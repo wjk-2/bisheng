@@ -40,7 +40,7 @@ export default function EvaluationModel({ llmOptions, onBack }) {
     return (
         <div className="max-w-[520px] mx-auto">
             <div className="mt-10">
-                <Label className="bisheng-label">{t('model.defaultEvaluationFeature')}<span className="text-red-500 text-xs">*</span></Label>
+                <Label className="eagent-label">{t('model.defaultEvaluationFeature')}<span className="text-red-500 text-xs">*</span></Label>
                 <ModelSelect
                     label={''}
                     value={selectedModel}

@@ -1,6 +1,7 @@
 import ast
 import inspect
 import operator
+import re
 import traceback
 from typing import Any, Dict, List, Type, Union
 
@@ -111,6 +112,13 @@ class CodeParser:
             arg_dict['type'] = ast.unparse(arg.annotation)
         return arg_dict
 
+    _SAFE_IDENTIFIER = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_.]*$')
+
+    @classmethod
+    def _validate_module_name(cls, name: str) -> bool:
+        """Validate module/identifier names to prevent code injection via exec/eval."""
+        return bool(cls._SAFE_IDENTIFIER.match(name))
+
     @cachedmethod(operator.attrgetter('cache'))
     def construct_eval_env(self, return_type_str: str, imports) -> dict:
         """
@@ -121,6 +129,8 @@ class CodeParser:
         for import_entry in imports:
             if isinstance(import_entry, tuple):  # from module import name
                 module, name = import_entry
+                if not (self._validate_module_name(module) and self._validate_module_name(name)):
+                    continue
                 if name in return_type_str:
                     exec(f'import {module}', eval_env)
                     exec(f'from {module} import {name}', eval_env)
@@ -129,6 +139,10 @@ class CodeParser:
                 alias = None
                 if ' as ' in module:
                     module, alias = module.split(' as ')
+                if not self._validate_module_name(module):
+                    continue
+                if alias and not self._validate_module_name(alias):
+                    continue
                 if module in return_type_str or (alias and alias in return_type_str):
                     exec(f'import {module} as {alias if alias else module}', eval_env)
         return eval_env
@@ -144,8 +158,16 @@ class CodeParser:
             eval_env = self.construct_eval_env(return_type_str, tuple(self.data['imports']))
 
             try:
-                return_type = eval(return_type_str, eval_env)
-            except NameError:
+                # Validate return_type_str is a safe type expression (no calls, assignments, etc.)
+                type_ast = ast.parse(return_type_str, mode='eval')
+                for node_check in ast.walk(type_ast):
+                    if isinstance(node_check, (ast.Call, ast.Lambda, ast.ListComp,
+                                               ast.SetComp, ast.DictComp, ast.GeneratorExp)):
+                        raise CodeSyntaxError(
+                            status_code=400,
+                            detail=f'Unsafe return type annotation: {return_type_str}')
+                return_type = eval(compile(type_ast, '<return_type>', 'eval'), eval_env)
+            except (NameError, SyntaxError):
                 # Handle cases where the type is not found in the constructed environment
                 pass
 

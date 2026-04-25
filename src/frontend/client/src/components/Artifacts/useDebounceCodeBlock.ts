@@ -10,7 +10,6 @@ export function useDebounceCodeBlock() {
   const setCodeBlockIds = useSetRecoilState(codeBlockIdsState);
 
   const updateCodeBlock = useCallback((codeBlock: CodeBlock) => {
-    console.log('Updating code block:', codeBlock);
     setCodeBlocks((prev) => ({
       ...prev,
       [codeBlock.id]: codeBlock,

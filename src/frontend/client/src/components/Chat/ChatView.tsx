@@ -5,12 +5,16 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { getFeaturedCases } from '~/api/linsight';
 import type { ChatFormValues } from '~/common';
+// import { SystemRoles } from '~/data-provider/data-provider/src';
 import { Spinner } from '~/components/svg';
 import type { TMessage } from '~/data-provider/data-provider/src';
 import { useGetMessagesByConvoId } from '~/data-provider/data-provider/src/react-query';
-import { useAddedResponse, useChatHelpers, useSSE } from '~/hooks';
+import { useAddedResponse, useAuthContext, useChatHelpers, useSSE } from '~/hooks';
 import useLocalize from '~/hooks/useLocalize';
 import { AddedChatContext, ChatContext, ChatFormProvider, useFileMapContext } from '~/Providers';
+// v2 暂时移除 Parameters（留到第二版统一处理）
+// import Parameters from '~/components/SidePanel/Parameters/Panel';
+// import { Sheet, SheetContent, SheetHeader, SheetTitle } from '~/components/ui/Sheet';
 import store from '~/store';
 import { buildTree, cn } from '~/utils';
 import { Button } from '../ui';
@@ -26,6 +30,10 @@ import Presentation from './Presentation';
 
 const ChatView = ({ id = '', index = 0, shareToken = '' }: { id?: string, index?: number, shareToken?: string }) => {
   const t = useLocalize();
+  const { user } = useAuthContext();
+  // v2 暂时移除 Parameters
+  // const isAdmin = user?.role === SystemRoles.ADMIN;
+  // const [showParams, setShowParams] = useState(false);
   const { conversationId: cid } = useParams();
   const conversationId = cid ?? id;
   const rootSubmission = useRecoilValue(store.submissionByIndex(index));
@@ -91,7 +99,6 @@ const ChatView = ({ id = '', index = 0, shareToken = '' }: { id?: string, index?
         if (rect.top <= 20) {
           setInputFloat(true)
           setInputWidth(rect.width)
-          console.log("e :>> ")
           if (hideLocal === 0) {
             hideLocal = scrollTop
           }
@@ -108,7 +115,6 @@ const ChatView = ({ id = '', index = 0, shareToken = '' }: { id?: string, index?
         try {
           const hasMore = await casesRef.current.loadMore()
           if (!hasMore) {
-            console.log("No more data to load")
           }
         } catch (error) {
           console.error("Error loading more data:", error)
@@ -148,6 +154,7 @@ const ChatView = ({ id = '', index = 0, shareToken = '' }: { id?: string, index?
     <ChatFormProvider {...methods}>
       <ChatContext.Provider value={chatHelpers}>
         <AddedChatContext.Provider value={addedChatHelpers}>
+          {/* v2 暂时移除 Parameters（留到第二版统一处理） */}
           <Presentation isLingsi={isLingsi}>
             <div className={cn(`h-full`)}>
               <video
@@ -165,6 +172,7 @@ const ChatView = ({ id = '', index = 0, shareToken = '' }: { id?: string, index?
                 <source src={`${__APP_ENV__.BASE_URL}/assets/linsi-bg.mp4`} type="video/mp4" />
                 <img src={`${__APP_ENV__.BASE_URL}/assets/lingsi-bg.png`} alt="" />
               </video>
+              {/* v2 暂时移除 Parameters 触发按钮 */}
               <div ref={chatContainerRef} className='relative z-10 h-full overflow-y-auto'>
                 <div className={cn(showCode ? "hidden" : "flex flex-col justify-center relative",
                   messagesTree ? ' h-full' : 'h-[calc(100vh-200px)]'

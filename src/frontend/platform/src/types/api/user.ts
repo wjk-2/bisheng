@@ -1,5 +1,6 @@
 export type User = {
     user_name: string;
+    nickname: string | null;
     email: string | null;
     phone_number: string | null;
     dept_id: number | null;
@@ -9,6 +10,8 @@ export type User = {
     update_time: string;
     user_id: number;
     role: string;
+    groups: Array<{ id: number; name: string }>;
+    roles: Array<{ id: number; name: string; group_id?: number }>;
 };
 
 export type ROLE = {

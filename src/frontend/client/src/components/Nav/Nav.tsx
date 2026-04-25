@@ -1,22 +1,26 @@
 import type { ConversationListResponse } from '~/data-provider/data-provider/src';
-import { PermissionTypes, Permissions } from '~/data-provider/data-provider/src';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { useRecoilState } from 'recoil';
 import { useSearchContext } from '~/Providers';
+import MyKnowledgeView from '~/components/Chat/Input/Files/MyKnowledgeView';
 import { Conversations } from '~/components/Conversations';
 import { Spinner } from '~/components/svg';
 import { useConversationsInfiniteQuery } from '~/data-provider';
+import { ChevronLeft } from 'lucide-react';
 import {
   useAuthContext,
-  useHasAccess,
   useLocalStorage,
   useLocalize,
   useMediaQuery,
   useNavScrolling,
 } from '~/hooks';
+import store from '~/store';
 import { cn } from '~/utils';
 import AccountSettings from './AccountSettings';
+import AccordionNav from './AccordionNav';
 import NavToggle from './NavToggle';
 import NewChat from './NewChat';
+import useLeftNavLinks from '~/hooks/Nav/useLeftNavLinks';
 
 const Nav = ({
   navVisible,
@@ -28,16 +32,15 @@ const Nav = ({
   const localize = useLocalize();
   const { isAuthenticated } = useAuthContext();
 
-  const [navWidth, setNavWidth] = useState('260px');
+  const [navWidth, setNavWidth] = useState('200px');
   const [isHovering, setIsHovering] = useState(false);
   const isSmallScreen = useMediaQuery('(max-width: 768px)');
   const [newUser, setNewUser] = useLocalStorage('newUser', true);
   const [isToggleHovering, setIsToggleHovering] = useState(false);
+  const [showKnowledge, setShowKnowledge] = useRecoilState(store.showKnowledge);
 
-  const hasAccessToBookmarks = useHasAccess({
-    permissionType: PermissionTypes.BOOKMARKS,
-    permission: Permissions.USE,
-  });
+  // 左侧手风琴导航链接
+  const leftNavLinks = useLeftNavLinks();
 
   const handleMouseEnter = useCallback(() => {
     setIsHovering(true);
@@ -53,9 +56,9 @@ const Nav = ({
       if (savedNavVisible === null) {
         toggleNavVisible();
       }
-      setNavWidth('320px');
+      setNavWidth('200px');
     } else {
-      setNavWidth('260px');
+      setNavWidth('200px');
     }
   }, [isSmallScreen]);
 
@@ -113,10 +116,11 @@ const Nav = ({
 
   return (
     <>
+      {showKnowledge && <MyKnowledgeView open={showKnowledge} onOpenChange={setShowKnowledge} />}
       <div
         data-testid="nav"
         className={
-          'nav active max-w-[320px] flex-shrink-0 overflow-x-hidden md:max-w-[260px] bg-[#F9FBFF]'
+          'nav active max-w-[200px] flex-shrink-0 overflow-x-hidden bg-[rgba(255,255,255,0.8)] dark:bg-gray-900 border-r border-[#E5EAF4] dark:border-gray-800'
         }
         style={{
           width: navVisible ? navWidth : '0px',
@@ -124,7 +128,7 @@ const Nav = ({
           transition: 'width 0.2s, visibility 0.2s',
         }}
       >
-        <div className="h-full w-[320px] md:w-[260px]">
+        <div className="h-full w-[200px]">
           <div className="flex h-full min-h-0 flex-col">
             <div
               className={cn(
@@ -147,6 +151,8 @@ const Nav = ({
                     toggleNav={itemToggleNav}
                     isSmallScreen={isSmallScreen}
                   />
+                  {/* 左侧手风琴导航：Prompts、Bookmarks、Parameters */}
+                  <AccordionNav links={leftNavLinks} />
                   <div
                     className={cn(
                       '-mr-2 flex-1 flex-col overflow-y-auto pr-2 transition-opacity duration-500',
@@ -165,6 +171,16 @@ const Nav = ({
                     {(isFetchingNextPage || showLoading) && (
                       <Spinner className={cn('m-1 mx-auto mb-4 h-4 w-4 text-text-primary')} />
                     )}
+                  </div>
+                  {/* 收起侧边栏 */}
+                  <div className="border-t border-[#E5EAF4] dark:border-gray-800 pt-2 mt-2">
+                    <button
+                      onClick={toggleNavVisible}
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[#9498AC] dark:text-gray-400 hover:text-[#140E35] dark:hover:text-gray-200 hover:bg-[#F7F9FF] dark:hover:bg-gray-800 transition-all duration-200 text-xs"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      <span>{localize('com_nav_close_sidebar')}</span>
+                    </button>
                   </div>
                   {/* 左下角设置 */}
                   <AccountSettings />

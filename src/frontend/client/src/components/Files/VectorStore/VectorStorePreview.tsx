@@ -111,7 +111,6 @@ export default function VectorStorePreview() {
           <div>
             <DeleteIconButton
               onClick={() => {
-                console.log('click');
               }}
             />
           </div>
@@ -202,7 +201,7 @@ export default function VectorStorePreview() {
                   <div className="content-center text-nowrap">{file.createdAt?.toString()}</div>
                   <Button
                     className="my-0 ml-3 h-min bg-transparent p-0 text-[#666666] hover:bg-slate-200"
-                    onClick={() => console.log('click')}
+                    onClick={() => { /* TODO: implement delete */ }}
                   >
                     <TrashIcon className="m-0 p-0" />
                   </Button>

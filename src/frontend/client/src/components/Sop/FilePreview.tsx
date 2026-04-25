@@ -6,6 +6,7 @@ import { useLocalize } from "~/hooks";
 import { Input, Button, Label } from '~/components';
 import FileIcon from "../ui/icon/File"
 import { getLinsightFileDownloadApi } from "~/data-provider/data-provider/src/data-service";
+import { sanitizeSvg } from "~/utils/sanitizeSvg";
 
 
 
@@ -208,7 +209,7 @@ const SvgViewer = ({ fileUrl, fileName, onDownload }: SvgViewerProps) => {
             {/* 直接渲染SVG内容，绕过标签限制 */}
             <div
                 className="max-w-full max-h-[calc(100vh-200px)]"
-                dangerouslySetInnerHTML={{ __html: svgContent }}
+                dangerouslySetInnerHTML={{ __html: sanitizeSvg(svgContent) }}
                 onClick={(e) => e.stopPropagation()}
             />
         </div>
@@ -269,7 +270,7 @@ const TxtFileViewer = ({ html = false, markdown = false, csv = false, filePath, 
     if (html) return <iframe
         className="w-full h-full border"
         srcDoc={content}
-        sandbox="allow-scripts"
+        sandbox="" // ⚠️ 安全关键：空字符串=最严格沙箱，禁止脚本/表单/弹窗/同源访问，防止 srcDoc 内 XSS。勿删，勿加 allow-*
     />
 
     if (markdown) return <div className="bs-mkdown p-10">

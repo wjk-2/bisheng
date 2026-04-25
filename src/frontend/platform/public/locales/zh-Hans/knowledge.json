@@ -23,6 +23,18 @@
         "englishPeriodRule": {
             "label": "\\.",
             "desc": "英文句号后切分，英文断句"
+        },
+        "chineseExclamationRule": {
+            "label": "！",
+            "desc": "中文感叹号后切分"
+        },
+        "chineseQuestionRule": {
+            "label": "？",
+            "desc": "中文问号后切分"
+        },
+        "chineseSemicolonRule": {
+            "label": "；",
+            "desc": "中文分号后切分"
         }
     },
     "confirm1": "确定",
@@ -362,6 +374,9 @@
         "articleRule": "\"第X条\"前切分，切分条目等",
         "chinesePeriodRule": "中文句号后切分，中文断句",
         "englishPeriodRule": "英文句号后切分，英文断句",
+        "chineseExclamationRule": "中文感叹号后切分",
+        "chineseQuestionRule": "中文问号后切分",
+        "chineseSemicolonRule": "中文分号后切分",
         "customRule": "自定义规则"
     },
     "fileNotSupported": "文件不支持预览",

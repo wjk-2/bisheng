@@ -2,15 +2,17 @@ from typing import List, Optional
 
 from loguru import logger
 from fastapi import APIRouter, HTTPException
+from fastapi.params import Depends
 from sqlmodel import delete, select
 
 from bisheng.api.v1.schemas import UnifiedResponseModel, resp_200
+from bisheng.common.dependencies.ip_whitelist import verify_internal_request
 from bisheng.core.database import get_sync_db_session
 from bisheng.database.models.flow_version import FlowVersionDao
 from bisheng.database.models.variable_value import Variable, VariableCreate, VariableRead, VariableDao
 
 # build router
-router = APIRouter(prefix='/variable', tags=['variable'])
+router = APIRouter(prefix='/variable', tags=['variable'], dependencies=[Depends(verify_internal_request)])
 
 
 @router.post('/', status_code=200)

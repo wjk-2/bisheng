@@ -27,10 +27,10 @@ export const InputField = ({
 
     return (
         <div key={id}>
-            <label htmlFor={id} className="bisheng-label flex items-center gap-1">
+            <label htmlFor={id} className="eagent-label flex items-center gap-1">
                 {label}
                 {tooltip && <QuestionTooltip content={tooltip} />}
-                {required && <span className="bisheng-tip">*</span>}
+                {required && <span className="eagent-tip">*</span>}
             </label>
 
             <Input
@@ -46,7 +46,7 @@ export const InputField = ({
                 {...prop}
             />
             {error && (
-                <p className="bisheng-tip mt-1">
+                <p className="eagent-tip mt-1">
                     {typeof error === "string"
                         ? error
                         : t("fieldCannotBeEmpty", { label })}
@@ -72,10 +72,10 @@ export const SelectField = ({
 
     return (
         <div key={id}>
-            <label htmlFor={id} className="bisheng-label flex items-center gap-1">
+            <label htmlFor={id} className="eagent-label flex items-center gap-1">
                 {label}
                 {tooltip && <QuestionTooltip content={tooltip} />}
-                {required && <span className="bisheng-tip">*</span>}
+                {required && <span className="eagent-tip">*</span>}
             </label>
 
             <Select value={value} onValueChange={onChange}>
@@ -94,7 +94,7 @@ export const SelectField = ({
             </Select>
 
             {error && (
-                <p className="bisheng-tip mt-1">
+                <p className="eagent-tip mt-1">
                     {t("fieldCannotBeEmpty", { label })}
                 </p>
             )}

@@ -53,10 +53,10 @@ class LinsightToolInitError(BaseErrorCode):
     Msg: str = 'Failed to initialize the Inspiration Workbench tool'
 
 
-# InspirationBisheng LLMRelated Errors
-class LinsightBishengLLMError(BaseErrorCode):
+# E-Agent LLM Related Errors
+class LinsightEagentLLMError(BaseErrorCode):
     Code: int = 11090
-    Msg: str = 'InspirationBisheng LLMRelated Errors'
+    Msg: str = 'E-Agent LLM Related Errors'
 
 
 # BuatSOPContent failed

@@ -151,6 +151,8 @@ class Graph:
         """
         Performs a topological sort of the vertices in the graph.
 
+        Uses iterative DFS to avoid Python recursion limit on large/deep graphs.
+
         Returns:
             List[Vertex]: A list of vertices in topological order.
 
@@ -161,22 +163,34 @@ class Graph:
         state = {node: 0 for node in self.vertices}
         sorted_vertices = []
 
-        def dfs(node):
-            if state[node] == 1:
-                # We have a cycle
-                raise ValueError('Graph contains a cycle, cannot perform topological sort')
-            if state[node] == 0:
-                state[node] = 1
-                for edge in node.edges:
-                    if edge.source_id == node.id:
-                        dfs(self.get_vertex(edge.target_id))
-                state[node] = 2
-                sorted_vertices.append(node)
+        for start in self.vertices:
+            if state[start] != 0:
+                continue
 
-        # Visit each node
-        for node in self.vertices:
-            if state[node] == 0:
-                dfs(node)
+            # Stack entries: (node, iterator_over_direct_children)
+            children_of_start = (
+                self.get_vertex(e.target_id) for e in start.edges if e.source_id == start.id
+            )
+            stack = [(start, children_of_start)]
+            state[start] = 1
+
+            while stack:
+                node, children = stack[-1]
+                try:
+                    child = next(children)
+                    if state[child] == 1:
+                        raise ValueError('Graph contains a cycle, cannot perform topological sort')
+                    if state[child] == 0:
+                        state[child] = 1
+                        grandchildren = (
+                            self.get_vertex(e.target_id) for e in child.edges if e.source_id == child.id
+                        )
+                        stack.append((child, grandchildren))
+                except StopIteration:
+                    # All children processed: node is done
+                    state[node] = 2
+                    sorted_vertices.append(node)
+                    stack.pop()
 
         return list(reversed(sorted_vertices))
 

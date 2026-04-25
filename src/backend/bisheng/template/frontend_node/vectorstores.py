@@ -269,7 +269,7 @@ class VectorStoreFrontendNode(FrontendNode):
                     advanced=False,
                     multiline=False,
                     value={
-                        'es_url': 'http://bisheng-es:9200',
+                        'es_url': 'http://eagent-es:9200',
                         'es_user': 'elastic',
                         'es_password': ''
                     },

@@ -15,7 +15,7 @@ export type FlowState = {
     source_internal_id
   }[];
   views: FlowNode[];
-  viewport: any;
+  viewport: Viewport;
 }
 
 /** 流程节点 */
@@ -23,15 +23,15 @@ interface FlowNode {
   id: string;
   name: string;
   type: string;
-  inputVariable: { [key: string]: any };
-  outputVariable: { [key: string]: any };
+  inputVariable: Record<string, unknown>;
+  outputVariable: Record<string, unknown>;
   data?: {
     edges: {
       source: string;
       target: string;
     }[];
-    nodes: any[];
-    viewport: any;
+    nodes: unknown[];
+    viewport: Viewport;
   }
 }
 
@@ -102,15 +102,15 @@ export type targetHandleType = {
 
 export type FlowVersionItem = {
   create_time: string;
-  data: null | any; // Replace 'any' with a more specific type if known
-  description: null | string;
+  data: Record<string, unknown> | null;
+  description: string | null;
   flow_id: string;
   id: number;
   is_current: number;
   is_delete: number;
   name: string;
   update_time: string;
-  user_id: null | string;
+  user_id: string | null;
 };
 
 export interface WorkFlow {
@@ -164,6 +164,19 @@ export interface WorkflowNode {
   tool_id?: string;
 }
 
+/** 工作流节点参数值类型 - 动态业务数据 */
+export type WorkflowParamValue = string | number | boolean | null | unknown[] | Record<string, unknown>;
+
+/** 工作流节点选项类型 */
+export interface WorkflowNodeOption {
+  /** Display label */
+  label: string;
+  /** Unique key */
+  key: string;
+  /** help text */
+  help?: string;
+}
+
 export interface WorkflowNodeParam {
   /** Unique key */
   key: string;
@@ -171,8 +184,8 @@ export interface WorkflowNodeParam {
   label?: string;
   /** type */
   type: string;
-  /** value */
-  value: any;
+  /** value - 动态业务数据 */
+  value: WorkflowParamValue;
   /** placeholder */
   placeholder?: string;
   /** help text */
@@ -184,28 +197,36 @@ export interface WorkflowNodeParam {
   /**  multiple value */
   multi?: boolean;
   /** Array of options */
-  options?: any[];
+  options?: WorkflowNodeOption[];
   test?: string,
   hidden?: boolean;
 }
 
+/** 工作流消息文件类型 - 后端 Output/Report 节点生成 */
+export interface WorkflowMessageFile {
+  /** 文件下载/预览链接 */
+  path: string;
+  /** 文件名称 */
+  name: string;
+}
+
 /** 工作流消息结构 */
 export interface WorkflowMessage {
-  category: string;              // "processing"
-  node_id?: string;               // Node identifier
-  flow_id: string;               // Flow identifier
-  chat_id: string | null;        // Nullable, could be null if not set
-  message_id: string | null;     // Nullable, could be null if not set
-  files: any[];                  // Array, likely for file attachments
-  is_bot: boolean;               // True if the sender is a bot
-  liked?: boolean;                 // Count or boolean representing like status
-  message: any;               // Actual message content, empty in this case
-  receiver: string | null;       // Nullable receiver field
-  sender: string | null;         // Nullable sender field
-  source: number;                // Source identifier, type unclear
-  user_id: number;               // User identifier, integer type
+  category: string;
+  node_id?: string;
+  flow_id: string;
+  chat_id: string | null;
+  message_id: string | null;
+  files: WorkflowMessageFile[];
+  is_bot: boolean;
+  liked?: boolean;
+  message: string | Record<string, unknown> | unknown[];
+  receiver: Record<string, unknown> | null;
+  sender: string | null;
+  source: number;
+  user_id: number;
   end: boolean;
   update_time: string;
-  reasoning_log?: string; // 推理
+  reasoning_log?: string;
   extra?: string;
 }

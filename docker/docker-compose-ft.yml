@@ -1,6 +1,6 @@
 services:
   ft_server:
-    container_name: bisheng-ft-server
+    container_name: eagent-ft-server
     image: dataelement/bisheng-ft:v0.5.0
     shm_size: "4g"
     ports:
@@ -8,10 +8,13 @@ services:
     environment:
       TZ: Asia/Shanghai
     volumes:
-      - ${DOCKER_VOLUME_DIRECTORY:-.}/bisheng-ft/config.yaml:/opt/bisheng-ft/sft_server/config.yaml  # 服务启动所需的配置文件地址，默认不用改
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/eagent-ft/config.yaml:/opt/bisheng-ft/sft_server/config.yaml  # 服务启动所需的配置文件地址，默认不用改
       - ${DOCKER_VOLUME_DIRECTORY:-.}/data/llm:/opt/bisheng-ft/models/model_repository # 这个是存放基座模型的目录，挂载到本机目录
       - ${DOCKER_VOLUME_DIRECTORY:-.}/data/finetune_output:/opt/bisheng-ft/finetune_output # 这个是存放微调过程的中间日志和微调训练后模型的目录，挂载到本机目录，不能与存放基座模型的目录相同
     security_opt:
+      # [S-40] 已知安全风险：seccomp:unconfined 关闭了系统调用过滤
+      # 原因：微调服务需要 GPU 访问和 CUDA 操作，必须放行相关系统调用
+      # 此项为 GPU 计算场景的必要配置，暂不修改
       - seccomp:unconfined
     command: bash start-sft-server.sh # 启动服务
     restart: on-failure

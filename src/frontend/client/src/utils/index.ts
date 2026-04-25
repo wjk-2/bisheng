@@ -132,7 +132,6 @@ export const playDing = () => {
 
   // 3. 播放结束后销毁
   audio.addEventListener('ended', () => {
-    console.log('播放结束，销毁音频元素');
     audio.remove();
   });
 
@@ -241,7 +240,6 @@ export const copyText = (text: string | HTMLElement) => {
 
 
 export function downloadFile(url, label) {
-  console.log('download file :>> ', url);
 
   return axios.get(url, { responseType: "blob" }).then((res: any) => {
     const blob = new Blob([res.data]);

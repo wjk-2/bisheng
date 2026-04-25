@@ -23,7 +23,7 @@ export const getWorkflowReportTemplate = async (key: string, flowId: string): Pr
 export const createWorkflowApi = async (name, desc, url, flow): Promise<any> => {
     if (url) {
         // logo保存相对路径
-        url = url.replace('/bisheng', '')
+        url = url.replace('/eagent', '')
     }
     const data = flow || {}
     return await axios.post("/api/v1/workflow/create", {
@@ -119,10 +119,11 @@ export const onlineWorkflow = async (flow, status = ''): Promise<any> => {
 }
 
 /**
- * 上线指定版本工作流
+ * 上线指定版本工作流（支持公开设置和分类）
  */
-export const onlineWorkflowApi = async (data: { flow_id, version_id, status }) => {
-    return await axios.patch(`/api/v1/workflow/status`, data);
+export const onlineWorkflowApi = async (flow_id: string, version_id: number, status: number, is_public: number = 0, category: string = '其他') => {
+    const requestBody = { flow_id, version_id, status, is_public, category };
+    return await axios.patch(`/api/v1/workflow/status`, requestBody);
 };
 
 /**
@@ -389,7 +390,7 @@ const workflowTemplate = [
                     {
                         "key": "model_id",
                         "label": "true",
-                        "type": "bisheng_model",
+                        "type": "eagent_model",
                         "value": "",
                         "required": true,
                         "placeholder": "true"
@@ -755,7 +756,7 @@ const workflowTemplate = [
                     {
                         "key": "model_id",
                         "label": "true",
-                        "type": "bisheng_model",
+                        "type": "eagent_model",
                         "value": "",
                         "required": true,
                         "placeholder": "true"

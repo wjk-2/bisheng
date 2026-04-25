@@ -1,11 +1,11 @@
 import React, { useState, useRef } from 'react';
 import * as Tabs from '@radix-ui/react-tabs';
-import { MessageSquare, Command } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
 import { SettingsTabValues } from '~/data-provider/data-provider/src';
 import type { TDialogProps } from '~/common';
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
-import { GearIcon, DataIcon, SpeechIcon, UserIcon, ExperimentIcon } from '~/components/svg';
-import { General, Chat, Speech, Beta, Commands, Data, Account } from './SettingsTabs';
+import { GearIcon, UserIcon } from '~/components/svg';
+import { General, Chat, Account } from './SettingsTabs';
 import { useMediaQuery, useLocalize, TranslationKeys } from '~/hooks';
 import { cn } from '~/utils';
 
@@ -19,10 +19,6 @@ export default function Settings({ open, onOpenChange }: TDialogProps) {
     const tabs = [
       SettingsTabValues.GENERAL,
       SettingsTabValues.CHAT,
-      SettingsTabValues.BETA,
-      SettingsTabValues.COMMANDS,
-      SettingsTabValues.SPEECH,
-      SettingsTabValues.DATA,
       SettingsTabValues.ACCOUNT,
     ];
     const currentIndex = tabs.indexOf(activeTab);
@@ -187,18 +183,6 @@ export default function Settings({ open, onOpenChange }: TDialogProps) {
                     </Tabs.Content>
                     <Tabs.Content value={SettingsTabValues.CHAT}>
                       <Chat />
-                    </Tabs.Content>
-                    <Tabs.Content value={SettingsTabValues.BETA}>
-                      <Beta />
-                    </Tabs.Content>
-                    <Tabs.Content value={SettingsTabValues.COMMANDS}>
-                      <Commands />
-                    </Tabs.Content>
-                    <Tabs.Content value={SettingsTabValues.SPEECH}>
-                      <Speech />
-                    </Tabs.Content>
-                    <Tabs.Content value={SettingsTabValues.DATA}>
-                      <Data />
                     </Tabs.Content>
                     <Tabs.Content value={SettingsTabValues.ACCOUNT}>
                       <Account />

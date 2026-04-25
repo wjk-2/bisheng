@@ -72,7 +72,6 @@ const InputFormSkill = forwardRef(({ flow, logo }, ref) => {
             file_path: item.type === 'file' ? item.value : '',
             value: item.type === 'file' ? '' : item.value
         }))
-        console.log('obj, str :>> ', formdata, str);
         // onStart(obj, str)
         emitAreaTextEvent({
             action: EVENT_TYPE.FORM_SUBMIT,

@@ -9,13 +9,13 @@ import { baseMsgItem } from "~/api/apps"
 import { formatDate, generateUUID } from "~/utils"
 import { FLOW_TYPES } from "."
 import { SkillMethod } from "./appUtils/skillMethod"
-import { bishengConfState, chatIdState, chatsState, currentChatState, currentRunningState, runningState } from "./store/atoms"
+import { eagentConfState, chatIdState, chatsState, currentChatState, currentRunningState, runningState } from "./store/atoms"
 import { emitAreaTextEvent, EVENT_TYPE } from "./useAreaText"
 
-export default function useChatHelpers() {
+export default function useChatHelpers(shareToken: string = '') {
     const chatState = useRecoilValue(currentChatState)
     const runState = useRecoilValue(currentRunningState)
-    const [bishengConfig] = useRecoilState(bishengConfState)
+    const [eagentConfig] = useRecoilState(eagentConfState)
     const [_, setChats] = useRecoilState(chatsState)
     const [__, setRunningState] = useRecoilState(runningState)
     const [chatId] = useRecoilState(chatIdState)
@@ -25,17 +25,23 @@ export default function useChatHelpers() {
 
         const { flow } = chatState;
         const type = Number(flow.flow_type)
-        const host = bishengConfig?.websocket_url || window.location.host;
+        const host = eagentConfig?.websocket_url || window.location.host;
         const basePath = __APP_ENV__.BASE_URL;
 
-        const routeConfig = {
-            [FLOW_TYPES.SKILL]: `${host}${basePath}/api/v1/chat/${flow.id}?type=L1`,
-            [FLOW_TYPES.ASSISTANT]: `${window.location.host}${basePath}/api/v1/assistant/chat/${flow.id}`,
-            [FLOW_TYPES.WORK_FLOW]: `${host}${basePath}/api/v1/workflow/chat/${flow.id}?chat_id=${chatId}`
-        };
+        const routeConfig = shareToken
+            ? {
+                [FLOW_TYPES.SKILL]: `${host}${basePath}/api/v1/chat/share/${flow.id}?type=L1`,
+                [FLOW_TYPES.ASSISTANT]: `${window.location.host}${basePath}/api/v1/assistant/chat/share/${flow.id}`,
+                [FLOW_TYPES.WORK_FLOW]: `${host}${basePath}/api/v1/workflow/chat/share/${flow.id}?chat_id=${chatId}`
+            }
+            : {
+                [FLOW_TYPES.SKILL]: `${host}${basePath}/api/v1/chat/${flow.id}?type=L1`,
+                [FLOW_TYPES.ASSISTANT]: `${window.location.host}${basePath}/api/v1/assistant/chat/${flow.id}`,
+                [FLOW_TYPES.WORK_FLOW]: `${host}${basePath}/api/v1/workflow/chat/${flow.id}?chat_id=${chatId}`
+            };
 
         return routeConfig[type] || '';
-    }, [chatState, chatId, bishengConfig])
+    }, [chatState, chatId, eagentConfig, shareToken])
 
     const appLost = useMemo(() => {
         return runState?.error?.code
@@ -317,7 +323,6 @@ export default function useChatHelpers() {
         endMsg: (chatid: string, data: any) => {
             // 删除所有未结束消息
             if (data.type === "end_cover" && data.message) {
-                console.log("触发安全审计,删除所有未结束消息")
                 data.category = "stream_msg"
                 data.type = "over"
                 data.id = generateUUID(8)

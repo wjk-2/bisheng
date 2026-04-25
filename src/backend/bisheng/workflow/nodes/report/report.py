@@ -224,7 +224,7 @@ class PatternMatcher:
             MatchPattern(
                 name="minio_image",
                 resource_type=ResourceType.IMAGE,
-                pattern=r"((?:minio://|/bisheng/|/tmp-dir/|/tmp/)[^\s]*\.(?:png|jpg|jpeg|bmp|gif|webp))",
+                pattern=r"((?:minio://|/eagent/|/tmp-dir/|/tmp/)[^\s]*\.(?:png|jpg|jpeg|bmp|gif|webp))",
                 flags=re.IGNORECASE,
                 priority=3,
                 handler_method="_handle_minio_image",
@@ -242,7 +242,7 @@ class PatternMatcher:
             MatchPattern(
                 name="minio_excel_csv",
                 resource_type=ResourceType.TABLE,
-                pattern=r"((?:minio://|/bisheng/|/tmp-dir/|/tmp/)[^\s]*\.(?:xlsx?|csv))",
+                pattern=r"((?:minio://|/eagent/|/tmp-dir/|/tmp/)[^\s]*\.(?:xlsx?|csv))",
                 flags=re.IGNORECASE,
                 priority=5,
                 handler_method="_handle_minio_excel_csv",
@@ -862,19 +862,19 @@ class ResourceDownloadManager:
         Supports correct mapping of special paths
 
         rule’:
-        - "/bisheng/xxx" -> bucket="bisheng", object_name="xxx"  
+        - "/eagent/xxx" -> bucket="eagent", object_name="xxx"
         - "/tmp-dir/xxx" -> bucket="tmp-dir", object_name="xxx"
-        - "/tmp/xxx" -> Try first bucket="bisheng", object_name="tmp/xxx", then try bucket="tmp-dir", object_name="xxx"
+        - "/tmp/xxx" -> Try first bucket="eagent", object_name="tmp/xxx", then try bucket="tmp-dir", object_name="xxx"
         - "images/photo.jpg" -> bucket="images", object_name="photo.jpg"
         """
         if not file_path:
             return None, None
 
         # Special Path Processing
-        if file_path.startswith("/bisheng/"):
-            # /bisheng/object/name -> bucket="bisheng", object_name="object/name"
-            object_name = file_path[9:]  # Remove '/bisheng/'
-            return "bisheng", object_name if object_name else None
+        if file_path.startswith("/eagent/"):
+            # /eagent/object/name -> bucket="eagent", object_name="object/name"
+            object_name = file_path[8:]  # Remove ‘/eagent/’
+            return "eagent", object_name if object_name else None
 
         elif file_path.startswith("/tmp-dir/"):
             # /tmp-dir/object/name -> bucket="tmp-dir", object_name="object/name"  
@@ -1193,10 +1193,10 @@ class ResourceDownloadManager:
                 else:
                     object_name = parts[0]
                     bucket_name = self.minio_client.bucket  # Defaultbucket
-            elif minio_path.startswith("/bisheng/"):
-                # Format: /bisheng/object/name
+            elif minio_path.startswith("/eagent/"):
+                # Format: /eagent/object/name
                 bucket_name = self.minio_client.bucket
-                object_name = minio_path[9:]  # Remove '/bisheng/'
+                object_name = minio_path[8:]  # Remove '/eagent/'
             elif minio_path.startswith("/tmp-dir/"):
                 # Format: /tmp-dir/object/name
                 bucket_name = self.minio_client.tmp_bucket
@@ -1260,7 +1260,7 @@ class ResourceDownloadManager:
         """Check if it is clearMinIODedicated Path"""
         # Only explicitMinIODedicated paths go straightMinIOMengunduh
         # Other pathways (incl./tmp/) all go smart local downloadspipeline
-        return path.startswith(("minio://", "/bisheng/", "/tmp-dir/"))
+        return path.startswith(("minio://", "/eagent/", "/tmp-dir/"))
 
     def cleanup(self):
         """Clean Up Temp Files"""

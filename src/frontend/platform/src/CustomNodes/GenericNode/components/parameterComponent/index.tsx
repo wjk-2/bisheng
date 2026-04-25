@@ -55,7 +55,7 @@ export default function ParameterComponent({
   const { id: flowId } = useParams();
 
   const ref = useRef(null);
-  const refHtml = useRef(null);
+  const refHtml = useRef(null) as React.MutableRefObject<React.ReactNode | null>;
   const refNumberComponents = useRef(0);
   const infoHtml = useRef(null);
   const updateNodeInternals = useUpdateNodeInternals();
@@ -183,7 +183,6 @@ export default function ParameterComponent({
     groupedEdge.current = groupedObj;
 
     if (groupedObj && groupedObj.length > 0) {
-      //@ts-ignore
       refHtml.current = groupedObj.map((item, index) => {
         const Icon: any =
           nodeIconsLucide[item.family] ?? nodeIconsLucide["unknown"];
@@ -259,7 +258,6 @@ export default function ParameterComponent({
         );
       });
     } else {
-      //@ts-ignore
       refHtml.current = <span>No compatible components found.</span>;
     }
   }, [tooltipTitle]);
@@ -302,8 +300,8 @@ export default function ParameterComponent({
             type === "knowledge_list" ||
             type === "NestedDict" ||
             type === "dict" ||
-            type === "bisheng_model" ||
-            type === "bisheng_embedding") &&
+            type === "eagent_model" ||
+            type === "eagent_embedding") &&
           !optionalHandle ? (<></>)
           : (
             <ShadTooltip
@@ -546,7 +544,7 @@ export default function ParameterComponent({
               handleOnNewValue(newValue);
             }} />
           </div>
-        ) : left === true && type === "bisheng_model" ? (
+        ) : left === true && type === "eagent_model" ? (
           <div className="mt-2 w-full">
             <ModelSelect
               type='flow'
@@ -557,7 +555,7 @@ export default function ParameterComponent({
               }}
             />
           </div>
-        ) : left === true && type === "bisheng_embedding" ? (
+        ) : left === true && type === "eagent_embedding" ? (
           <div className="mt-2 w-full">
             <ModelSelect
               type='flow'

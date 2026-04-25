@@ -1,6 +1,6 @@
 
 import { Button } from '@/components/bs-ui/button';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/bs-ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/bs-ui/dialog';
 import { Input } from '@/components/bs-ui/input';
 import { Label } from '@/components/bs-ui/label';
 import { useEffect, useState } from 'react';
@@ -38,7 +38,7 @@ export default function ReportItem({ nodeId, data, onChange, onValidate, i18nPre
 
     return (
         <div className='node-item mb-4 nodrag' data-key={data.key}>
-            <Label className='bisheng-label'>
+            <Label className='eagent-label'>
                 {data.required && <span className='text-red-500'>*</span>}
                 {t(`${i18nPrefix}label`)}
             </Label>
@@ -66,6 +66,7 @@ export default function ReportItem({ nodeId, data, onChange, onValidate, i18nPre
                 <DialogContent close={false} className='size-full lg:max-w-full pt-12' onKeyDown={(e) => {
                     e.stopPropagation();
                 }}>
+                    <DialogHeader className="sr-only"><DialogTitle>编辑报告模板</DialogTitle></DialogHeader>
                     <ReportWordEdit nodeId={nodeId} versionKey={value.key} onChange={handleChange} />
                 </DialogContent>
             </Dialog>

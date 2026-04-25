@@ -150,7 +150,7 @@ class ConfigService(Settings):
                 initdb_config = config_repository.find_one_sync(key=ConfigKeyEnum.INIT_DB.value)
 
                 if initdb_config:
-                    get_redis_client_sync().set(redis_key, initdb_config.value, 100)
+                    get_redis_client_sync().set(redis_key, initdb_config.value, 600)
                     return yaml.safe_load(initdb_config.value)
                 else:
                     raise Exception('initdb_config not found, please check your system config')
@@ -167,7 +167,7 @@ class ConfigService(Settings):
                 config_repository = ConfigRepositoryImpl(session)
                 initdb_config = await config_repository.find_one(key=ConfigKeyEnum.INIT_DB.value)
                 if initdb_config:
-                    await get_redis_client_sync().aset(redis_key, initdb_config.value, 100)
+                    await get_redis_client_sync().aset(redis_key, initdb_config.value, 600)
                     return yaml.safe_load(initdb_config.value)
                 else:
                     raise Exception('initdb_config not found, please check your system config')
@@ -198,7 +198,7 @@ class ConfigService(Settings):
         # Get password-related configuration items
         all_config = self.get_all_config()
         tmp = SystemLoginMethod(**all_config.get('system_login_method', {}))
-        tmp.bisheng_pro = os.getenv('BISHENG_PRO') == 'true'
+        tmp.eagent_pro = os.getenv('EAGENT_PRO') == 'true'
         return tmp
 
     def get_workflow_conf(self) -> WorkflowConf:
@@ -224,6 +224,19 @@ class ConfigService(Settings):
         # Get all of them firstkey
         all_config = await self.aget_all_config()
         return all_config.get(key, {})
+
+    def get_from_yaml(self, key: str):
+        """直接从 initdb_config.yaml 读取配置，绕过数据库"""
+        current_path = os.path.dirname(os.path.abspath(__file__))
+        current_path = os.path.dirname(os.path.dirname(current_path))
+        yaml_path = os.path.join(current_path, 'initdb_config.yaml')
+        try:
+            with open(yaml_path, 'r', encoding='utf-8') as f:
+                config = yaml.safe_load(f)
+                return config.get(key)
+        except Exception as e:
+            logger.warning(f'Failed to read {key} from yaml: {e}')
+            return None
 
 
 settings = ConfigService.load_settings_from_yaml(config_file)

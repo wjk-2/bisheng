@@ -201,7 +201,7 @@ export default function Cascader({ error = false, selectClass = '', close = fals
                         })
                     }
                 </div>
-                : <div className="w-full flex justify-center items-center bisheng-label">空</div>
+                : <div className="w-full flex justify-center items-center eagent-label">空</div>
             }
         </SelectContent>
     </Select>

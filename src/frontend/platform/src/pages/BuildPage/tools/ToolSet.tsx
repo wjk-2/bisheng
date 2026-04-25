@@ -46,7 +46,6 @@ const ToolSet = forwardRef(function ToolSet({ onChange }, ref) {
             try {
                 if (item.extra) {
                     config = JSON.parse(item.extra);
-                    console.log('Parsed extra config:', config);
                 }
             } catch (e) {
                 console.error('api error');

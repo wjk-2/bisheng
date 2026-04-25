@@ -58,7 +58,7 @@ export default function FileTypeSelect({ data, onChange, i18nPrefix }: FileTypeS
 
     return (
         <div className='node-item flex gap-4 items-center mb-4'>
-            <Label className="bisheng-label min-w-28">
+            <Label className="eagent-label min-w-28">
                 {i18nPrefix ? t(`${i18nPrefix}label`) : data.label}
             </Label>
             <Select >

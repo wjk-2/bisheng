@@ -16,6 +16,7 @@ from bisheng.common.errcode.http_error import NotFoundError
 from bisheng.common.schemas.api import PageData
 from bisheng.core.cache.redis_manager import get_redis_client
 from bisheng.database.models.assistant import Assistant
+from bisheng.open_endpoints.domain.utils import get_default_operator
 from bisheng.share_link.api.dependencies import header_share_token_parser
 from bisheng.share_link.domain.models.share_link import ShareLink
 from bisheng.utils import generate_uuid
@@ -80,9 +81,11 @@ async def update_assistant(*,
 async def update_status(*,
                         request: Request,
                         assistant_id: str = Body(description='Assistant UniqueID', alias='id'),
-                        status: int = Body(description='whether to go online: 0 offline, 1 online'),
+                        status: int = Body(description='whether to go online: 1 offline, 2 online'),
+                        is_public: int = Body(default=0, description='可见范围: 0=仅自己, 1=组内, 2=全部'),
+                        category: str = Body(default='其他', description='分类：助教/助学/助研/助管/助评/其他'),
                         login_user: UserPayload = Depends(UserPayload.get_login_user)):
-    await AssistantService.update_status(request, login_user, assistant_id, status)
+    await AssistantService.update_status(request, login_user, assistant_id, status, is_public, category)
     return resp_200()
 
 
@@ -152,6 +155,24 @@ async def update_tool_list(*,
     """ Update the list of tools selected by the assistant """
     AssistantService.update_tool_list(assistant_id, tool_list, login_user)
     return resp_200()
+
+
+# Share link WebSocket (no auth)
+@router.websocket('/chat/share/{assistant_id}')
+async def chat_share(*,
+                     assistant_id: str,
+                     websocket: WebSocket,
+                     chat_id: Optional[str] = None):
+    login_user = get_default_operator()
+    try:
+        await chat_manager.dispatch_client(websocket, assistant_id, chat_id, login_user,
+                                           WorkType.GPTS, websocket)
+    except WebSocketException as exc:
+        logger.error(f'Websocket exception: {str(exc)}')
+        await websocket.close(code=http_status.WS_1011_INTERNAL_ERROR, reason=str(exc))
+    except Exception as exc:
+        logger.exception(f'Error in share chat websocket: {str(exc)}')
+        await websocket.close(code=http_status.WS_1011_INTERNAL_ERROR, reason=str(exc))
 
 
 # Assistant Dialogue'swebsocketCONNECT

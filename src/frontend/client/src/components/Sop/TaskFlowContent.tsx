@@ -98,7 +98,6 @@ const Tool = ({ data, setCurrentDirectFile, onSearchKnowledge, onWebSearch }) =>
                 data: resData
             })
         } catch (error) {
-            console.log('knowledge parse error :>> ', error);
             showToast({ message: output, status: 'error' });
         }
     }
@@ -133,7 +132,6 @@ const Tool = ({ data, setCurrentDirectFile, onSearchKnowledge, onWebSearch }) =>
                 })
             }
         } catch (error) {
-            console.log('websearch parse error :>> ', error);
 
             onWebSearch({
                 query: params.query,
@@ -252,7 +250,6 @@ const Task = ({
 
     useEffect(() => {
         if (task.event_type === "user_input") {
-            console.log('ding :>> ', task.event_type, task);
             playDing()
         }
     }, [task.status])
@@ -437,7 +434,6 @@ export const TaskFlowContent = ({ versionId, linsight, sendInput, onSearchKnowle
         );
     }
 
-    console.log('tasks :>> ', tasks);
     return (
         <div className="w-[80%] mx-auto p-5 text-gray-800 leading-relaxed">
             {/* load */}
@@ -666,7 +662,6 @@ export const TaskFlowContent = ({ versionId, linsight, sendInput, onSearchKnowle
 const useFoucsInput = (tasks: any) => {
     const [inputQueue, setInputQueue] = useState<string[]>([]); // 待处理的输入任务队列
     const [currentFocusId, setCurrentFocusId] = useState(''); // 当前聚焦的任务ID
-    console.log('inputQueue :>> ', inputQueue);
     // 当任务变化时更新输入队列
     useEffect(() => {
         // 找出所有需要输入的新任务
@@ -699,7 +694,6 @@ const useFoucsInput = (tasks: any) => {
     useEffect(() => {
         if (currentFocusId) {
             const dom = document.getElementById(currentFocusId);
-            console.log('dom :>> ', dom);
             if (dom) {
                 dom?.focus();
                 // 平滑滚动到输入框位置

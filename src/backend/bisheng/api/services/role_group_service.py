@@ -22,7 +22,7 @@ from bisheng.database.models.group_resource import GroupResourceDao, ResourceTyp
 from bisheng.database.models.role import RoleDao
 from bisheng.database.models.user_group import UserGroupCreate, UserGroupDao, UserGroupRead
 from bisheng.knowledge.domain.models.knowledge import KnowledgeDao
-from bisheng.telemetry_search.domain.services.dashboard import DashboardService
+# from bisheng.telemetry_search.domain.services.dashboard import DashboardService  # disabled: .pyc compiled for Python 3.10
 from bisheng.tool.domain.models.gpts_tools import GptsToolsDao
 from bisheng.user.domain.models.user import User, UserDao
 from bisheng.user.domain.models.user_role import UserRoleDao
@@ -349,30 +349,9 @@ class RoleGroupService():
 
     async def get_group_dashboards(self, group_id: int, keyword: str, page_size: int, page_num: int) -> (List[Any],
                                                                                                          int):
-
         """ Get a list of dashboards under a user group """
-        # Query the dashboard under the user groupIDVertical
-        resource_list = await GroupResourceDao.aget_group_resources(group_id=group_id,
-                                                                    resource_type=ResourceTypeEnum.DASHBOARD)
-        if not resource_list:
-            return [], 0
-        res = []
-        dashboard_ids = [int(resource.third_id) for resource in resource_list]
-        # Query Dashboard
-        data = await DashboardService.get_simple_dashboards(keyword=keyword, filter_ids=dashboard_ids)
-
-        user_map = await self.aget_user_map(set([one.user_id for one in data]))
-        for one in data:
-            one_dict = one.model_dump(exclude={"layout_config", "style_config"})
-            one_dict["name"] = one.title
-            one_dict["user_name"] = user_map.get(one.user_id, one.user_id)
-            res.append(one_dict)
-        if page_size and page_num:
-            start_index = (page_num - 1) * page_size
-            end_index = start_index + page_size
-            paged_res = res[start_index:end_index]
-            return paged_res, len(res)
-        return res, len(res)
+        # DashboardService disabled (telemetry_search module unavailable, .pyc compiled for Python 3.10)
+        return [], 0
 
     def get_manage_resources(self, login_user: UserPayload, keyword: str, page: int, page_size: int) -> (list, int):
         """ Get a list of apps under a user group managed by a user Contains skills, assistants, workflows"""

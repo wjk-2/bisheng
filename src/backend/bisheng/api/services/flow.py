@@ -167,8 +167,8 @@ class FlowService(BaseService):
                 # Refresh this version of the form data
                 if not get_L2_param_from_flow(flow_version.data, flow_version.flow_id, flow_version.id):
                     logger.error(f'flow_id={flow_version.id} version_id={flow_version.id} extract file_node fail')
-            except:
-                pass
+            except Exception as e:
+                logger.warning(f'flow_id={flow_version.id} version_id={flow_version.id} refresh form data failed: {e}')
         return resp_200(data=flow_version)
 
     @classmethod
@@ -209,8 +209,8 @@ class FlowService(BaseService):
                 # Refresh this version of the form data
                 if not get_L2_param_from_flow(flow_version.data, flow_version.flow_id, flow_version.id):
                     logger.error(f'flow_id={flow_version.id} version_id={flow_version.id} extract file_node fail')
-            except:
-                pass
+            except Exception as e:
+                logger.warning(f'flow_id={flow_version.id} version_id={flow_version.id} refresh form data failed: {e}')
         await cls.update_flow_hook(request, user, flow_info)
         return resp_200(data=flow_version)
 
@@ -219,6 +219,11 @@ class FlowService(BaseService):
             UnifiedResponseModel[Flow]:
         """
         Get details on individual skills
+
+        权限规则：
+        - is_public=2 且 status=ONLINE：公开到所有用户
+        - is_public=1 且 status=ONLINE：仅组织内可见（需要检查用户是否在同一组）
+        - is_public=0 或其他情况：需要角色授权或分享链接
         """
         flow_info = await FlowDao.aget_flow_by_id(flow_id)
         if not flow_info:
@@ -226,11 +231,50 @@ class FlowService(BaseService):
         atype = AccessType.FLOW
         if flow_info.flow_type == FlowType.WORKFLOW.value:
             atype = AccessType.WORKFLOW
-        if not await login_user.async_access_check(flow_info.user_id, flow_info.id, atype):
-            if (share_link is None
-                    or share_link.meta_data is None
-                    or share_link.meta_data.get("flowId") != flow_info.id):
-                raise UnAuthorizedError()
+
+        # 只检查上线的智能体
+        is_online = flow_info.status == FlowStatus.ONLINE.value
+
+        if is_online:
+            if flow_info.is_public == 2:
+                # 公开到所有用户：允许访问
+                pass
+            elif flow_info.is_public == 1:
+                # 仅组织内可见：检查用户是否在同一组
+                flow_groups = await GroupResourceDao.aget_resource_group(
+                    ResourceTypeEnum.WORK_FLOW if flow_info.flow_type == FlowType.WORKFLOW.value else ResourceTypeEnum.FLOW,
+                    flow_info.id
+                )
+                if flow_groups:
+                    # 获取智能体所属的组ID列表
+                    flow_group_ids = [g.group_id for g in flow_groups]
+                    # 获取当前用户所属的组
+                    user_groups = await UserGroupDao.aget_user_group(login_user.user_id)
+                    user_group_ids = [ug.group_id for ug in user_groups]
+                    # 检查是否有交集
+                    if set(flow_group_ids) & set(user_group_ids):
+                        # 用户和智能体在同一组内，允许访问
+                        pass
+                    else:
+                        # 不在同一组，需要检查角色授权
+                        if not await login_user.async_access_check(flow_info.user_id, flow_info.id, atype):
+                            if share_link is None or not share_link.is_valid(flow_info.id):
+                                raise UnAuthorizedError()
+                else:
+                    # 智能体没有关联组，需要检查角色授权
+                    if not await login_user.async_access_check(flow_info.user_id, flow_info.id, atype):
+                        if share_link is None or not share_link.is_valid(flow_info.id):
+                            raise UnAuthorizedError()
+            else:
+                # 其他情况需要检查权限
+                if not await login_user.async_access_check(flow_info.user_id, flow_info.id, atype):
+                    if share_link is None or not share_link.is_valid(flow_info.id):
+                        raise UnAuthorizedError()
+        else:
+            # 非上线状态需要检查权限
+            if not await login_user.async_access_check(flow_info.user_id, flow_info.id, atype):
+                if share_link is None or not share_link.is_valid(flow_info.id):
+                    raise UnAuthorizedError()
 
         flow_info.logo = await cls.get_logo_share_link_async(flow_info.logo)
 
@@ -304,7 +348,7 @@ class FlowService(BaseService):
             one.logo = cls.get_logo_share_link(one.logo)
             flow_info = jsonable_encoder(one)
             flow_info['user_name'] = user_dict.get(one.user_id, one.user_id)
-            flow_info['write'] = True if user.is_admin() or user.user_id == one.user_id else False
+            flow_info['write'] = user.is_admin() or user.access_check(one.user_id, one.id, AccessType.FLOW_WRITE)
             flow_info['version_list'] = flow_versions.get(one.id, [])
             flow_info['group_ids'] = flow_group_dict.get(one.id, [])
             flow_info['tags'] = flow_tags.get(one.id, [])
@@ -441,8 +485,8 @@ class FlowService(BaseService):
         try:
             if flow_info.data and not get_L2_param_from_flow(flow_info.data, flow_info.id, version_id):
                 logger.error(f'flow_id={flow_info.id} extract file_node fail')
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f'flow_id={flow_info.id} create_flow_hook extract file_node failed: {e}')
         # Associate the skill to the corresponding user group
         user_group = UserGroupDao.get_user_group(login_user.user_id)
         if user_group:

@@ -1,4 +1,4 @@
-import { Loader2 } from "lucide-react";
+import { Loader2, MessageSquare } from "lucide-react";
 import { useContext, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "../../../components/bs-ui/badge";
@@ -6,12 +6,13 @@ import { Button } from "../../../components/bs-ui/button";
 import EditLabel from "../../../components/bs-ui/editLabel";
 import { alertContext } from "../../../contexts/alertContext";
 import { getModelInfoApi } from "../../../controllers/API";
-import { cancelTaskApi, getTaskInfoApi, publishTaskApi, unPublishTaskApi, updataTaskNameApi } from "../../../controllers/API/finetune";
+import { cancelTaskApi, getTaskInfoApi, publishTaskApi, unPublishTaskApi, updataTaskNameApi, enableModelChatApi, getLLmServerDetail } from "../../../controllers/API/finetune";
 import { captureAndAlertRequestErrorHoc } from "../../../controllers/request";
 import { TaskDB } from "../../../types/api/finetune";
 import FinetuneResult from "./FinetuneResult";
 import { formatMilliseconds } from "../../../util/utils";
 import { bsConfirm } from "@/components/bs-ui/alertDialog/useConfirm";
+import { useToast } from "@/components/bs-ui/toast/use-toast";
 
 export const enum TaskStatus {
     /** 训练中 */
@@ -28,7 +29,7 @@ export const enum TaskStatus {
 
 // 徽章
 export const BadgeView = ({ value }) => {
-    const { t } = useTranslation()
+    const { t } = useTranslation('model')
     // 训练成功
     // return null
     const colors = ['', '', 'text-red-500', '', 'text-green-500', 'text-green-500']
@@ -36,7 +37,7 @@ export const BadgeView = ({ value }) => {
     return <Badge size="sm" variant="secondary" className={`${colors[value]} break-keep`}>{texts[value]}</Badge>
 }
 
-const HeadButtonView = ({ name, status, online, onPublish, onUnPublish, onDelete, onStop }) => {
+const HeadButtonView = ({ name, status, online, onPublish, onUnPublish, onDelete, onStop, chatEnabled, onEnableChat, isAdmin = true, showPermissionDenied }) => {
     const { t } = useTranslation('model')
     const [loading, setLoading] = useState(false)
 
@@ -59,12 +60,20 @@ const HeadButtonView = ({ name, status, online, onPublish, onUnPublish, onDelete
     }
 
     const handlePublish = async () => {
+        if (!isAdmin) {
+            showPermissionDenied()
+            return
+        }
         setLoading(true)
         await onPublish()
         setLoading(false)
     }
 
     const deleteClick = () => {
+        if (!isAdmin) {
+            showPermissionDenied()
+            return
+        }
         let tip = t('finetune.confirmDeleteModel', { name })
         if (online) {
             tip = t('finetune.confirmDeleteOnlineModel', { name })
@@ -81,6 +90,10 @@ const HeadButtonView = ({ name, status, online, onPublish, onUnPublish, onDelete
     }
 
     const stopClick = () => {
+        if (!isAdmin) {
+            showPermissionDenied()
+            return
+        }
         bsConfirm({
             desc: t('finetune.confirmStopTraining'),
             onOk(next) {
@@ -91,8 +104,19 @@ const HeadButtonView = ({ name, status, online, onPublish, onUnPublish, onDelete
     }
 
     return <div className="absolute right-4 flex gap-2">
+        {/* B++: 发布成功后显示启用到对话按钮 */}
+        {status === TaskStatus.PUBLISH_SUCCESS && !chatEnabled && onEnableChat && (
+            <Button size="sm" variant="outline" onClick={onEnableChat}>
+                <MessageSquare className="w-3 h-3 mr-1" />{t('finetune.enableChat')}
+            </Button>
+        )}
+        {status === TaskStatus.PUBLISH_SUCCESS && chatEnabled && (
+            <Badge variant="default" className="h-8 flex items-center">
+                <MessageSquare className="w-3 h-3 mr-1" />{t('finetune.chatAvailable')}
+            </Badge>
+        )}
         {status === TaskStatus.PUBLISH_SUCCESS ?
-            <Button size="sm" disabled={loading} onClick={cancelPublish}>
+            <Button size="sm" disabled={loading} onClick={() => isAdmin ? cancelPublish() : showPermissionDenied()}>
                 {loading && <Loader2 className="animate-spin mr-2" size={14} />}
                 {t('finetune.cancelPublish')}
             </Button> :
@@ -112,21 +136,46 @@ const HeadButtonView = ({ name, status, online, onPublish, onUnPublish, onDelete
 
 
 
-export default function FinetuneDetail({ id, onDelete, onStatusChange }) {
+export default function FinetuneDetail({ id, onDelete, onStatusChange, isAdmin = true }) {
     const { t } = useTranslation('model')
 
     const { setSuccessData } = useContext(alertContext);
+    const { message } = useToast()
+
+    // 权限不足提示
+    const showPermissionDenied = () => {
+        message({ variant: 'warning', description: '暂无权限，请联系管理员' });
+    };
 
     const [baseInfo, setBaseInfo] = useState<TaskDB>(null)
 
     // 上线状态
     const [online, setOnline] = useState(false)
+    // B++: 对话启用状态
+    const [chatEnabled, setChatEnabled] = useState(false)
+
     const getOnlineState = (modelId) => {
         if (modelId) {
             return getModelInfoApi(modelId).then((data) => {
-                console.log(data);
                 setOnline(data.status === '已上线')
             })
+        }
+    }
+
+    // B++: 查询对话状态
+    const checkChatEnabled = async (llmServerId: number) => {
+        if (!llmServerId) return
+        try {
+            const serverDetail = await getLLmServerDetail(String(llmServerId))
+            if (serverDetail?.models?.length) {
+                const { getChatEnabledIdsApi } = await import("../../../controllers/API/finetune")
+                const enabledIds = await getChatEnabledIdsApi().catch(() => [])
+                const enabledSet = new Set((enabledIds || []).map(String))
+                const isEnabled = serverDetail.models.some((m: any) => enabledSet.has(String(m.id)))
+                setChatEnabled(isEnabled)
+            }
+        } catch (e) {
+            // ignore
         }
     }
 
@@ -134,10 +183,35 @@ export default function FinetuneDetail({ id, onDelete, onStatusChange }) {
         captureAndAlertRequestErrorHoc(getTaskInfoApi(id).then((data) => {
             setBaseInfo(data.finetune)
             getOnlineState(data.finetune.model_id)
+            // B++: 检查对话状态
+            if (data.finetune.llm_server_id) {
+                checkChatEnabled(data.finetune.llm_server_id)
+            }
         }), (err) => {
             setBaseInfo(null)
         })
     }, [id])
+
+    // B++: 启用微调模型到对话
+    const handleEnableChat = async () => {
+        if (!baseInfo?.llm_server_id) {
+            message({ variant: 'error', description: '该模型未注册到 LLM 管理' })
+            return
+        }
+        try {
+            const serverDetail = await getLLmServerDetail(String(baseInfo.llm_server_id))
+            const llmModel = serverDetail?.models?.find((m: any) => m.model_type === 'llm')
+            if (llmModel) {
+                await enableModelChatApi(llmModel.id, baseInfo.model_name)
+                message({ variant: 'success', description: `${baseInfo.model_name} 已启用到对话` })
+                setChatEnabled(true)
+            } else {
+                message({ variant: 'error', description: '未找到对应的 LLM 模型' })
+            }
+        } catch (error) {
+            message({ variant: 'error', description: '启用到对话失败' })
+        }
+    }
 
     const handlePublish = async () => {
         const res = await captureAndAlertRequestErrorHoc(publishTaskApi(id))
@@ -146,6 +220,13 @@ export default function FinetuneDetail({ id, onDelete, onStatusChange }) {
         onStatusChange(TaskStatus.PUBLISH_SUCCESS)
         setBaseInfo({ ...baseInfo, status: TaskStatus.PUBLISH_SUCCESS })
         setSuccessData({ title: t('finetune.publishSuccess') })
+        // B++: 发布后刷新任务信息以获取 llm_server_id
+        setTimeout(async () => {
+            const data = await getTaskInfoApi(id)
+            if (data?.finetune?.llm_server_id) {
+                setBaseInfo(data.finetune)
+            }
+        }, 1000)
     }
 
     const handleUnPublish = async () => {
@@ -183,6 +264,10 @@ export default function FinetuneDetail({ id, onDelete, onStatusChange }) {
             onUnPublish={handleUnPublish}
             onDelete={onDelete}
             onStop={handleStopTrain}
+            chatEnabled={chatEnabled}
+            onEnableChat={baseInfo.llm_server_id ? handleEnableChat : undefined}
+            isAdmin={isAdmin}
+            showPermissionDenied={showPermissionDenied}
         ></HeadButtonView>
         <div className="border-b pb-4">
             <div className="flex gap-4 items-center">

@@ -109,7 +109,7 @@ export default function VarSelectItem({ nodeId, data: paramItem, onChange, onOut
 
     return <div className='node-item mb-4' data-key={paramItem.key}>
         <div className="flex justify-between items-center">
-            <Label className="flex items-center bisheng-label">
+            <Label className="flex items-center eagent-label">
                 {paramItem.required && <span className="text-red-500">*</span>}
                 {t(`${i18nPrefix}label`)}
                 {paramItem.help && <QuestionTooltip content={t(`${i18nPrefix}help`)} />}
@@ -199,7 +199,7 @@ export function VarSelectSingleItem({ nodeId, data: paramItem, onChange, onValid
 
     return <div className='node-item mb-4' data-key={paramItem.key}>
         <div className="flex justify-between items-center">
-            <Label className="flex items-center bisheng-label">
+            <Label className="flex items-center eagent-label">
                 {paramItem.required && <span className="text-red-500">*</span>}
                 {t(`${i18nPrefix}label`)}
                 {paramItem.help && <QuestionTooltip content={t(`${i18nPrefix}help`)} />}

@@ -28,6 +28,7 @@ import { userContext } from "../../contexts/userContext";
 import { copyLibDatabase, createFileLib, deleteFileLib, readFileLibDatabase, updateKnowledge } from "../../controllers/API";
 import { captureAndAlertRequestErrorHoc } from "../../controllers/request";
 import { useTable } from "../../util/hook";
+import { formatDateTime } from "../../util/utils";
 import { useModel } from "../ModelPage/manage";
 import { ModelSelect } from "../ModelPage/manage/tabs/WorkbenchModel";
 
@@ -155,7 +156,6 @@ function CreateModal({ datalist, open, onOpenChange, onLoadEnd, mode = 'create',
                 model: modelId,
                 type: 0
             }).then(res => {
-                window.libname = [name, desc]
                 navigate(isImport
                     ? `/filelib/upload/${res.id}`
                     : `/filelib/${res.id}`
@@ -204,19 +204,19 @@ function CreateModal({ datalist, open, onOpenChange, onLoadEnd, mode = 'create',
                 {mode === 'edit' && currentLib && (
                     <div className="space-y-4">
                         <div className="flex items-center gap-48">
-                            <label className="bisheng-label text-sm text-gray-500">{t('lib.knowledgeBaseId', { ns: 'bs' })}</label>
+                            <label className="eagent-label text-sm text-gray-500">{t('lib.knowledgeBaseId', { ns: 'bs' })}</label>
                             <div className="text-sm">{currentLib.id}</div>
                         </div>
                         <div className="flex items-center gap-48">
-                            <label className="bisheng-label text-sm text-gray-500">{t('createTime', { ns: 'bs' })}</label>
+                            <label className="eagent-label text-sm text-gray-500">{t('createTime', { ns: 'bs' })}</label>
                             <div className="text-sm">
-                                {currentLib.create_time.replace('T', ' ')}
+                                {formatDateTime(currentLib.create_time)}
                             </div>
                         </div>
                     </div>
                 )}
                 <div className="">
-                    <label htmlFor="name" className="bisheng-label">{t('lib.libraryName', { ns: 'bs' })}</label>
+                    <label htmlFor="name" className="eagent-label">{t('lib.libraryName', { ns: 'bs' })}</label>
                     <span className="text-red-500">*</span>
                     <Input
                         name="name"
@@ -227,7 +227,7 @@ function CreateModal({ datalist, open, onOpenChange, onLoadEnd, mode = 'create',
                     />
                 </div>
                 <div className="">
-                    <label htmlFor="desc" className="bisheng-label">{t('lib.desc', { ns: 'bs' })}</label>
+                    <label htmlFor="desc" className="eagent-label">{t('lib.desc', { ns: 'bs' })}</label>
                     <Textarea
                         id="desc"
                         ref={descRef}
@@ -238,7 +238,7 @@ function CreateModal({ datalist, open, onOpenChange, onLoadEnd, mode = 'create',
                     />
                 </div>
                 <div className="">
-                    <label htmlFor="model" className="bisheng-label">{t('lib.embeddingModelSelection', { ns: 'bs' })}</label>
+                    <label htmlFor="model" className="eagent-label">{t('lib.embeddingModelSelection', { ns: 'bs' })}</label>
                     {isLoading ? (
                         <div className="flex items-center gap-2 p-3 border rounded-md bg-gray-50">
                             <LoadIcon className="w-4 h-4 animate-spin" />
@@ -375,8 +375,6 @@ export default function KnowledgeFile() {
     }
 
     const handleOpenSettings = (lib) => {
-        console.log("=== handleOpenSettings execution started ===");
-        console.log("Clicked lib ID:", lib.id);
         // 1. Deep copy: Completely break reference association with original lib (solving nested property reference issues)
         const newCurrentLib = JSON.parse(JSON.stringify(lib));
         // 2. Inject unique identifier: Ensure currentSettingLib reference is absolutely unique even if data is identical
@@ -385,16 +383,13 @@ export default function KnowledgeFile() {
         setCurrentSettingLib(newCurrentLib); // Now passing a completely new object reference
         setSettingsOpen(true);
         setModalKey(prev => prev + 1); // Keep modalKey to ensure modal re-mounts
-        console.log("handleOpenSettings called with lib:", newCurrentLib); // Verify print
     };
 
     const handleSettingsClose = (isOpen) => {
-        console.log("handleSettingsClose called with isOpen:", isOpen);
         setSettingsOpen(isOpen);
         if (!isOpen) {
             setCurrentSettingLib(null);
             setSelectOpenId(null);
-            console.log("Settings modal closed and state cleared");
         }
     };
 
@@ -457,9 +452,6 @@ export default function KnowledgeFile() {
     }
 
     useEffect(() => {
-        console.log("settingsOpen state changed:", settingsOpen);
-        console.log("currentSettingLib:", currentSettingLib);
-        console.log("modalKey:", modalKey);
     }, [settingsOpen, currentSettingLib, modalKey]);
 
     return (
@@ -488,7 +480,6 @@ export default function KnowledgeFile() {
                                 className=""
                                 onClick={() => {
                                     if ([KnowledgeBaseStatus.Copying, KnowledgeBaseStatus.Unpublished].includes(el.state)) return;
-                                    window.libname = [el.name, el.description];
                                     navigate(`/filelib/${el.id}`);
                                     handleCachePage();
                                 }}
@@ -519,7 +510,7 @@ export default function KnowledgeFile() {
                                 <TableCell
                                     className="text-[#5A5A5A]"
                                 >
-                                    {el.update_time.replace('T', ' ')}
+                                    {formatDateTime(el.update_time)}
                                 </TableCell>
 
                                 <TableCell
@@ -544,7 +535,6 @@ export default function KnowledgeFile() {
                                             }}
                                             onValueChange={(selectedValue) => {
                                                 setSelectOpenId(null);
-                                                console.log("Selected value:", selectedValue, "for lib:", el.id);
 
                                                 switch (selectedValue) {
                                                     case 'copy':
@@ -632,7 +622,7 @@ export default function KnowledgeFile() {
                     </TableBody>
                 </Table>
             </div>
-            <div className="bisheng-table-footer px-6 bg-background-login">
+            <div className="eagent-table-footer px-6 bg-background-login">
                 <p className="desc">{t('lib.libraryCollection', { ns: 'bs' })}</p>
                 <div>
                     <AutoPagination

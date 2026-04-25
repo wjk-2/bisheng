@@ -1,6 +1,8 @@
 import json
 from typing import Dict, List, Literal
 
+import aiohttp
+
 from bisheng.core.external.http_client.http_client_manager import get_http_client
 
 
@@ -26,6 +28,9 @@ class SFTBackend:
 
     @classmethod
     async def _base_request(cls, method: Literal['get', 'post'], *args, **kwargs) -> (bool, str | Dict):
+        # 设置默认超时 30 秒，防止长时间阻塞
+        if 'timeout' not in kwargs:
+            kwargs['timeout'] = aiohttp.ClientTimeout(total=30)
         client = await get_http_client()
         client = await client.get_aiohttp_client()
         if method == 'get':

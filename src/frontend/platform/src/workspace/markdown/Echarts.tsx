@@ -16,7 +16,6 @@ export default function ECharts({ option }: { option: string }) {
     useEffect(() => {
         loadScript("echarts")
             .then((echarts) => {
-                console.log("[v0] ECharts library loaded successfully", echarts)
                 setEchartsLib(echarts)
             })
             .catch((error) => {
@@ -40,11 +39,12 @@ export default function ECharts({ option }: { option: string }) {
             setTimeout(() => {
                 if (domRef.current && echartsLib) {
                     chartRef.current = echartsLib.init(domRef.current)
-                    const getOption = new Function("myChart", "echarts", `return ${option.trim()}`)
                     try {
-                        chartRef.current.setOption(getOption(chartRef.current, echartsLib))
+                        // Use JSON.parse instead of new Function to prevent code injection
+                        const parsedOption = JSON.parse(option.trim())
+                        chartRef.current.setOption(parsedOption)
                     } catch (e) {
-                        console.error("[v0] ECharts option error:", e)
+                        console.error("[v0] ECharts option error (only JSON options are supported):", e)
                     }
                 }
             }, 0)
@@ -82,7 +82,7 @@ export default function ECharts({ option }: { option: string }) {
     }, [mode])
 
     useEffect(() => {
-        const parentNode = document.querySelector(".bisheng-message")
+        const parentNode = document.querySelector(".eagent-message")
         if (parentNode && containerRef.current) {
             containerRef.current.style.width = `${parentNode.clientWidth - 60}px`
         }

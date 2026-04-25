@@ -190,7 +190,6 @@ export default function EditUserGroup({ data, onBeforeChange, onChange }) {
     const [lockOptions, setLockOptions] = useState([])
 
     const handleSave = async () => {
-        console.log('form', form);
 
         if (!form.groupName) {
             setForm({ ...form, groupName: data.group_name || '' })

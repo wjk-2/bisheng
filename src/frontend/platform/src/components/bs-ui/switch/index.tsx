@@ -2,9 +2,14 @@ import * as React from "react"
 import * as SwitchPrimitives from "@radix-ui/react-switch"
 import { cname } from "../utils"
 
+interface SwitchProps extends React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root> {
+    /** 开关两侧显示的文字 [开启文字, 关闭文字] */
+    texts?: [string, string] | null;
+}
+
 const Switch = React.forwardRef<
     React.ElementRef<typeof SwitchPrimitives.Root>,
-    React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root>
+    SwitchProps
 >(({ className, texts = null, ...props }, ref) => (
     <SwitchPrimitives.Root
         className={cname(

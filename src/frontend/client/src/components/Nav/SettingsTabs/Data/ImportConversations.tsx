@@ -52,7 +52,6 @@ function ImportConversations() {
     try {
       await startUpload(_file);
     } catch (error) {
-      console.log('file handling error', error);
       setError('An error occurred while processing the file.');
     }
   };

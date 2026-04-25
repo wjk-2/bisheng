@@ -33,6 +33,7 @@ export const getTasksApi = async (params: Tasks_query): Promise<TaskDB[]> => {
 };
 
 // 创建任务
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- createTask 参数结构由表单动态生成，类型不固定
 export const createTaskApi = async (data: any): Promise<TaskDB> => {
     const filterData = (arr) => {
         return arr?.reduce((res, el) => {
@@ -71,7 +72,7 @@ export const publishTaskApi = async (taskId: string): Promise<TaskDB> => {
 };
 
 // 获取任务详情
-export const getTaskInfoApi = async (taskId: string): Promise<{ finetune: TaskDB, log: any, report: any, loss_data: any }> => {
+export const getTaskInfoApi = async (taskId: string): Promise<{ finetune: TaskDB, log: unknown, report: unknown, loss_data: unknown }> => {
     return await axios.get(`/api/v1/finetune/job/info?job_id=${taskId}`);
 };
 
@@ -85,7 +86,7 @@ export const updataTaskNameApi = async (taskId: string, name: string) => {
 
 // 上传文件
 export const uploadTaskFileApi = async (data, config): Promise<FileItem> => {
-    return await axios.post(`/api/v1/finetune/job/file`, data, config).then((res: any) => {
+    return await axios.post(`/api/v1/finetune/job/file`, data, config).then((res: Record<string, unknown>[]) => {
         if (!res.length) return null
         const { id, url, name } = res[0]
         return {
@@ -121,11 +122,12 @@ export const getFileUrlApi = async (urlkey): Promise<{ url: string }> => {
 };
 
 // 获模型列表
-export const getModelListApi = async (): Promise<any> => {
+export const getModelListApi = async (): Promise<unknown> => {
     return await axios.get(`/api/v1/llm`);
 }
 
 // 添加模型
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- LLM 服务器配置结构动态，保留 any
 export const addLLmServer = async (data: any) => {
     // 删除前端生成的id (id: string )
     data.models = data.models.map((item) => {
@@ -138,6 +140,7 @@ export const addLLmServer = async (data: any) => {
 };
 
 // 修改模型
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- LLM 服务器配置结构动态，保留 any
 export const updateLLmServer = async (data: any) => {
     // 删除前端生成的id (id: string )
     data.models = data.models.map((item) => {
@@ -160,69 +163,86 @@ export const changeLLmServerStatus = async (model_id: string, online: number) =>
 }
 
 // 获取模型详情
-export const getLLmServerDetail = async (server_id: string): Promise<any> => {
+export const getLLmServerDetail = async (server_id: string): Promise<unknown> => {
     return await axios.get(`/api/v1/llm/info?server_id=${server_id}`)
 }
 
 // 获取知识库模型配置
-export const getKnowledgeModelConfig = async (): Promise<any> => {
+export const getKnowledgeModelConfig = async (): Promise<unknown> => {
     return await axios.get(`/api/v1/llm/knowledge`)
 }
 
 // 更新知识库模型配置
-export const updateKnowledgeModelConfig = async (data: any): Promise<any> => {
+export const updateKnowledgeModelConfig = async (data: Record<string, unknown>): Promise<unknown> => {
     return await axios.post(`/api/v1/llm/knowledge`, data)
 }
 // 获取灵思模型配置
-export const getLinsightModelConfig = async (): Promise<any> => {
+export const getLinsightModelConfig = async (): Promise<unknown> => {
     return await axios.get(`/api/v1/llm/workbench`)
 }
 // 更新灵思模型配置
-export const updateLinsightModelConfig = async (data: any): Promise<any> => {
+export const updateLinsightModelConfig = async (data: Record<string, unknown>): Promise<unknown> => {
     return await axios.post(`/api/v1/llm/workbench`, data)
 }
 // 获取助手模型配置
-export const getAssistantModelConfig = async (): Promise<any> => {
+export const getAssistantModelConfig = async (): Promise<unknown> => {
     return await axios.get(`/api/v1/llm/assistant`)
 }
 
 // 更新助手模型配置
-export const updateAssistantModelConfig = async (data: any): Promise<any> => {
+export const updateAssistantModelConfig = async (data: Record<string, unknown>): Promise<unknown> => {
     return await axios.post(`/api/v1/llm/assistant`, data)
 }
 
 // 获取评测模型配置
-export const getEvaluationModelConfig = async (): Promise<any> => {
+export const getEvaluationModelConfig = async (): Promise<unknown> => {
     return await axios.get(`/api/v1/llm/evaluation`)
 }
 
 // 更新评测模型配置
-export const updateEvaluationModelConfig = async (data: any): Promise<any> => {
+export const updateEvaluationModelConfig = async (data: Record<string, unknown>): Promise<unknown> => {
     return await axios.post(`/api/v1/llm/evaluation`, data)
 }
 
 /**
  * llm 助手节点默认模型
  */
-export async function setLlmDefaultModel(data: { model_id: string }): Promise<any> {
+export async function setLlmDefaultModel(data: { model_id: string }): Promise<unknown> {
     return await axios.post(`/api/v1/llm/workflow`, data)
 }
 
 /**
  * llm 助手节点默认模型
  */
-export async function getLlmDefaultModel(): Promise<any> {
+export async function getLlmDefaultModel(): Promise<unknown> {
     return await axios.get(`/api/v1/llm/workflow`)
 }
 
 // 获取助手模型可选列表
-export const getAssistantModelList = async (): Promise<any> => {
+export const getAssistantModelList = async (): Promise<unknown> => {
     return await axios.get(`/api/v1/llm/assistant/llm_list`)
 }
 
+// ===== B++ 新增：模型对话启用管理 =====
+
+// 启用模型到 Workspace 对话
+export const enableModelChatApi = async (model_id: number, display_name?: string): Promise<unknown> => {
+    return await axios.post(`/api/v1/llm/chat/enable`, { model_id, display_name })
+}
+
+// 从 Workspace 对话移除模型
+export const disableModelChatApi = async (model_id: number): Promise<unknown> => {
+    return await axios.post(`/api/v1/llm/chat/disable`, { model_id })
+}
+
+// 获取所有已启用对话的模型ID列表
+export const getChatEnabledIdsApi = async (): Promise<string[]> => {
+    return await axios.get(`/api/v1/llm/chat/enabled-ids`)
+}
+
 // 创建数据集
-export const createDatasetApi = async (data: { name: string, files: string, qa_list: string[] }): Promise<any> => {
-    return await axios.post(`/api/v1/finetune/job/file/preset `, data);
+export const createDatasetApi = async (data: { name: string, files: string, qa_list: string[] }): Promise<unknown> => {
+    return await axios.post(`/api/v1/finetune/job/file/preset`, data);
 }
 
 // 删除数据集

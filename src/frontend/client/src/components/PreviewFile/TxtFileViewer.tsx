@@ -53,7 +53,7 @@ const TxtFileViewer = ({ html = false, markdown = false, filePath }) => {
     if (html) return <iframe
         className="w-full h-full border"
         srcDoc={content}  // 使用srcdoc直接嵌入HTML内容
-        sandbox="allow-scripts"
+        sandbox="" // ⚠️ 安全关键：空字符串=最严格沙箱，禁止脚本/表单/弹窗/同源访问，防止 srcDoc 内 XSS。勿删，勿加 allow-*
     />
 
     return (

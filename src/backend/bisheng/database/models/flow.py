@@ -28,6 +28,17 @@ class FlowStatus(Enum):
     ONLINE = 2
 
 
+# 固定分类枚举
+class FlowCategory(Enum):
+    """智能体分类：助教、助学、助研、助管、助评、其他"""
+    TEACHING = '助教'
+    LEARNING = '助学'
+    RESEARCH = '助研'
+    MANAGEMENT = '助管'
+    EVALUATION = '助评'
+    OTHER = '其他'
+
+
 class FlowType(Enum):
     FLOW = 1
     ASSISTANT = 5
@@ -53,6 +64,8 @@ class FlowBase(SQLModelSerializable):
     data: Optional[Dict] = Field(default=None)
     logo: Optional[str] = Field(default=None, index=False)
     status: Optional[int] = Field(index=False, default=1)
+    is_public: Optional[int] = Field(index=False, default=0, description='可见范围 (0=仅自己, 1=组内, 2=全部)')
+    category: Optional[str] = Field(index=False, default='其他', max_length=32, description='分类：助教/助学/助研/助管/助评/其他')
     flow_type: Optional[int] = Field(index=False, default=1)
     guide_word: Optional[str] = Field(default=None, sa_column=Column(String(length=1000)))
     create_time: Optional[datetime] = Field(default=None, sa_column=Column(
@@ -103,6 +116,7 @@ class FlowUpdate(SQLModelSerializable):
     description: Optional[str] = None
     data: Optional[Dict] = None
     status: Optional[int] = None
+    is_public: Optional[int] = None
     guide_word: Optional[str] = None
 
 
@@ -387,18 +401,22 @@ class FlowDao(FlowBase):
                      id_extra: list = None,
                      id_list_not_in: list = None,
                      page: int = 0,
-                     limit: int = 0) -> (List[Dict], int):
-        """ Get all apps Contains skills, assistants, workflows """
+                     limit: int = 0,
+                     category: str = None) -> (List[Dict], int):
+        """ Get all apps Contains skills, assistants, workflows
+        Support category filter for classification
+        """
         sub_query = select(
             Flow.id, Flow.name, Flow.description, Flow.flow_type, Flow.logo, Flow.user_id,
-            Flow.status, Flow.create_time, Flow.update_time).union_all(
+            Flow.status, Flow.is_public, Flow.category, Flow.create_time, Flow.update_time).union_all(
             select(Assistant.id, Assistant.name, Assistant.desc, FlowType.ASSISTANT.value,
-                   Assistant.logo, Assistant.user_id, Assistant.status, Assistant.create_time,
-                   Assistant.update_time).where(Assistant.is_delete == 0)).subquery()
+                   Assistant.logo, Assistant.user_id, Assistant.status, Assistant.is_public, Assistant.category,
+                   Assistant.create_time, Assistant.update_time).where(Assistant.is_delete == 0)).subquery()
 
         statement = select(sub_query.c.id, sub_query.c.name, sub_query.c.description,
                            sub_query.c.flow_type, sub_query.c.logo, sub_query.c.user_id,
-                           sub_query.c.status, sub_query.c.create_time, sub_query.c.update_time)
+                           sub_query.c.status, sub_query.c.is_public, sub_query.c.category,
+                           sub_query.c.create_time, sub_query.c.update_time)
         count_statement = select(func.count(sub_query.c.id))
         if name:
             statement = statement.where(sub_query.c.name.like(f'%{name}%'))
@@ -412,15 +430,51 @@ class FlowDao(FlowBase):
         if flow_type is not None:
             statement = statement.where(sub_query.c.flow_type == flow_type)
             count_statement = count_statement.where(sub_query.c.flow_type == flow_type)
+        # 分类筛选 - 独立应用，不受权限影响
+        if category is not None and category != '':
+            statement = statement.where(sub_query.c.category == category)
+            count_statement = count_statement.where(sub_query.c.category == category)
+        # 构建权限条件
+        # is_public: 0=仅自己, 1=组内, 2=全部
         if user_id is not None:
+            # 获取当前用户所属组
+            from bisheng.database.models.user_group import UserGroup
+            user_group_ids = []
+            with get_sync_db_session() as session:
+                group_stmt = select(UserGroup.group_id).where(UserGroup.user_id == user_id)
+                group_result = session.exec(group_stmt).all()
+                user_group_ids = list(group_result)
+
+            # 构建权限条件
+            permission_conditions = [
+                sub_query.c.user_id == user_id,  # 1. 自己的应用
+            ]
+
             if id_extra:
-                statement = statement.where(
-                    or_(sub_query.c.user_id == user_id, sub_query.c.id.in_(id_extra)))
-                count_statement = count_statement.where(
-                    or_(sub_query.c.user_id == user_id, sub_query.c.id.in_(id_extra)))
-            else:
-                statement = statement.where(sub_query.c.user_id == user_id)
-                count_statement = count_statement.where(sub_query.c.user_id == user_id)
+                permission_conditions.append(sub_query.c.id.in_(id_extra))  # 2. 被授权的应用
+
+            # 3. 全部可用的应用 (is_public=2)
+            permission_conditions.append(and_(sub_query.c.is_public == 2, sub_query.c.status == 2))
+
+            # 4. 组内可用的应用 (is_public=1) - 通过 group_resource 表判断资源组归属
+            if user_group_ids:
+                from bisheng.database.models.group_resource import GroupResourceDao, ResourceTypeEnum
+                group_resources = GroupResourceDao.get_groups_resource(
+                    user_group_ids,
+                    [ResourceTypeEnum.FLOW, ResourceTypeEnum.ASSISTANT, ResourceTypeEnum.WORK_FLOW],
+                )
+                group_resource_ids = list({gr.third_id for gr in group_resources})
+
+                if group_resource_ids:
+                    permission_conditions.append(
+                        and_(sub_query.c.is_public == 1, sub_query.c.status == 2,
+                             sub_query.c.id.in_(group_resource_ids))
+                    )
+
+            # 应用权限条件
+            permission_condition = or_(*permission_conditions)
+            statement = statement.where(permission_condition)
+            count_statement = count_statement.where(permission_condition)
         if id_list_not_in:
             statement = statement.where(~sub_query.c.id.in_(id_list_not_in))
             count_statement = count_statement.where(~sub_query.c.id.in_(id_list_not_in))
@@ -440,8 +494,10 @@ class FlowDao(FlowBase):
                 'logo': one[4],
                 'user_id': one[5],
                 'status': one[6],
-                'create_time': one[7],
-                'update_time': one[8]
+                'is_public': one[7],
+                'category': one[8],
+                'create_time': one[9],
+                'update_time': one[10]
             })
         return data, total
 

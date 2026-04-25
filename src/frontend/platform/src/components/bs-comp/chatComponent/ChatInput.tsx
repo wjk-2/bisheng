@@ -139,12 +139,17 @@ export default function ChatInput({ clear, form, questions, inputForm, wsUrl, on
                     let connectionTime = endTime - startTime;
 
                     // console.log('WebSocket 连接建立时间: ' + connectionTime + ' 毫秒');
-                    console.log("WebSocket connection established!");
                     res('ok')
                 };
                 ws.onmessage = (event) => {
                     // console.log(`WebSocket get: ${Date.now()} 毫秒；与send差值${Date.now() - diffRef.current}毫秒`);
-                    const data = JSON.parse(event.data);
+                    let data: any;
+                    try {
+                        data = JSON.parse(event.data);
+                    } catch (e) {
+                        console.error('WebSocket message parse error:', e);
+                        return;
+                    }
 
                     let errorMsg = ''
                     if (data.category === 'error') {
@@ -238,7 +243,6 @@ export default function ChatInput({ clear, form, questions, inputForm, wsUrl, on
         } else if (['end', 'end_cover'].includes(data.type)) {
             if (msgClosedRef.current && !['tool', 'flow', 'knowledge'].includes(data.category)) {
                 // 无未闭合的消息，先创建（补一条start）  工具类除外
-                console.log('重复end,新建消息 :>> ');
                 createWsMsg(data)
             }
             updateCurrentMessage({
@@ -288,7 +292,6 @@ export default function ChatInput({ clear, form, questions, inputForm, wsUrl, on
     }
 
     const handleSpeechRecognition = (text) => {
-        console.log('text', text);
 
         if (!showWhenLocked && inputLock.locked) return;
         if (!inputRef.current) return;

@@ -109,7 +109,6 @@ export const useMessageStore = create<State & Actions>((set, get) => ({
     },
     // start
     createWsMsg(data) {
-        console.log('change createWsMsg');
         set((state) => {
             let newChat = cloneDeep(state.messages);
             const { category, flow_id, chat_id, message_id, files, is_bot, extra, liked, message, receiver, type, source, user_id, reasoning_log } = data
@@ -246,7 +245,6 @@ export const useMessageStore = create<State & Actions>((set, get) => ({
     overWsMsg(data) {
         // 删除所有未结束消息
         if (data.type === 'end_cover' && data.message) {
-            console.log('触发安全审计,删除所有未结束消息 :>> ');
             data.category = "stream_msg"
             data.type = 'over'
             data.message_id = generateUUID(8)
@@ -260,7 +258,6 @@ export const useMessageStore = create<State & Actions>((set, get) => ({
     updateCurrentMessage(data) {
         const messages = get().messages
 
-        console.log('change updateCurrentMessage');
         const currentMessageIndex = messages.findIndex(msg => msg.message_id === data.message_id)
         const currentMessage = messages[currentMessageIndex]
 

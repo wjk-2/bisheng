@@ -229,7 +229,7 @@ def initial_milvus(class_object: Type[Milvus], params: dict, search_kwargs: dict
 
         if not knowledge:
             raise ValueError(f'Unable to find knowledge basecollection={col} knowledge_id={collection_id}')
-        params['embedding'] = LLMService.get_bisheng_knowledge_embedding_sync(0, model_id=int(knowledge.model))
+        params['embedding'] = LLMService.get_eagent_knowledge_embedding_sync(0, model_id=int(knowledge.model))
         if knowledge.collection_name.startswith('partition'):
             search_kwargs.update({'partition_key': knowledge.id})
             params['partition_key'] = knowledge.id
@@ -264,7 +264,7 @@ def initial_elastic_vector(class_object: Type[ElasticKeywordsSearch], params: di
         knowledge = KnowledgeDao.query_by_id(collection_id)
         index_name = knowledge.index_name or knowledge.collection_name
         params['index_name'] = index_name
-        params['embedding'] = LLMService.get_bisheng_knowledge_embedding_sync(0, model_id=int(knowledge.model))
+        params['embedding'] = LLMService.get_eagent_knowledge_embedding_sync(0, model_id=int(knowledge.model))
     if params['documents']:
         return class_object.from_documents(**params)
     else:

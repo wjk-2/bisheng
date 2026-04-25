@@ -56,7 +56,7 @@ export default function InputListItem({ node, data, preset, onChange, i18nPrefix
     }
 
     return <div className='node-item mb-4'>
-        <Label className="flex items-center bisheng-label">
+        <Label className="flex items-center eagent-label">
             {t(`${i18nPrefix}label`)}
             {data.help && <QuestionTooltip content={t(`${i18nPrefix}help`)} />}
         </Label>

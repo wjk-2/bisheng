@@ -273,7 +273,7 @@ class AssistantAgent(AssistantUtils):
 
     async def record_chat_history(self, message: List[Any]):
         # Record Assistant Chat History
-        if not os.getenv('BISHENG_RECORD_HISTORY'):
+        if not os.getenv('EAGENT_RECORD_HISTORY'):
             return
         try:
             os.makedirs('/app/data/history', exist_ok=True)

@@ -4,7 +4,7 @@ from langchain.embeddings.base import Embeddings
 from langchain_community.embeddings.dashscope import BATCH_SIZE
 from pydantic import Field
 
-from bisheng.llm.domain.llm.embedding import BishengEmbedding
+from bisheng.llm.domain.llm.embedding import EagentEmbedding
 
 BATCH_SIZE["text-embedding-v4"] = 10  # PengaturanDashScopeThe batch size for is1
 
@@ -44,5 +44,5 @@ class FakeEmbedding(Embeddings):
 
 CUSTOM_EMBEDDING = {
     'OpenAIProxyEmbedding': OpenAIProxyEmbedding,
-    'BishengEmbedding': BishengEmbedding,
+    'EagentEmbedding': EagentEmbedding,
 }

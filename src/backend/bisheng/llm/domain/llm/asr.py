@@ -11,7 +11,7 @@ from bisheng.core.ai import BaseASRClient, OpenAIASRClient, AliyunASRClient, Azu
 from bisheng.llm.domain.const import LLMModelType, LLMServerType
 from bisheng.llm.domain.models import LLMModel, LLMServer
 from .base import BishengBase
-from ..utils import wrapper_bisheng_model_limit_check_async
+from ..utils import wrapper_eagent_model_limit_check_async
 
 
 async def _get_openai_params(params: dict, server_info: LLMServer, model_info: LLMModel) -> dict:
@@ -60,7 +60,7 @@ _asr_client_type = {
 }
 
 
-class BishengASR(BishengBase):
+class EagentASR(BishengBase):
     asr: BaseASRClient = Field(..., description="asrInstances")
 
     @classmethod
@@ -101,6 +101,6 @@ class BishengASR(BishengBase):
         client = _asr_client_type[server_info.type]['client'](**new_params)
         return client
 
-    @wrapper_bisheng_model_limit_check_async
+    @wrapper_eagent_model_limit_check_async
     async def ainvoke(self, audio: Union[str, bytes, BinaryIO], **kwargs) -> str:
         return await self.asr.transcribe(audio=audio, **kwargs)

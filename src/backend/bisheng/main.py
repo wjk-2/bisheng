@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request, status
@@ -6,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, ORJSONResponse
 from loguru import logger
 
-from bisheng.api import router, router_rpc
+from bisheng.api import router, router_rpc, router_ws
 from bisheng.common.errcode import BaseErrorCode
 from bisheng.common.exceptions.auth import AuthJWTException
 from bisheng.common.init_data import init_default_data
@@ -51,9 +52,26 @@ _EXCEPTION_HANDLERS = {
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await initialize_app_context(config=settings)
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            await initialize_app_context(config=settings)
+            break
+        except Exception as e:
+            if attempt == max_retries - 1:
+                raise
+            logger.warning(f"Startup dependency not ready, retrying ({attempt+1}/{max_retries})... {e}")
+            await asyncio.sleep(5 * (attempt + 1))
     initialize_services()
-    await init_default_data()
+    for attempt in range(max_retries):
+        try:
+            await init_default_data()
+            break
+        except Exception as e:
+            if attempt == max_retries - 1:
+                raise
+            logger.warning(f"init_default_data not ready, retrying ({attempt+1}/{max_retries})... {e}")
+            await asyncio.sleep(5 * (attempt + 1))
     # LangfuseInstance.update()
     yield
     teardown_services()
@@ -70,9 +88,7 @@ def create_app():
         lifespan=lifespan,
     )
 
-    origins = [
-        '*',
-    ]
+    cors_origins = settings.cors_origins or ['*']
 
     @app.get('/health')
     def get_health():
@@ -80,8 +96,8 @@ def create_app():
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=origins,
-        allow_credentials=False,
+        allow_origins=cors_origins,
+        allow_credentials=True if cors_origins != ['*'] else False,
         allow_methods=['*'],
         allow_headers=['*'],
     )
@@ -95,6 +111,7 @@ def create_app():
 
     app.include_router(router)
     app.include_router(router_rpc)
+    app.include_router(router_ws)
     if settings.debug:
         import tracemalloc
         tracemalloc.start()

@@ -17,7 +17,6 @@ export default function ChatInput({
   const [inputLock, setInputLock] = useState({ locked: false });
 
   const handleSpeechRecognition = (text) => {
-    console.log('识别到的文本:', text);
     
     // 修复未定义变量问题，完善锁定逻辑
     if (lockChat || inputLock.locked || !inputRef.current) return;

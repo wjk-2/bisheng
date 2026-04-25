@@ -5,14 +5,14 @@ import { generateUUID } from "../../utils";
 import ChatPanne from "./components/ChatPanne";
 import { AppNumType } from "@/types/app";
 
-export default function chatAssitantShare() {
-    const { id: assitId } = useParams()
+export default function ChatAssistantShare() {
+    const { id: assistId } = useParams()
 
-    const wsUrl = `/api/v2/assistant/chat/${assitId}`
+    const wsUrl = `/api/v2/assistant/chat/${assistId}`
 
-    const [data] = useState<any>({ id: assitId, chatId: generateUUID(32), type: AppNumType.ASSISTANT })
+    const [data] = useState<any>({ id: assistId, chatId: generateUUID(32), type: AppNumType.ASSISTANT })
 
-    if (!assitId) return <div>请选择会话</div>
+    if (!assistId) return <div>请选择会话</div>
 
     return <ChatPanne customWsHost={wsUrl} version="v2" data={data} />
 };

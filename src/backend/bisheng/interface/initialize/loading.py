@@ -272,7 +272,7 @@ def instantiate_llm(node_type, class_object, params: Dict, user_llm_request: boo
             params['max_tokens'] = int(params['max_tokens'])
         elif not isinstance(params.get('max_tokens'), int):
             params.pop('max_tokens', None)
-    if node_type == 'BishengLLM':
+    if node_type == 'EagentLLM':
         params['app_id'] = "flow(will be deprecated)"
         params['app_name'] = "flow(will be deprecated)"
         params['app_type'] = ApplicationTypeEnum.SKILL
@@ -471,7 +471,7 @@ def instantiate_embedding(class_object, params: Dict):
             del params['openai_proxy']
         if class_object.__name__ == 'OpenAIEmbeddings':
             params['check_embedding_ctx_length'] = False
-        elif class_object.__name__ == 'BishengEmbedding':
+        elif class_object.__name__ == 'EagentEmbedding':
             params['app_id'] = "flow(will be deprecated)"
             params['app_name'] = "flow(will be deprecated)"
             params['app_type'] = ApplicationTypeEnum.SKILL
@@ -515,7 +515,7 @@ def instantiate_vectorstore(node_type: str, class_object: Type[VectorStore], par
             for knowledge in knowledge_list:
                 params[col_name].append(knowledge.collection_name)
                 params['collection_embeddings'].append(
-                    LLMService.get_bisheng_knowledge_embedding_sync(0, model_id=int(knowledge.model)))
+                    LLMService.get_eagent_knowledge_embedding_sync(0, model_id=int(knowledge.model)))
                 if knowledge.collection_name.startswith('partition'):
                     params['partition_keys'].append(knowledge.id)
                 else:

@@ -1,36 +1,21 @@
 "use client"
 
+import * as echarts from "echarts"
 import { Copy } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Button } from "~/components/ui"
 import { copyText } from "~/utils"
-import { loadScript } from "./Mermaid"
 import { useLocalize } from "~/hooks"
 
 export default function ECharts({ option }: { option: string }) {
     const [mode, setMode] = useState<"chart" | "code">("chart")
-    const [echartsLib, setEchartsLib] = useState<any>(null)
-    const chartRef = useRef<any | null>(null)
+    const chartRef = useRef<echarts.ECharts | null>(null)
     const domRef = useRef<HTMLDivElement>(null)
     const containerRef = useRef<HTMLDivElement>(null)
     const localize = useLocalize();
     const codeRef = useRef<HTMLElement>(null)
 
     useEffect(() => {
-        loadScript("echarts")
-            .then((echarts) => {
-                console.log("[v0] ECharts library loaded successfully", echarts)
-                setEchartsLib(echarts)
-            })
-            .catch((error) => {
-                console.error("[v0] Failed to load ECharts library:", error)
-            })
-    }, [])
-
-    useEffect(() => {
-        // 等待 echarts 库加载完成
-        if (!echartsLib) return
-
         // 清理旧实例
         if (chartRef.current) {
             chartRef.current.dispose()
@@ -41,13 +26,14 @@ export default function ECharts({ option }: { option: string }) {
         if (domRef.current) {
             // 确保 DOM 已经渲染
             setTimeout(() => {
-                if (domRef.current && echartsLib) {
-                    chartRef.current = echartsLib.init(domRef.current)
-                    const getOption = new Function("myChart", "echarts", `return ${option.trim()}`)
+                if (domRef.current) {
+                    chartRef.current = echarts.init(domRef.current)
                     try {
-                        chartRef.current.setOption(getOption(chartRef.current, echartsLib))
+                        // Use JSON.parse instead of new Function to prevent code injection
+                        const parsedOption = JSON.parse(option.trim())
+                        chartRef.current.setOption(parsedOption)
                     } catch (e) {
-                        console.error("[v0] ECharts option error:", e)
+                        console.error("[v0] ECharts option error (only JSON options are supported):", e)
                     }
                 }
             }, 0)
@@ -59,7 +45,7 @@ export default function ECharts({ option }: { option: string }) {
                 chartRef.current = null
             }
         }
-    }, [option, echartsLib])
+    }, [option])
 
     // 自适应宽度
     useEffect(() => {
@@ -85,7 +71,7 @@ export default function ECharts({ option }: { option: string }) {
     }, [mode])
 
     useEffect(() => {
-        const parentNode = document.querySelector(".bisheng-message")
+        const parentNode = document.querySelector(".eagent-message")
         if (parentNode && containerRef.current) {
             containerRef.current.style.width = `${parentNode.clientWidth - 60}px`
         }
@@ -143,10 +129,7 @@ export default function ECharts({ option }: { option: string }) {
 
                 {/* 内容区域 */}
                 <div className="">
-                    {!echartsLib && mode === "chart" && (
-                        <div className="flex items-center justify-center h-[400px] text-muted-foreground">loading...</div>
-                    )}
-                    <div ref={domRef} style={{ height: 400 }} className={mode === "chart" && echartsLib ? "block" : "hidden"} />
+                    <div ref={domRef} style={{ height: 400 }} className={mode === "chart" ? "block" : "hidden"} />
                     <div className={mode === "code" ? "block relative" : "hidden"}>
                         <pre className="p-4 overflow-x-auto text-sm leading-relaxed max-h-[500px] overflow-y-auto mt-0 bg-transparent">
                             <code ref={codeRef} className="text-slate-500 font-mono whitespace-pre-wrap break-words">{codeStr}</code>

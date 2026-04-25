@@ -46,6 +46,7 @@ import { ChatToolDown } from "./ChatFormTools";
 import CollapseChat from "./CollapseChat";
 import FileFormWrapper from "./Files/FileFormWrapper";
 import SameSopSpan, { sameSopLabelState } from "./SameSopSpan";
+import PromptsCommand from "./PromptsCommand";
 import SendButton from "./SendButton";
 import StopButton from "./StopButton";
 import { ChatKnowledge } from "./ChatKnowledge";
@@ -226,7 +227,6 @@ const ChatForm = ({ isLingsi, setShowCode, readOnly, index = 0 }) => {
 
     // 情况1: 切换到 "new" 状态
     if (conversation?.conversationId === "new") {
-      console.log("切换到 new 状态，清空所有状态");
 
       // 清空状态
       setSelectedOrgKbs([]);
@@ -240,20 +240,17 @@ const ChatForm = ({ isLingsi, setShowCode, readOnly, index = 0 }) => {
     // 情况2: 从 "new" 转换到实际 ID
     if (prevChatId.current === "new" && conversation?.conversationId) {
       const newChatId = conversation.conversationId;
-      console.log("从 new 转换到实际 ID", newChatId);
 
       // 先检查是否已经有保存的状态
       const savedState = chatStatesMap[newChatId];
 
       if (savedState) {
         // 如果已经有保存的状态，恢复它
-        console.log("恢复已保存的状态", savedState);
         setSelectedOrgKbs(savedState.selectedOrgKbs || []);
         setEnableOrgKb(savedState.enableOrgKb ?? false);
         setSearchType(savedState.searchType ?? "");
       } else {
         // 如果没有保存的状态，保存当前状态
-        console.log("保存当前状态到新ID");
         const newChatState = {
           selectedOrgKbs: selectedOrgKbs,
           enableOrgKb: enableOrgKb,
@@ -294,12 +291,10 @@ const ChatForm = ({ isLingsi, setShowCode, readOnly, index = 0 }) => {
       // 然后恢复新会话的状态
       const savedState = chatStatesMap[newChatId];
       if (savedState) {
-        console.log("恢复新会话的状态", savedState);
         setSelectedOrgKbs(savedState.selectedOrgKbs || []);
         setEnableOrgKb(savedState.enableOrgKb || false);
         setSearchType(savedState.searchType || "");
       } else {
-        console.log("新会话没有保存的状态，清空");
         setSelectedOrgKbs([]);
         setEnableOrgKb(false);
         setSearchType("");
@@ -315,12 +310,10 @@ const ChatForm = ({ isLingsi, setShowCode, readOnly, index = 0 }) => {
       // 恢复保存的状态
       const savedState = chatStatesMap[newChatId];
       if (savedState) {
-        console.log("恢复保存的状态", savedState);
         setSelectedOrgKbs(savedState.selectedOrgKbs || []);
         setEnableOrgKb(savedState.enableOrgKb || false);
         setSearchType(savedState.searchType || "");
       } else {
-        console.log("没有保存的状态，清空");
         setSelectedOrgKbs([]);
         setEnableOrgKb(false);
         setSearchType("");
@@ -381,12 +374,6 @@ const ChatForm = ({ isLingsi, setShowCode, readOnly, index = 0 }) => {
   return (
     <form
       onSubmit={methods.handleSubmit((data) => {
-        console.log(
-          "bsConfig?.linsight_invitation_code :>> ",
-          bsConfig?.linsight_invitation_code,
-          isLingsi,
-          count
-        );
         if (bsConfig?.linsight_invitation_code && isLingsi && count === 0)
           return setShowCode(true);
         submitMessage({
@@ -428,7 +415,7 @@ const ChatForm = ({ isLingsi, setShowCode, readOnly, index = 0 }) => {
           />
         )} */}
         {/* 快捷提示词选择 */}
-        {/* <PromptsCommand index={index} textAreaRef={textAreaRef} submitPrompt={submitPrompt} /> */}
+        <PromptsCommand index={index} textAreaRef={textAreaRef} submitPrompt={submitPrompt} />
         <div
           className={cn(
             "transitional-all relative flex w-full flex-grow flex-col overflow-hidden rounded-3xl bg-surface-tertiary pb-8 z-10 text-text-primary duration-200 border border-transparent",
@@ -506,7 +493,7 @@ const ChatForm = ({ isLingsi, setShowCode, readOnly, index = 0 }) => {
             accept={accept}
             showVoice={showVoice}
             fileTip={!isLingsi}
-            noUpload={!bsConfig?.fileUpload.enabled}
+            noUpload={!bsConfig?.fileUpload?.enabled}
             disableInputs={disableInputs || audioOpening}
             disabledSearch={isSearch && !isLingsi}
             selectedOrgKbs={selectedOrgKbs}
@@ -605,7 +592,7 @@ const ChatForm = ({ isLingsi, setShowCode, readOnly, index = 0 }) => {
               />
             )}
             {/* 知识库 */}
-            {!isLingsi && bsConfig?.knowledgeBase.enabled && (
+            {!isLingsi && bsConfig?.knowledgeBase?.enabled && (
               <ChatKnowledge
                 config={bsConfig}
                 searchType={searchType}

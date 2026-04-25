@@ -10,7 +10,7 @@ import { getLinsightModelConfig, updateLinsightModelConfig } from "@/controllers
 import { captureAndAlertRequestErrorHoc } from "@/controllers/request";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useModel } from "..";
 
 export const ModelSelect = ({ required = false, close = false, label, tooltipText = '', value, options, onChange,placeholder = '' }) => {
@@ -34,7 +34,7 @@ export const ModelSelect = ({ required = false, close = false, label, tooltipTex
 
     return (
         <div>
-            <Label className="bisheng-label">
+            <Label className="eagent-label">
                 <span>{label}</span>
                 {required && <span className="text-red-500 text-xs">*</span>}
                 {tooltipText && <QuestionTooltip className="relative top-0.5 ml-1" content={tooltipText}></QuestionTooltip>}
@@ -171,8 +171,6 @@ export default function WorkbenchModel({ onBack }) {
             <LoadingIcon />
         </div>
     );
-    console.log('ASR Model Options structure:', JSON.stringify(asrModel, null, 2));
-    console.log('TTS Model Options structure:', JSON.stringify(ttsModel, null, 2));
     return (
         <div className="max-w-[520px] mx-auto gap-y-4 flex flex-col mt-16 relative">
             <ModelSelect
@@ -184,7 +182,7 @@ export default function WorkbenchModel({ onBack }) {
                 onChange={(val) => setForm({ ...form, sourceModelId: val })}
                 required
             />
-            <h3 className="bisheng-label">{t('model.lingsiTaskModel')}</h3>
+            <h3 className="eagent-label">{t('model.lingsiTaskModel')}</h3>
             <div className="border rounded-lg p-4 -mt-3">
                 <div className="flex gap-4">
                     <div className="flex-1">
@@ -199,7 +197,7 @@ export default function WorkbenchModel({ onBack }) {
                         />
                     </div>
                     <div className="flex-1">
-                        <Label className="bisheng-label">
+                        <Label className="eagent-label">
                             <span>{t('model.executionMode')}</span>
                             <QuestionTooltip className="relative top-0.5 ml-1" content={t('model.executionModeTooltip')}></QuestionTooltip>
                         </Label>
@@ -218,7 +216,7 @@ export default function WorkbenchModel({ onBack }) {
                     </div>
                 </div>
             </div>
-            <h3 className="bisheng-label">{t('model.workbenchVoiceModel')}</h3>
+            <h3 className="eagent-label">{t('model.workbenchVoiceModel')}</h3>
             <div className="border rounded-lg p-4 -mt-3 space-y-4">
                 <ModelSelect
                     close

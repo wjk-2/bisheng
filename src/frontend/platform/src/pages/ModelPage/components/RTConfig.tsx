@@ -15,8 +15,21 @@ import {
 import { addServiceApi, deleteServiceApi, getServicesApi } from "../../../controllers/API";
 import { captureAndAlertRequestErrorHoc } from "../../../controllers/request";
 import { useCopyText } from "../../../util/hook";
+import { useToast } from "@/components/bs-ui/toast/use-toast";
 
-export default function RTConfig({ open, onChange }) {
+interface RTConfigProps {
+    open: boolean;
+    onChange: () => void;
+    isAdmin?: boolean;
+}
+
+export default function RTConfig({ open, onChange, isAdmin = true }: RTConfigProps) {
+    const { message } = useToast();
+
+    // 权限不足提示
+    const showPermissionDenied = () => {
+        message({ variant: 'warning', description: '暂无权限，请联系管理员' });
+    };
 
     const nameRef = useRef(null)
     // const urlRef = useRef(null)
@@ -60,7 +73,7 @@ export default function RTConfig({ open, onChange }) {
                                 <TableCell className="py-2">
                                     <p className="cursor-pointer" onClick={e => copyText(el.ftUrl)}>{el.ftUrl}</p>
                                 </TableCell>
-                                <TableCell className="py-2 text-right"><Button variant="link" className="h-8 rounded-full text-red-500 px-5" onClick={() => handleDel(el.id)}>{t('bs:delete')}</Button></TableCell>
+                                <TableCell className="py-2 text-right"><Button variant="link" className="h-8 rounded-full text-red-500 px-5" onClick={() => isAdmin ? handleDel(el.id) : showPermissionDenied()}>{t('bs:delete')}</Button></TableCell>
                             </TableRow>
                         ))}
                         {showAdd && <TableRow>
@@ -77,7 +90,7 @@ export default function RTConfig({ open, onChange }) {
             </div>
             <DialogFooter>
                 <div className="flex justify-start mt-4">
-                    <Button variant='outline' className="flex w-[120px]" onClick={() => setShowAdd(true)}><Plus className="mr-2 size-5" />{t('bs:create')}</Button>
+                    <Button variant='outline' className="flex w-[120px]" onClick={() => isAdmin ? setShowAdd(true) : showPermissionDenied()}><Plus className="mr-2 size-5" />{t('bs:create')}</Button>
                 </div>
             </DialogFooter>
         </DialogContent>

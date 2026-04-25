@@ -7,9 +7,9 @@ import ChatMessages from "./ChatMessages";
 import useChatHelpers from "./useChatHelpers";
 import { useWebSocket } from "./useWebsocket";
 
-export default function ChatView({ data, cid, v, readOnly }) {
+export default function ChatView({ data, cid, v, readOnly, shareToken = '' }) {
     const { user } = useAuthContext();
-    const help = useChatHelpers()
+    const help = useChatHelpers(shareToken)
     useWebSocket(help)
 
     const Logo = useMemo(() => {

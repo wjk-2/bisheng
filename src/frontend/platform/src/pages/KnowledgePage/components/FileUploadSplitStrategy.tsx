@@ -13,6 +13,9 @@ export const ruleI18nMap = {
   '第.{1,3}章': 'chapterRule',
   '第.{1,3}条': 'articleRule',
   '。': 'chinesePeriodRule',
+  '！': 'chineseExclamationRule',
+  '？': 'chineseQuestionRule',
+  '；': 'chineseSemicolonRule',
   '\\.': 'englishPeriodRule',
 }
 
@@ -65,8 +68,10 @@ const [predefinedRules] = useState([
     { regexKey:  '第.{1,3}章', mode: 'before' },
     { regexKey: '第.{1,3}条', mode: 'before' },
     { regexKey: '。', mode: 'after' },
+    { regexKey: '！', mode: 'after' },
+    { regexKey: '？', mode: 'after' },
+    { regexKey: '；', mode: 'after' },
     { regexKey: '\\.', mode: 'after' }
-
   ]);
 
   return (

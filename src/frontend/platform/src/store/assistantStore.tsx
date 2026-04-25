@@ -21,7 +21,6 @@ type Actions = {
 type Action = 'setBaseInfo' | 'setting' | 'setPrompt' | 'setGuideword' | 'setTools' | 'setFlows' | 'setQuestion' | 'setContentSecurity'
 
 const assistantReducer = (state: State, action: Action, data: Partial<AssistantDetail>) => {
-  console.log('action :>> ', action, data);
   return { changed: true, assistantState: { ...state.assistantState, ...data } }
   // switch (action) {
   //   case 'setBaseInfo':

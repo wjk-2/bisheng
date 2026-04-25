@@ -37,6 +37,9 @@ export type APIClassType = {
     | undefined;
 };
 
+/** 模板变量值类型 - 动态业务数据 */
+export type TemplateValue = string | number | boolean | null | TemplateValue[] | Record<string, TemplateValue>;
+
 export type TemplateVariableType = {
   type: string;
   required: boolean;
@@ -45,13 +48,13 @@ export type TemplateVariableType = {
   show: boolean;
   readonly?: boolean;
   multiline?: boolean;
-  value?: any;
+  value?: TemplateValue;
   dynamic?: boolean;
   proxy?: { id: string; field: string };
   input_types?: Array<string>;
   display_name?: string;
   name?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 };
 export type sendAllProps = {
   nodes?: Node[];
@@ -59,11 +62,11 @@ export type sendAllProps = {
   name: string;
   description: string;
   viewport?: Viewport;
-  inputs: any;
+  inputs: Record<string, unknown>;
   id?: string;
   file_path?: string;
   action?: string;
-  chatHistory: { message: string | object; isSend: boolean }[];
+  chatHistory: { message: string | Record<string, unknown>; isSend: boolean }[];
   flow_id: string;
   chat_id: string;
 };
@@ -92,7 +95,7 @@ export type UploadFileTypeAPI = {
 export type Component = {
   name: string;
   description: string;
-  data: Object;
+  data: Record<string, unknown>;
   tags: [string];
 };
 

@@ -11,8 +11,13 @@ export const requestInterceptor = {
 };
 
 customAxios.interceptors.request.use(function (config) {
+    // S-4: ws_token stored in localStorage is used for WebSocket connections which
+    // cannot automatically carry cookies. This is a known risk — localStorage is
+    // accessible to XSS. Mitigation: HttpOnly cookies are the primary auth mechanism;
+    // ws_token is only attached to non-eagent API requests as a fallback.
+    // Cleanup: ws_token is removed on logout (see MainLayout.tsx handleLogout).
     const token = localStorage.getItem('ws_token');
-    if (token && !/^\/bisheng/.test(config.url)) {
+    if (token && !/^\/eagent/.test(config.url)) {
         config.headers['Authorization'] = `Bearer ${token}`;
     }
     return config;
@@ -54,11 +59,16 @@ customAxios.interceptors.response.use(function (response) {
 }, function (error) {
     console.error('application error :>> ', error);
     if (error.response?.status === 401) {
-        // cookie expires
+        // cookie expires — clean up all local auth state
         console.error('登录过期 :>> ');
         const UUR_INFO = 'UUR_INFO'
         const infoStr = localStorage.getItem(UUR_INFO)
         localStorage.removeItem(UUR_INFO)
+        // S-4: Clear WebSocket token and related auth data on session expiry
+        localStorage.removeItem('ws_token')
+        localStorage.removeItem('token')
+        localStorage.removeItem('userInfo')
+        localStorage.removeItem('isLogin')
         infoStr && location.reload()
         return Promise.reject('登录过期,请重新登录');
     }
@@ -82,7 +92,6 @@ export function captureAndAlertRequestErrorHoc(apiFunc, iocFunc?) {
         if (error === null) return // app error
         if (error?.code === "ERR_CANCELED") return 'canceled'
 
-        console.log('error :>> ', error);
         iocFunc?.(error)
         // 弹窗
         toast({

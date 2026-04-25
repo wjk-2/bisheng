@@ -27,6 +27,7 @@ class DatabaseConnectionManager:
 
         self._engine: Optional[Engine] = None
         self._async_engine: Optional[AsyncEngine] = None
+        self._session_maker: Optional[sessionmaker] = None
         self._async_session_maker: Optional[async_sessionmaker] = None
 
     def _convert_to_async_url(self, url: str) -> str:
@@ -40,8 +41,8 @@ class DatabaseConnectionManager:
     def _get_default_engine_config(self) -> Dict[str, Any]:
         """Get default engine configuration"""
         config = {
-            'pool_size': 100,
-            'max_overflow': 20,
+            'pool_size': 20,
+            'max_overflow': 10,
             'pool_timeout': 30,
             'pool_pre_ping': True,
             'pool_recycle': 3600,  # 1 hour
@@ -99,15 +100,16 @@ class DatabaseConnectionManager:
     @contextmanager
     def create_session(self) -> Generator[Session, Any, None]:
         """Create a sync session"""
-        session_maker = sessionmaker(
-            bind=self.engine,
-            class_=Session,
-            expire_on_commit=False,
-            autoflush=True,
-            autocommit=False
-        )
+        if self._session_maker is None:
+            self._session_maker = sessionmaker(
+                bind=self.engine,
+                class_=Session,
+                expire_on_commit=False,
+                autoflush=True,
+                autocommit=False
+            )
 
-        with session_maker() as session:
+        with self._session_maker() as session:
             try:
                 yield session
             except Exception as e:
@@ -121,15 +123,16 @@ class DatabaseConnectionManager:
     async def async_session(self):
         """Asynchronous Session Context Manager"""
 
-        session_maker = async_sessionmaker(
-            bind=self.async_engine,
-            class_=AsyncSession,
-            expire_on_commit=False,
-            autoflush=True,
-            autocommit=False
-        )
+        if self._async_session_maker is None:
+            self._async_session_maker = async_sessionmaker(
+                bind=self.async_engine,
+                class_=AsyncSession,
+                expire_on_commit=False,
+                autoflush=True,
+                autocommit=False
+            )
 
-        async with session_maker() as session:
+        async with self._async_session_maker() as session:
             try:
                 yield session
             except Exception as e:

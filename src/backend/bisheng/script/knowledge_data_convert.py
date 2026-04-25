@@ -54,7 +54,7 @@ def convert_milvus_data(knowledge: Knowledge, all_file: List[KnowledgeFile], new
     # convert_milvus_chunk
     # New.. MilvusObjects
 
-    embedding = LLMService.get_bisheng_knowledge_embedding_sync(0, model_id=int(knowledge.model))
+    embedding = LLMService.get_eagent_knowledge_embedding_sync(0, model_id=int(knowledge.model))
     new_milvus = KnowledgeRag.init_milvus_vectorstore(new_collection_name, embedding,
                                                       metadata_schemas=KNOWLEDGE_RAG_METADATA_SCHEMA)
 

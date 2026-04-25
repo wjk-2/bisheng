@@ -1,7 +1,7 @@
 
 import { FileSearch2, Loader2 } from "lucide-react";
 import { useContext, useEffect, useState } from "react";
-import { bishengConfState } from "../store/atoms";
+import { eagentConfState } from "../store/atoms";
 import { useRecoilState } from "recoil";
 import { useToastContext } from "~/Providers";
 import { Button } from "~/components";
@@ -45,14 +45,14 @@ export default function InputFileComponent({
         setMyValue(value);
     }, [value]);
 
-    const [bishengConfig] = useRecoilState(bishengConfState)
+    const [eagentConfig] = useRecoilState(eagentConfState)
 
     const { showToast } = useToastContext();
 
     const checkFileSize = (file) => {
-        const maxSize = (bishengConfig?.uploaded_files_maximum_size || 50) * 1024 * 1024;
+        const maxSize = (eagentConfig?.uploaded_files_maximum_size || 50) * 1024 * 1024;
         if (file.size > maxSize) {
-            return t('com_inputfile_exceed_limit', { 0: file.name, 1: (bishengConfig?.uploaded_files_maximum_size || 50) })
+            return t('com_inputfile_exceed_limit', { 0: file.name, 1: (eagentConfig?.uploaded_files_maximum_size || 50) })
         }
         return ''
     }
@@ -92,7 +92,6 @@ export default function InputFileComponent({
                 onFileChange(file_path);
             }) : uploadFile(file, flow.id)
                 .then((data) => {
-                    console.log("File uploaded successfully");
                     // Get the file name from the response
                     const { file_path } = data.data;
 
@@ -174,7 +173,6 @@ export default function InputFileComponent({
                                 return res.file_path
                             })
                         : uploadFile(file, flow.id).then((data) => {
-                            console.log("File uploaded successfully");
                             return data.data.file_path
                         });
                 });

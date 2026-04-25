@@ -65,7 +65,7 @@ const UserPwdModal = forwardRef<UserPwdModalRef, UserPwdModalProps>((props, ref)
                 </DialogHeader>
                 <div className="flex flex-col gap-8 py-6">
                     <div>
-                        <label htmlFor="password" className="bisheng-label">{t('resetPassword.newPassword')}<span className="bisheng-tip">*</span></label>
+                        <label htmlFor="password" className="eagent-label">{t('resetPassword.newPassword')}<span className="eagent-tip">*</span></label>
                         <PasswordInput
                             ref={passwordRef}
                             id="password"
@@ -74,7 +74,7 @@ const UserPwdModal = forwardRef<UserPwdModalRef, UserPwdModalProps>((props, ref)
                             className="mt-2"
                             onChange={(e) => passwordRef.current.value = e.target.value}
                         />
-                        {error && <p className="bisheng-tip mt-1">{error}</p>}
+                        {error && <p className="eagent-tip mt-1">{error}</p>}
                     </div>
                 </div>
                 <DialogFooter>

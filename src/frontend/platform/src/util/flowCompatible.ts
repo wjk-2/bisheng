@@ -231,7 +231,7 @@ const comptibleInput = (node) => {
 
 const comptibleAgent = (node) => {
     if (!node.v) {
-        if (node.group_params[1].params[0].type === 'bisheng_model') {
+        if (node.group_params[1].params[0].type === 'eagent_model') {
             node.group_params[1].params[0].type = 'agent_model'
         }
         node.v = 1

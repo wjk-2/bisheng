@@ -42,7 +42,7 @@ expire = 600
 
 
 class EvaluationService:
-    UserCache: InMemoryCache = InMemoryCache()
+    UserCache: InMemoryCache = InMemoryCache(max_size=200)
 
     @classmethod
     def get_evaluation(cls,

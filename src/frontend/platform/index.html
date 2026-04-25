@@ -5,11 +5,21 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="<%- baseUrl %>/assets/bisheng/favicon.ico" />
+    <!-- <link rel="svg" href="/favicon.svg" /> -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <%- aceScriptSrc %>
-    <title>loading...</title>
-    <!-- window.APP_CONFIG.baseUrl -->
+    <title>E-Agent</title>
     <!-- style -->
+    <link rel="stylesheet" href="/src/pages/LoginPage/loginv2.css" />
+    <style>
+      body { color: #e2e8f0; height: 100vh; margin: 0; }
+    </style>
+    <script>
+      (function() {
+        var isDark = window.localStorage.getItem('isDark');
+        if (document.body) document.body.style.backgroundColor = isDark === 'false' ? '#ffffff' : '#020617';
+      })();
+    </script>
     <script>
         fetch('<%- baseUrl %>/api/v1/web/config').then(function (res) {
             return res.json()
@@ -27,13 +37,6 @@
                 document.documentElement.style.setProperty(key, hslStr);
             });
         })
-        // 兼容历史
-        const ln = localStorage.getItem('i18nextLng')
-        if (ln === 'zh') {
-            localStorage.setItem('i18nextLng', 'zh-Hans')
-        } else if (ln === 'en') {
-            localStorage.setItem('i18nextLng', 'en-US')
-        }
     </script>
 </head>
 

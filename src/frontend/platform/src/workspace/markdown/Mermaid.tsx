@@ -6,6 +6,7 @@ import { Button } from "@/components/bs-ui/button"
 import { Separator } from "@/components/bs-ui/separator"
 import { formatDate } from "@/util/utils"
 import { copyText } from "@/utils"
+import DOMPurify from "dompurify"
 import { Copy, DownloadIcon, ZoomIn, ZoomOut } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 
@@ -48,17 +49,23 @@ export default function MermaidBlock({ children }: { children: string }) {
 
     useEffect(() => {
         loadScript('mermaid').then((mermaid) => {
-            mermaid.initialize({ startOnLoad: false, theme: "default" })
+            mermaid.initialize({
+                startOnLoad: false,
+                theme: "default",
+                securityLevel: 'strict' // 启用严格安全模式
+            })
             mermaidRef.current = mermaid
             if (ref.current) {
-                ref.current.innerHTML = children
+                // DOMPurify 净化 mermaid 代码，移除潜在危险标签
+                const sanitizedCode = DOMPurify.sanitize(children, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] })
+                ref.current.innerHTML = sanitizedCode
                 mermaidRef.current.run({ nodes: [ref.current] })
             }
         })
     }, [])
 
     useEffect(() => {
-        const parentNode = document.querySelector(".bisheng-message")
+        const parentNode = document.querySelector(".eagent-message")
         if (parentNode && containerRef.current) {
             containerRef.current.style.width = `${parentNode.clientWidth - 60}px`
         }
@@ -128,7 +135,6 @@ export default function MermaidBlock({ children }: { children: string }) {
                 canvas.toBlob((blob) => {
                     if (blob) {
                         const titleDom = document.querySelector("#app-title")
-                        console.log('titleDom :>> ', titleDom);
                         const link = document.createElement("a")
                         link.download = `${titleDom?.innerHTML}_${formatDate(new Date(), 'yyyyMMdd_HHmm')}.png` || `mermaid-diagram-${Date.now()}.png`
                         link.href = URL.createObjectURL(blob)

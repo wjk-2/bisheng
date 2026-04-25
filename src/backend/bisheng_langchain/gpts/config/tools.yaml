@@ -9,7 +9,7 @@
 - type: calculator
   # 3. 用于执行计算的工具
   
-- type: bisheng_code_interpreter
+- type: eagent_code_interpreter
   # 4. 用于执行代码的工具
   minio:
     MINIO_ACCESS_KEY: 

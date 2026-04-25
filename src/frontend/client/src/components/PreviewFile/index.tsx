@@ -30,7 +30,6 @@ export default function FileViewPanne({ file }) {
                 map[el.page].push({ id: generateUUID(8), label: el.bbox, active: true, txt: '' })
             })
         })
-        console.log('file.chunks[0].box[0].page :>> ', file.chunks);
         setPositon([file.chunks[0].box[0].page, file.chunks[0].box[0].bbox[1] || 0])
         setCurrentIndex(0)
         return map

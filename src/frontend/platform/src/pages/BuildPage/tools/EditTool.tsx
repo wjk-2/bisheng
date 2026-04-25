@@ -101,7 +101,7 @@ export const TestDialog = forwardRef<{
             </DialogHeader>
             {testShow && <div className="flex flex-col gap-8 py-6">
                 <div className="max-h-[600px] overflow-y-auto scrollbar-hide">
-                    <label htmlFor="name" className="bisheng-label">{t('test.parametersAndValues')}</label>
+                    <label htmlFor="name" className="eagent-label">{t('test.parametersAndValues')}</label>
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -132,7 +132,7 @@ export const TestDialog = forwardRef<{
                 </div>
                 <Button onClick={handleTest} disabled={loading}>{t('test.test')}</Button>
                 <div className="">
-                    <label htmlFor="desc" className="bisheng-label">{t('test.result')}</label>
+                    <label htmlFor="desc" className="eagent-label">{t('test.result')}</label>
                     <Textarea id="desc" name="desc" value={result} placeholder={t('test.outResultPlaceholder')} readOnly className="mt-2" />
                 </div>
             </div>}
@@ -419,7 +419,7 @@ const EditTool = forwardRef((props: any, ref) => {
                     <label htmlFor="open" className="px-6">{t('tools.authenticationType')}</label>
                     <div className="px-6">
                         <div className="px-6 mb-4" >
-                            <label htmlFor="open" className="bisheng-label">{t('tools.authType')}</label>
+                            <label htmlFor="open" className="eagent-label">{t('tools.authType')}</label>
                             <RadioGroup
                                 id="authMethod"
                                 name="authMethod"
@@ -439,7 +439,7 @@ const EditTool = forwardRef((props: any, ref) => {
                         </div>
                         {formState.authMethod === "apikey" && (<>
                             <div className="px-6 mb-4" >
-                                <Label htmlFor="open" className="bisheng-label flex items-center gap-1">
+                                <Label htmlFor="open" className="eagent-label flex items-center gap-1">
                                     {t('tools.authTypeLabel')}
                                     <QuestionTooltip content={<div>
                                         <p>{t('tools.basicBearerDescription')}</p>
@@ -469,7 +469,7 @@ const EditTool = forwardRef((props: any, ref) => {
                             </div>
                             {formState.authType === "custom" && <>
                                 <div className="px-6 mb-4" >
-                                    <Label htmlFor="apiLocation" className="bisheng-label flex items-center gap-1">
+                                    <Label htmlFor="apiLocation" className="eagent-label flex items-center gap-1">
                                         {t('tools.apiLocationLabel')}
                                         <QuestionTooltip content={<div>
                                             <p>{t('tools.headerDescription')}</p>
@@ -496,7 +496,7 @@ const EditTool = forwardRef((props: any, ref) => {
                                     </RadioGroup>
                                 </div>
                                 <div className="px-6 mb-4">
-                                    <Label className="bisheng-label" htmlFor="parameter">
+                                    <Label className="eagent-label" htmlFor="parameter">
                                         <span className="text-red-500">*</span> {t('tools.parameterName')}
                                     </Label>
                                     <Input
@@ -510,7 +510,7 @@ const EditTool = forwardRef((props: any, ref) => {
                                 </div>
                             </>}
                             <div className="px-6 mb-4">
-                                <Label className="bisheng-label" htmlFor="apiKey">
+                                <Label className="eagent-label" htmlFor="apiKey">
                                     <span className="text-red-500">*</span> {t('tools.apiKeyLabel')}
                                 </Label>
                                 <Input
@@ -568,7 +568,7 @@ const EditTool = forwardRef((props: any, ref) => {
                 <label htmlFor="open" className="px-6">{t('tools.authenticationType')}</label>
                 <div className="px-6">
                     <div className="px-6 mb-4" >
-                        <label htmlFor="open" className="bisheng-label">{t('tools.authType')}</label>
+                        <label htmlFor="open" className="eagent-label">{t('tools.authType')}</label>
                         <RadioGroup
                             id="authMethod"
                             name="authMethod"

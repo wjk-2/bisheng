@@ -1,14 +1,16 @@
 services:
   office:
-    container_name: bisheng-office
+    container_name: eagent-office
     image: onlyoffice/documentserver:7.1.1
     ports:
       - "8701:80"
     environment:
       TZ: Asia/Shanghai
-      JWT_ENABLED: "false"
+      JWT_ENABLED: "true"
+      JWT_SECRET: "${OFFICE_JWT_SECRET:-EAgentOffice2024!}"
+      JWT_HEADER: "Authorization"
     volumes:
-      - ${DOCKER_VOLUME_DIRECTORY:-.}/office/bisheng:/var/www/onlyoffice/documentserver/sdkjs-plugins/bisheng
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/office/eagent:/var/www/onlyoffice/documentserver/sdkjs-plugins/eagent
     command: bash -c "supervisorctl restart all"
     restart: on-failure
 

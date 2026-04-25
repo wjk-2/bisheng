@@ -1,0 +1,137 @@
+:root {
+    --primary-color: #0ea5e9;
+    --background-color: #020617;
+    --text-color: #e2e8f0;
+    --input-text-color: #ffffff; /* 使用纯白色确保最大对比度 */
+    --input-border-color: rgba(148, 163, 184, 0.3);
+    --glass-background: rgba(15, 23, 42, 0.6);
+    --glass-border: 1px solid rgba(148, 163, 184, 0.1);
+}
+*
+{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+body, .login-page {
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Helvetica Neue",Helvetica,Arial,sans-serif;
+    height:100vh;
+    color:var(--text-color);
+    background-color:var(--background-color);
+    overflow:hidden;
+    position:relative;
+}
+#particle-canvas{
+    position:absolute;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    z-index:0;
+}
+.login-wrapper{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100%;
+    width:100%;
+    position:relative;
+    z-index:1;
+}
+.login-container{
+    width:420px;
+    padding:48px;
+    background:var(--glass-background);
+    border-radius:20px;
+    border:var(--glass-border);
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+    text-align:center;
+    animation:fadeIn 1.5s cubic-bezier(0.25,0.46,0.45,0.94),subtleGlow 6s ease-in-out infinite;
+}
+@keyframes fadeIn{from{opacity:0;transform:scale(0.95) translateY(10px);}to{opacity:1;transform:scale(1) translateY(0);}}
+@keyframes subtleGlow{0%,100%{box-shadow:0 0 20px rgba(14,165,233,0.1),0 0 40px rgba(14,165,233,0.08);}50%{box-shadow:0 0 35px rgba(14,165,233,0.15),0 0 60px rgba(14,165,233,0.1);}}
+.login-container h1{font-size:36px;margin-bottom:12px;font-weight:700;color:#fff;letter-spacing:1px;}
+.login-container .tagline{font-size:15px;color:var(--text-color);opacity:0.8;margin-bottom:40px;}
+.login-container form{display:flex;flex-direction:column;gap:22px;}
+.login-container input{
+    width:100%;
+    padding:15px 18px;
+    background:rgba(30, 41, 59, 0.8); /* 更深的背景色增加对比度 */
+    border:1px solid var(--input-border-color);
+    border-radius:10px;
+    color:var(--input-text-color)!important; /* 使用新的输入框文字颜色变量 */
+    -webkit-text-fill-color:var(--input-text-color)!important; /* 兼容 Safari */
+    caret-color:var(--primary-color);
+    font-size:16px;
+    font-weight:400;
+    transition:all 0.3s ease;
+}
+.login-container input::placeholder{
+    color:rgba(226,232,240,0.65); /* 稍微提高占位符文字的可见度 */
+    opacity:1; /* 确保在所有浏览器中占位符文字显示一致 */
+}
+.login-container input:focus{
+    outline:none;
+    border-color:var(--primary-color);
+    background:rgba(30, 41, 59, 0.95); /* 聚焦时背景稍深 */
+    box-shadow:0 0 0 4px rgba(14,165,233,0.2);
+}
+.login-submit-button{padding:15px;background:var(--primary-color);color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;transition:all 0.3s ease;box-shadow:0 4px 15px rgba(14,165,233,0.2);}
+.login-submit-button:hover{background:#0ea5e9;transform:translateY(-3px);box-shadow:0 7px 20px rgba(14,165,233,0.3);}
+.login-submit-button:active{transform:translateY(0);box-shadow:0 4px 15px rgba(14,165,233,0.2);}
+.footer{margin-top:40px;font-size:12px;color:var(--text-color);opacity:0.4;}
+.version{position:absolute;bottom:20px;right:20px;font-size:12px;color:var(--text-color);opacity:0.3;z-index:1;}
+.captcha-group{display:flex;align-items:center;gap:10px;}
+
+/* Improve visibility for autofill and text rendering on dark background */
+.login-container input::-webkit-contacts-auto-fill-button{visibility:hidden;display:none !important;pointer-events:none;}
+.login-container input:-webkit-autofill,
+.login-container input:-webkit-autofill:hover,
+.login-container input:-webkit-autofill:focus,
+.login-container input:-webkit-autofill:active{
+    -webkit-text-fill-color: var(--input-text-color) !important;
+    color: var(--input-text-color) !important;
+    caret-color: var(--primary-color) !important;
+    font-weight: 400 !important;
+    transition: background-color 9999s ease-in-out 0s;
+    -webkit-box-shadow: 0 0 0px 1000px rgba(30, 41, 59, 0.8) inset !important;
+    box-shadow: 0 0 0px 1000px rgba(30, 41, 59, 0.8) inset !important;
+}
+/* Ensure selected text has good contrast */
+.login-container input::selection{
+    background: rgba(14,165,233,0.45);
+    color:#ffffff;
+}
+.login-container input::-moz-selection{
+    background: rgba(14,165,233,0.45);
+    color:#ffffff;
+}
+
+/* Additional fixes for input text visibility */
+.login-container input[type="text"],
+.login-container input[type="email"],
+.login-container input[type="password"]{
+    color: var(--input-text-color) !important;
+    -webkit-text-fill-color: var(--input-text-color) !important;
+    opacity: 1;
+}
+
+/* Ensure password dots are visible */
+.login-container input[type="password"]::-webkit-credentials-auto-fill-button{
+    visibility: hidden;
+}
+
+/* Fix for Firefox */
+.login-container input::-moz-placeholder{
+    color: rgba(226,232,240,0.65);
+    opacity: 1;
+}
+
+/* Fix for IE/Edge */
+.login-container input:-ms-input-placeholder{
+    color: rgba(226,232,240,0.65);
+}
+.login-container input::-ms-input-placeholder{
+    color: rgba(226,232,240,0.65);
+}

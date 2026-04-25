@@ -51,7 +51,6 @@ const TestDialog = forwardRef((props, ref) => {
 
         setLoading(true);
         try {
-            console.log('toolData :>> ', toolData);
             const { server_host, children, auth_method, auth_type, api_key } = serverRef.current
 
             const res = await captureAndAlertRequestErrorHoc(
@@ -65,7 +64,6 @@ const TestDialog = forwardRef((props, ref) => {
                     openapi_schema: openapiSchemaRef.current
                 }).then(setResult)
             );
-            console.log('res :>> ', res);
             // setResult(JSON.stringify(res, null, 2));
         } finally {
             setLoading(false);

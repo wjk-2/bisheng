@@ -46,8 +46,8 @@ export const ModelManagement = forwardRef<HTMLDivElement[], ModelManagementProps
 
         return (<div className="mt-2 border p-4 rounded-md bg-muted">
             <div className="grid mb-4 items-center" style={{ gridTemplateColumns: "repeat(2, 1fr) 40px" }}>
-                <Label className="bisheng-label">{t('bench.model')}</Label>
-                <Label className="bisheng-label">{t('bench.displayName')}</Label>
+                <Label className="eagent-label">{t('bench.model')}</Label>
+                <Label className="eagent-label">{t('bench.displayName')}</Label>
                 <div></div>
             </div>
             {models.map((model, index) => (

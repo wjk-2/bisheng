@@ -6,11 +6,11 @@ import { useRecordingAudioLoading } from "~/components/Voice/textToSpeechStore";
 import { useGetWorkbenchModelsQuery } from "~/data-provider";
 import { useLocalize } from "~/hooks";
 import InputFiles from "./components/InputFiles";
-import { bishengConfState, currentRunningState } from "./store/atoms";
+import { eagentConfState, currentRunningState } from "./store/atoms";
 import { useAreaText } from "./useAreaText";
 
 export default function ChatInput({ readOnly, v }) {
-    const [bishengConfig] = useRecoilState(bishengConfState)
+    const [eagentConfig] = useRecoilState(eagentConfState)
     const { inputDisabled, error: inputMsg, showUpload, showStop, showReRun } = useRecoilValue(currentRunningState)
     const { accepts, inputRef, setChatFiles, handleInput, handleRestart, handleSendClick, handleStopClick } = useAreaText()
     const [fileUploading, setFileUploading] = useState(false)
@@ -42,7 +42,7 @@ export default function ChatInput({ readOnly, v }) {
                 showVoice={showVoice}
                 accepts={accepts}
                 disabled={readOnly || audioOpening || inputDisabled}
-                size={bishengConfig?.uploaded_files_maximum_size || 50}
+                size={eagentConfig?.uploaded_files_maximum_size || 50}
                 onChange={(files => {
                     setFileUploading(!files)
                     setChatFiles(files)
@@ -100,6 +100,6 @@ export default function ChatInput({ readOnly, v }) {
                 className={"resize-none bg-transparent border-none p-4 pr-10 text-md min-h-24 max-h-80 scrollbar-hide"}
             ></Textarea>
         </div>
-        <p className="text-center text-sm pt-2 pb-4 text-gray-400">{bishengConfig?.dialog_tips}</p>
+        <p className="text-center text-sm pt-2 pb-4 text-gray-400">{eagentConfig?.dialog_tips}</p>
     </div>
 };

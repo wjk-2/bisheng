@@ -113,58 +113,64 @@ export default function useSSE(
     });
 
     sse.addEventListener('message', (e: MessageEvent) => {
-      const data = JSON.parse(e.data);
-      console.log('data :>> ', data);
+      try {
+        const data = JSON.parse(e.data);
 
-      if (data.final != null) { // end
-        const { plugins } = data;
-        finalHandler(data, { ...submission, plugins } as EventSubmission);
-        (startupConfig?.checkBalance ?? false) && balanceQuery.refetch(); // 更新余额?
-        console.log('final', data);
-        return;
-      } else if (data.created != null) {
-        const runId = v4();
-        setActiveRunId(runId);
-        userMessage = {
-          ...userMessage,
-          ...data.message,
-          overrideParentMessageId: userMessage.overrideParentMessageId,
-        };
+        if (data.final != null) { // end
+          const { plugins } = data;
+          finalHandler(data, { ...submission, plugins } as EventSubmission);
+          (startupConfig?.checkBalance ?? false) && balanceQuery.refetch(); // 更新余额?
+          return;
+        } else if (data.created != null) {
+          const runId = v4();
+          setActiveRunId(runId);
+          userMessage = {
+            ...userMessage,
+            ...data.message,
+            overrideParentMessageId: userMessage.overrideParentMessageId,
+          };
 
-        createdHandler(data, { ...submission, userMessage } as EventSubmission);
-      } else if (data.event != null) {
-        stepHandler(data, { ...submission, userMessage } as EventSubmission);
-      } else if (data.sync != null) {
-        const runId = v4();
-        setActiveRunId(runId);
-        /* synchronize messages to Assistants API as well as with real DB ID's */
-        syncHandler(data, { ...submission, userMessage } as EventSubmission);
-      } else if (data.type != null) {
-        const { text, index } = data;
-        if (text != null && index !== textIndex) {
-          textIndex = index;
+          createdHandler(data, { ...submission, userMessage } as EventSubmission);
+        } else if (data.event != null) {
+          stepHandler(data, { ...submission, userMessage } as EventSubmission);
+        } else if (data.sync != null) {
+          const runId = v4();
+          setActiveRunId(runId);
+          /* synchronize messages to Assistants API as well as with real DB ID's */
+          syncHandler(data, { ...submission, userMessage } as EventSubmission);
+        } else if (data.type != null) {
+          const { text, index } = data;
+          if (text != null && index !== textIndex) {
+            textIndex = index;
+          }
+
+          contentHandler({ data, submission: submission as EventSubmission });
+        } else {
+          const text = data.text ?? data.response;
+          const { plugin, plugins } = data;
+
+          const initialResponse = {
+            ...(submission.initialResponse as TMessage),
+            parentMessageId: data.parentMessageId,
+            messageId: data.messageId,
+          };
+
+          if (data.message != null) {
+            messageHandler(text, { ...submission, plugin, plugins, userMessage, initialResponse });
+          }
         }
-
-        contentHandler({ data, submission: submission as EventSubmission });
-      } else {
-        const text = data.text ?? data.response;
-        const { plugin, plugins } = data;
-
-        const initialResponse = {
-          ...(submission.initialResponse as TMessage),
-          parentMessageId: data.parentMessageId,
-          messageId: data.messageId,
-        };
-
-        if (data.message != null) {
-          messageHandler(text, { ...submission, plugin, plugins, userMessage, initialResponse });
-        }
+      } catch (error) {
+        console.error('SSE message parse error:', error);
+        errorHandler({
+          data: { text: localize('com_error_sse_parse') || 'Stream data parse error' },
+          submission: { ...submission, userMessage } as EventSubmission
+        });
+        setIsSubmitting(false);
       }
     });
 
     sse.addEventListener('open', () => {
       setAbortScroll(false);
-      console.log('connection is opened');
     });
 
     sse.addEventListener('cancel', async () => {
@@ -208,11 +214,9 @@ export default function useSSE(
           return;
         } catch (error) {
           /* token refresh failed, continue handling the original 401 */
-          console.log(error);
         }
       }
 
-      console.log('error in server stream.');
       (startupConfig?.checkBalance ?? false) && balanceQuery.refetch();
 
       let data: TResData | undefined = undefined;
@@ -220,7 +224,6 @@ export default function useSSE(
         data = JSON.parse(e.data) as TResData;
       } catch (error) {
         console.error(error);
-        console.log(e);
         setIsSubmitting(false);
       }
 

@@ -1,6 +1,6 @@
 import { getLinsightTools, getPersonalKnowledgeInfo, readFileLibDatabase } from "@/controllers/API";
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
-import { useQuery } from "react-query";
+import { useQuery } from "@tanstack/react-query";
 import Vditor from "vditor";
 import "vditor/dist/index.css";
 import SopToolsDown from "./SopToolsDown";
@@ -378,7 +378,6 @@ const useSopTools = (tools) => {
         return tree;
     }, [linsightTools, personalTool, orgTools, files, tools, t]);
 
-    console.log('Combined tree structure:', buildTreeData);
     return { nameToValueRef, valueToNameRef, buildTreeData };
 };
 

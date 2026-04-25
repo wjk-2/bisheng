@@ -145,7 +145,6 @@ export default function FileSidePanel() {
   const localize = useLocalize();
   const deleteFile = (id: string | undefined) => {
     // Define delete functionality here
-    console.log(`Deleting File with id: ${id}`);
   };
 
   return (
@@ -162,7 +161,6 @@ export default function FileSidePanel() {
             placeholder={localize('com_files_filter')}
             value={''}
             onChange={() => {
-              console.log('changed');
             }}
             className="max-w-sm border-border-light placeholder:text-text-secondary"
           />
@@ -170,7 +168,6 @@ export default function FileSidePanel() {
         <div className="w-1/3">
           <UploadFileButton
             onClick={() => {
-              console.log('Upload');
             }}
           />
         </div>

@@ -10,7 +10,12 @@ import {
   RTServer
 } from "./../../types/api/index";
 
-export const paramsSerializer = (params) => {
+/** 参数序列化函数参数类型 */
+export interface ParamsSerializerInput {
+  [key: string]: string | number | boolean | undefined | (string | number | boolean)[];
+}
+
+export const paramsSerializer = (params: ParamsSerializerInput): string => {
   return Object.keys(params)
     .map(key => {
       const value = params[key];
@@ -28,7 +33,7 @@ export const paramsSerializer = (params) => {
 
 const GITHUB_API_URL = "https://api.github.com";
 
-export async function getRepoStars(owner, repo) {
+export async function getRepoStars(owner: string, repo: string): Promise<number | null> {
   try {
     const response = await axios.get(
       `${GITHUB_API_URL}/repos/${owner}/${repo}`
@@ -50,29 +55,40 @@ export async function getAll() {
   return await axios.get(`/api/v1/all`);
 }
 
+/** 组件项 */
+export interface ComponentItem {
+  id?: number;
+  name: string;
+  description?: string;
+  data: Record<string, unknown>;
+  tags?: string[];
+  create_time?: string;
+  update_time?: string;
+}
+
 /**
  * 读取 saved 组件s
  */
-export async function getComponents(): Promise<any[]> {
+export async function getComponents(): Promise<ComponentItem[]> {
   return await axios.get(`/api/v1/component`);
 }
 /**
  * save 组件
  */
-export async function saveComponent(data): Promise<any[]> {
+export async function saveComponent(data: Omit<ComponentItem, 'id' | 'create_time' | 'update_time'>): Promise<ComponentItem> {
   return await axios.post(`/api/v1/component`, data);
 }
 
 /**
  * 覆盖 组件
  */
-export async function overridComponent(data): Promise<any[]> {
+export async function overridComponent(data: ComponentItem): Promise<ComponentItem> {
   return await axios.patch(`/api/v1/component`, data);
 }
 /**
  * 删除 组件
  */
-export async function delComponentApi(name): Promise<any> {
+export async function delComponentApi(name: string): Promise<void> {
   return await axios.delete(`/api/v1/component`, { data: { name } });
 }
 /**
@@ -84,7 +100,7 @@ export async function getAppConfig(): Promise<AppConfig> {
 /**
  * 获取平台配置
  */
-export async function saveThemeApi(data: string): Promise<any> {
+export async function saveThemeApi(data: string): Promise<unknown> {
   return await axios.post(`/api/v1/web/config`, { value: data });
 }
 /**
@@ -133,13 +149,34 @@ export function updateTempApi(temp_id, data) {
   return axios.post(`/api/v1/skill/template/${temp_id}`, data);
 }
 
+/** 知识库查询参数 */
+export interface ReadFileLibParams {
+  page?: number;
+  pageSize?: number;
+  name?: string;
+  type?: number;
+}
+
+/** 知识库项 */
+export interface KnowledgeItem {
+  id: number;
+  name: string;
+  description?: string;
+  type: number;
+  status: number;
+  create_time: string;
+  update_time: string;
+  user_id: number;
+}
+
 /**
  * 获取知识库列表
  * type 0文件库 1qa库
  */
-export async function readFileLibDatabase({ page = 1, pageSize = 20, name = '', type = 0 }) {
+export async function readFileLibDatabase(params: ReadFileLibParams = {}): Promise<{ data: KnowledgeItem[], total: number }> {
+  const { page = 1, pageSize = 20, name = '', type = 0 } = params;
   try {
-    const response: { data: any[], total: number } = await axios.get('/api/v1/knowledge', {
+    const response: { data: KnowledgeItem[], total: number } = await axios.get('/api/v1/knowledge', {
       params: {
         page_num: page,
         page_size: pageSize,
@@ -172,7 +209,7 @@ export async function copyQaDatabase(knowledge_id, knowledge_name) {
 export async function readFileByLibDatabase({ id, page, pageSize = 20, name = '', status, file_ids }) {
   if (Array.isArray(status)) {
     if (status?.includes(1)) { // 4合并到解析中
-      status.push(4)
+      status = [...status, 4]
     } else {
       status = status?.filter(item => item !== 4)
     }
@@ -185,7 +222,7 @@ export async function readFileByLibDatabase({ id, page, pageSize = 20, name = ''
     status: status === 999 ? undefined : status,
     file_ids,
   }
-  const response: { data: any[], total: number, writeable: any } = await axios.get(`/api/v1/knowledge/file_list/${id}`, {
+  const response: { data: Record<string, unknown>[], total: number, writeable: boolean } = await axios.get(`/api/v1/knowledge/file_list/${id}`, {
     params, paramsSerializer
   });
 
@@ -218,7 +255,7 @@ export async function updateMetadataFields(
  */
 export async function saveUserMetadataApi(
   knowledge_id: string | number,
-  updates: Array<{ field_name: string; field_value: any }>,
+  updates: Array<{ field_name: string; field_value: unknown }>,
   updated_at?: string | number
 ) {
   await axios.put(`/api/v1/knowledge/file/user_metadata`, {
@@ -242,7 +279,7 @@ export async function deleteMetadataFields(
   });
 }
 // 获取元数据
-export async function getMetaFile(file_id): Promise<any> {
+export async function getMetaFile(file_id: string | number): Promise<unknown> {
   return await axios.get(`/api/v1/knowledge/file/info/${file_id}`);
 }
 
@@ -295,8 +332,8 @@ type DefaultUploadFileFc = {
   file_list: { file_path: string }[]; // 必需
 };
 ///
-export async function subUploadLibFile(data: UploadFileFc): Promise<any>;
-export async function subUploadLibFile(data: DefaultUploadFileFc): Promise<any>;
+export async function subUploadLibFile(data: UploadFileFc): Promise<unknown>;
+export async function subUploadLibFile(data: DefaultUploadFileFc): Promise<unknown>;
 export async function subUploadLibFile(data: UploadFileFc | DefaultUploadFileFc) {
   return await axios.post(`/api/v1/knowledge/process`, data);
 }
@@ -304,24 +341,19 @@ export async function subUploadLibFile(data: UploadFileFc | DefaultUploadFileFc)
 export async function rebUploadFile(data) {
   return await axios.post(`/api/v1/knowledge/process/rebuild`, data);
 }
-/**
- * 查看文件切片（SSE 版本）
- * 取消逻辑基于 EventSource.close()，无需 CancelToken
- */
-let currentEventSource = null; // 仅保留此变量用于跟踪当前连接
 
 // 用 fetch 实现 POST 方式的 SSE
 /**
  * 预览文档分片（轮询模式）。
  * 首次请求创建任务，返回任务标识；随后访问 `/api/v1/knowledge/preview/Polling` 轮询状态。
- * @param {Record<string, any>} data 请求体
- * @param {(eventType: string, payload: any) => void} onEvent 事件回调
+ * @param {Record<string, unknown>} data 请求体
+ * @param {(eventType: string, payload: unknown) => void} onEvent 事件回调
  * @param {{ pollInterval?: number }} [options] 轮询配置
  * @returns {() => void} 取消函数
  */
 export function previewFileSplitApi(
-  data: Record<string, any>,
-  onEvent: (eventType: string, payload: any) => void,
+  data: Record<string, unknown>,
+  onEvent: (eventType: string, payload: unknown) => void,
   options: { pollInterval?: number } = {}
 ) {
   const createController = new AbortController();
@@ -358,18 +390,16 @@ export function previewFileSplitApi(
    */
   const pollStatus = (previewFileId) => {
     if (isFinished) return;
-    console.log('开始轮询状态, preview_file_id:', previewFileId);
     axios
       .get(`/api/v1/knowledge/preview/status`, {
         params: { preview_file_id: previewFileId },
         signal: pollingSignal
       })
-      .then((result: any) => {
+      .then((result: Record<string, unknown>) => {
         // axios 拦截器已经返回了 response.data.data，所以这里直接使用 result
         // 后端返回格式: resp_200(data=file_status)，其中 file_status 是 {"status":"processing"} 或 {"status":"completed","data":{...}}
         // 经过拦截器后，result 应该是: {"status":"processing"} 或 {"status":"completed","data":{...}}
-        console.log('轮询状态响应:', result);
-        const status: string = result?.status;
+        const status: string = result?.status as string;
         const payload = result?.data;
         const code = result?.code;
         const message = result?.message;
@@ -423,17 +453,15 @@ export function previewFileSplitApi(
     .post('/api/v1/knowledge/preview', data, {
       signal: createSignal
     })
-    .then((result: any) => {
-      console.log('preview 创建任务响应:', result);
+    .then((result: Record<string, unknown>) => {
 
       if (!result || isFinished) {
         console.warn('预览任务创建响应为空或已结束');
         return;
       }
-      const previewFileId = result?.preview_file_id || result?.previewFileId;
+      const previewFileId = (result?.preview_file_id || result?.previewFileId) as string | undefined;
 
       if (previewFileId) {
-        console.log('获取到 preview_file_id:', previewFileId, '开始轮询');
         // 立即开始第一次轮询
         pollStatus(previewFileId);
         return;
@@ -463,7 +491,7 @@ export function previewFileSplitApi(
 /**
  * 获取知识库下的切分段落
  */
-export async function getKnowledgeChunkApi(params): Promise<any> {
+export async function getKnowledgeChunkApi(params: Record<string, unknown>): Promise<unknown> {
   let queryStr = ''
   if (params.file_ids?.length) {
     queryStr = params.file_ids.map(id => `file_ids=${id}`).join('&');
@@ -503,7 +531,7 @@ type KnowledgePutRequest = {
   file_id: number;
   chunk_index: number;
   text: string;
-  bbox: any
+  bbox: Record<string, unknown> | null
 }
 export async function updateChunkApi(data: KnowledgePutRequest) {
   return await axios.put(`/api/v1/knowledge/chunk`, data);
@@ -531,12 +559,12 @@ export async function deleteFileLib(id) {
 }
 
 // 获取灵思工具
-export async function getLinsightTools(): Promise<any> {
+export async function getLinsightTools(): Promise<unknown> {
   return await axios.get('/api/v1/tool/linsight/preset');
 }
 
 // 获取个人知识库信息
-export async function getPersonalKnowledgeInfo(): Promise<any> {
+export async function getPersonalKnowledgeInfo(): Promise<unknown> {
   return await axios.get('/api/v1/knowledge/personal_knowledge_info');
 }
 
@@ -679,7 +707,7 @@ export async function getFileBboxApi(file_id) {
 /**
  * 获取知识库详情
  */
-export async function getKnowledgeDetailApi(knowledge_id): Promise<any[]> {
+export async function getKnowledgeDetailApi(knowledge_id: (string | number)[]): Promise<unknown[]> {
   let queryStr = knowledge_id.map(id => `knowledge_id=${id}`).join('&');
   return await axios.get(`/api/v1/knowledge/info?${queryStr}`);
 }
@@ -701,7 +729,7 @@ export async function getFTServicesApi(server_id: number): Promise<RTServer[]> {
 /**
  * 获取RT服务列表（包含已删除data）
  */
-export async function getAllServicesApi(): Promise<any[]> {
+export async function getAllServicesApi(): Promise<unknown[]> {
   return await axios.get(`/api/v1/finetune/server/filters`);
 }
 
@@ -731,7 +759,7 @@ export async function getModelInfoApi(id) {
 
 export async function postValidateCode(
   code: string
-): Promise<any> {
+): Promise<unknown> {
   return await axios.post("/api/v1/validate/code", { code });
 }
 
@@ -746,7 +774,7 @@ export async function postValidatePrompt(
   name: string,
   template: string,
   frontend_node: APIClassType
-): Promise<any> {
+): Promise<unknown> {
   return await axios.post("/api/v1/validate/prompt", {
     name: name,
     template: template,
@@ -767,7 +795,7 @@ export const getChatsApi = (page) => {
     }
   }
 
-  return (axios.get(`/api/v1/chat/list?page=${page}&limit=40`) as Promise<any[]>).then(res => {
+  return (axios.get(`/api/v1/chat/list?page=${page}&limit=40`) as Promise<Record<string, unknown>[]>).then(res => {
     const result = res?.filter((el, i) => el.chat_id) || []
     return result.map(el => {
       const { intermediate_steps, message } = el.latest_message || { intermediate_steps: '', message: '' }
@@ -805,7 +833,7 @@ export const deleteChatApi = (chatId) => {
  * 获取会话消息记录
  *
  * @param id flow_id chat_id - .
- * @returns {Promise<any>} his data.
+ * @returns {Promise<MessageDB[]>} his data.
  */
 export interface MessageDB {
   /** 场景 */
@@ -839,7 +867,7 @@ export interface MessageDB {
 export async function getChatHistory(flowId: string, chatId: string, pageSize: number, id?: number): Promise<MessageDB[]> {
   // hack Switch API URL based on routing 
   let url = '/api/v1/chat/history'
-  if (location.pathname.indexOf('/log/chatlog') || location.pathname.indexOf('/label/chat')) {
+  if (location.pathname.indexOf('/log/chatlog') !== -1 || location.pathname.indexOf('/label/chat') !== -1) {
     url = '/api/v1/session/chat/history'
   }
   return await axios.get(`${url}?flow_id=${flowId}&chat_id=${chatId}&page_size=${pageSize}&id=${id || ''}`);
@@ -884,7 +912,7 @@ export const trackingApi = (data: { message_id: string, operation_type: 'dislike
 /**
  * Fetches the version of the API.
  *
- * @returns {Promise<AxiosResponse<any>>} A promise that resolves to an AxiosResponse containing the version information.
+ * @returns {Promise<AxiosResponse<unknown>>} A promise that resolves to an AxiosResponse containing the version information.
  */
 export async function getVersion() {
   const respnose = await axios.get("/api/v1/version");
@@ -916,7 +944,7 @@ export async function postBuildInit(data: {
   flow: FlowType
   chatId?: string
   versionId?: number
-}): Promise<any> {
+}): Promise<unknown> {
   const { flow, chatId, versionId } = data;
   const qstr = versionId ? `?version_id=${versionId}` : ''
   return await axios.post(`/api/v1/build/init/${flow.id}${qstr}`, chatId ? { chat_id: chatId } : flow);
@@ -934,7 +962,7 @@ export async function postBuildInit(data: {
 export async function uploadFile(
   file: File,
   id: string
-): Promise<any> {
+): Promise<unknown> {
   const formData = new FormData();
   formData.append("file", file);
   return await axios.post(`/api/v1/upload/${id}`, formData);
@@ -947,8 +975,8 @@ export async function uploadFile(
  * 获取知识库下文件列表
  *
  */
-export async function serverListApi(byRtName?: string): Promise<any[]> {
-  return await axios.get(`/api/v1/server/list`).then((list: any) => {
+export async function serverListApi(byRtName?: string): Promise<Record<string, unknown>[]> {
+  return await axios.get(`/api/v1/server/list`).then((list: Record<string, unknown>[]) => {
     return byRtName ? list.filter(item => item.server === byRtName) : list
   });
 }
@@ -971,18 +999,18 @@ export async function updateConfigApi(id, config) {
  * 获取gpu
  *
  */
-export async function GPUlistApi(): Promise<any> {
+export async function GPUlistApi(): Promise<unknown> {
   return await axios.get(`/api/v1/server/GPU`);
 }
-export async function GPUlistByFinetuneApi(): Promise<any> {
+export async function GPUlistByFinetuneApi(): Promise<unknown> {
   return await axios.get(`/api/v1/finetune/gpu`);
 }
 
 // 工作台配置
-export async function setWorkstationConfigApi(data): Promise<any> {
+export async function setWorkstationConfigApi(data: Record<string, unknown>): Promise<unknown> {
   return await axios.post(`api/v1/workstation/config`, data);
 }
-export async function getWorkstationConfigApi(): Promise<any> {
+export async function getWorkstationConfigApi(): Promise<unknown> {
   return await axios.get(`api/v1/workstation/config`);
 }
 
@@ -998,7 +1026,7 @@ export async function splitWordApi(word: string, messageId: string): Promise<str
 // 获取 chunks
 export async function getSourceChunksApi(chatId: string, messageId: number, keys: string) {
   try {
-    let chunks: any[] = await axios.post(`/api/v1/qa/chunk`, {
+    let chunks: Record<string, unknown>[] = await axios.post(`/api/v1/qa/chunk`, {
       chat_id: chatId,
       message_id: messageId,
       keys,
@@ -1046,7 +1074,7 @@ export async function getSourceChunksApi(chatId: string, messageId: number, keys
 }
 
 
-export async function updateKnowledge(data): Promise<any[]> {
+export async function updateKnowledge(data: Record<string, unknown>): Promise<unknown[]> {
   return await axios.post(`/api/v1/knowledge/update_knowledge`, data);
 }
 
@@ -1060,13 +1088,13 @@ export async function uploadFileApi({ fileKey, knowledgeId, file, onProgress, on
     file: File,
     knowledgeId: string,
     onProgress?: (progressEvent: number) => void,
-    onFail?: (error: any) => void,
-    onFinish?: (response: any) => void,
-    onAbort?: (abortCtlr: any) => void
-  }): Promise<any> {
+    onFail?: (error: unknown) => void,
+    onFinish?: (response: unknown) => void,
+    onAbort?: (abortCtlr: AbortController | null) => void
+  }): Promise<unknown> {
   // 创建新的控制器
   const abortCtlr = new AbortController();
-  onAbort(abortCtlr);
+  onAbort?.(abortCtlr);
 
   try {
     const formData = new FormData();
@@ -1079,23 +1107,21 @@ export async function uploadFileApi({ fileKey, knowledgeId, file, onProgress, on
       onUploadProgress: (progressEvent) => {
         const { loaded, total } = progressEvent;
         const progress = Math.min(99.99, (loaded * 100) / total);
-        console.log(`Upload progress: ${file.name} ${progress}%`);
         // UI with the progress information here
-        !isFinished && onProgress(progress)
+        !isFinished && onProgress?.(progress)
       },
       signal: abortCtlr.signal,
     }
     const response = await axios.post(`/api/v1/knowledge/upload/${knowledgeId}`, formData, config);
     // 处理成功
     isFinished = true;
-    onFinish(response);
+    onFinish?.(response);
   } catch (error) {
     if (error?.code === "ERR_CANCELED") {
-      console.log('用户取消了上传');
     } else {
-      onFail(error);
+      onFail?.(error);
     }
   } finally {
-    onAbort(null);
+    onAbort?.(null);
   }
 }

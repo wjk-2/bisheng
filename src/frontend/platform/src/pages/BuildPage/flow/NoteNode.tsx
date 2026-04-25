@@ -75,7 +75,7 @@ function NoteNode({ data: node, selected, width, height }: { data: any; selected
     const { isVisible, handleMouseEnter, handleMouseLeave } = useHoverToolbar();
     return (
         <div
-            className={`bisheng-node justify-start min-w-60 min-h-28 relative rounded-md border p-2 pt-4 bg-yellow-50 hover:border-orange-300 ${selected ? 'border-orange-300' : 'border-transparent'
+            className={`eagent-node justify-start min-w-60 min-h-28 relative rounded-md border p-2 pt-4 bg-yellow-50 hover:border-orange-300 ${selected ? 'border-orange-300' : 'border-transparent'
                 }`}
             data-id={node.id}
             style={{

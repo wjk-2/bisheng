@@ -2,42 +2,25 @@
 
 import type React from "react"
 
+import mermaid from "mermaid"
 import { Copy, DownloadIcon, ZoomIn, ZoomOut } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { Button, Separator } from "~/components/ui"
 import { copyText, formatDate } from "~/utils"
 import { useLocalize } from "~/hooks"
+import DOMPurify from 'dompurify';
 
-// 动态加载 mermaid
-export const loadScript = async (fileName) => {
-    if (window[fileName]) {
-        return window[fileName]
-    }
-
-    const script = document.createElement("script")
-    script.src = `${__APP_ENV__.BASE_URL}/${fileName}.min.js`
-    script.type = "module"
-
-    return new Promise((resolve, reject) => {
-        script.onload = () => {
-            // 等待 mermaid 初始化
-            const checkMermaid = setInterval(() => {
-                if (window[fileName]) {
-                    clearInterval(checkMermaid)
-                    resolve(window[fileName])
-                }
-            }, 100)
-        }
-        script.onerror = reject
-        document.head.appendChild(script)
-    })
-}
+// 初始化 mermaid（模块级别只执行一次）
+mermaid.initialize({
+    startOnLoad: false,
+    theme: "default",
+    securityLevel: 'strict' // 启用严格安全模式
+})
 
 export default function MermaidBlock({ children }: { children: string }) {
     const ref = useRef<HTMLDivElement>(null)
     const containerRef = useRef<HTMLDivElement>(null)
     const [mode, setMode] = useState<"chart" | "code">("chart")
-    const mermaidRef = useRef<any>(null)
     const localize = useLocalize();
 
     const [zoom, setZoom] = useState(1)
@@ -48,18 +31,18 @@ export default function MermaidBlock({ children }: { children: string }) {
     const codeRef = useRef<HTMLElement>(null)
 
     useEffect(() => {
-        loadScript('mermaid').then((mermaid) => {
-            mermaid.initialize({ startOnLoad: false, theme: "default" })
-            mermaidRef.current = mermaid
-            if (ref.current) {
-                ref.current.innerHTML = children
-                mermaidRef.current.run({ nodes: [ref.current] })
-            }
-        })
-    }, [])
+        if (ref.current) {
+            // DOMPurify 净化 mermaid 代码，防止注入攻击
+            const sanitizedCode = DOMPurify.sanitize(children, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] })
+            ref.current.innerHTML = sanitizedCode
+            // 添加 class 以便 mermaid.run() 识别
+            ref.current.classList.add('mermaid')
+            mermaid.run({ nodes: [ref.current] })
+        }
+    }, [children])
 
     useEffect(() => {
-        const parentNode = document.querySelector(".bisheng-message")
+        const parentNode = document.querySelector(".eagent-message")
         if (parentNode && containerRef.current) {
             containerRef.current.style.width = `${parentNode.clientWidth - 60}px`
         }
@@ -82,16 +65,6 @@ export default function MermaidBlock({ children }: { children: string }) {
         try {
             // Clone the SVG to avoid modifying the original
             const clonedSvg = svgElement.cloneNode(true) as SVGElement
-
-            // Get computed styles and inline them to avoid CORS issues
-            // const allElements = clonedSvg.querySelectorAll("*")
-            // allElements.forEach((el) => {
-            //     const computedStyle = window.getComputedStyle(el as Element)
-            //     const styleString = Array.from(computedStyle)
-            //         .map((key) => `${key}:${computedStyle.getPropertyValue(key)}`)
-            //         .join(";")
-            //         ; (el as HTMLElement).setAttribute("style", styleString)
-            // })
 
             // Get SVG dimensions
             const bbox = svgElement.getBBox()
@@ -129,7 +102,6 @@ export default function MermaidBlock({ children }: { children: string }) {
                 canvas.toBlob((blob) => {
                     if (blob) {
                         const titleDom = document.querySelector("#app-title")
-                        console.log('titleDom :>> ', titleDom);
                         const link = document.createElement("a")
                         link.download = `${titleDom?.innerHTML}_${formatDate(new Date(), 'yyyyMMdd_HHmm')}.png` || `mermaid-diagram-${Date.now()}.png`
                         link.href = URL.createObjectURL(blob)
@@ -157,10 +129,8 @@ export default function MermaidBlock({ children }: { children: string }) {
     }
 
     const handleMouseDown = (e: React.MouseEvent) => {
-        // if (zoom > 1) {
         setIsDragging(true)
         setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y })
-        // }
     }
 
     const handleMouseMove = (e: React.MouseEvent) => {

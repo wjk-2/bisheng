@@ -301,10 +301,10 @@ export const PassInput = React.forwardRef<HTMLInputElement, InputProps & {
 
     return (
         <div className={cname("", className)}>
-            <label htmlFor={id} className="bisheng-label flex items-center gap-1 mb-2">
+            <label htmlFor={id} className="eagent-label flex items-center gap-1 mb-2">
                 {label}
                 {tooltip && <QuestionTooltip content={tooltip} />}
-                {required && <span className="bisheng-tip">*</span>}
+                {required && <span className="eagent-tip">*</span>}
             </label>
 
             <div className="relative">
@@ -322,7 +322,7 @@ export const PassInput = React.forwardRef<HTMLInputElement, InputProps & {
                 />
             </div>
 
-            {error && <p className="bisheng-tip mt-1">{typeof error === 'string' ? error : '不能为空'}</p>}
+            {error && <p className="eagent-tip mt-1">{typeof error === 'string' ? error : '不能为空'}</p>}
         </div>
     );
 });

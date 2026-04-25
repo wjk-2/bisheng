@@ -4,6 +4,21 @@
 
 /* Custom Variables */
 :root {
+  /* Studio Design Tokens */
+  --studio-primary:          #4658FF;
+  --studio-primary-hover:    #6483FF;
+  --studio-primary-disabled: #A2B8FF;
+  --studio-primary-selected: #F1F5FF;
+  --studio-title:    #140E35;
+  --studio-text:     #565772;
+  --studio-desc:     #9498AC;
+  --studio-disabled: #AEB4C9;
+  --studio-border:   #D9DEE9;
+  --studio-divide:   #E5EAF4;
+  --studio-moduleBg: #F7F9FF;
+  --studio-cardBg:   #FFFFFF;
+  --studio-tagBg:    #F1F5FF;
+  --studio-page-bg:  linear-gradient(180deg, #F7F9FF 0%, #F2F5FE 100%);
   --white: #fff;
   --black: #000;
   --gray-20: #ececf1;
@@ -84,11 +99,11 @@ html {
   --border-xheavy: var(--gray-500);
   /* These are test styles */
 
-  --background: 0 0% 100%;
+  --background: 228 100% 99%;
   --foreground: 0 0% 3.9%;
   --card: 0 0% 100%;
   --card-foreground: 0 0% 3.9%;
-  --primary: 219 98% 46%;
+  --primary: 240 100% 64%;
   --primary-foreground: 0 0% 100%;
   --secondary: 0 0% 96.1%;
   --secondary-foreground: 0 0% 9%;
@@ -98,8 +113,8 @@ html {
   --accent-foreground: 0 0% 9%;
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 0 0% 98%;
-  --border: 0 0% 89.8%;
-  --input: 0 0% 89.8%;
+  --border: 220 22% 87%;
+  --input: 220 22% 87%;
   --ring: 0 0% 3.9%;
   --radius: 0.5rem;
   --chart-1: 12 76% 61%;
@@ -195,9 +210,27 @@ html {
 }
 
 @font-face {
-  font-family: AlibabaPuHuiTi-3-55-Regular;
-  /* src: url("assets/text-security-disc.woff") format("woff"); */
-  src: url("assets/AlibabaPuHuiTi-3-55-Regular.woff") format("woff");
+  font-family: "AlibabaPuHuiTi";
+  font-weight: 400;
+  src: url("/workspace/fonts/AlibabaPuHuiTi-3-55-Regular.woff") format("woff");
+}
+
+@font-face {
+  font-family: "AlibabaPuHuiTi";
+  font-weight: 500;
+  src: url("/workspace/fonts/AlibabaPuHuiTi-3-65-Medium.woff") format("woff");
+}
+
+@font-face {
+  font-family: "AlibabaPuHuiTi";
+  font-weight: 600;
+  src: url("/workspace/fonts/AlibabaPuHuiTi-3-75-SemiBold.woff") format("woff");
+}
+
+@font-face {
+  font-family: "AlibabaPuHuiTi";
+  font-weight: 700;
+  src: url("/workspace/fonts/AlibabaPuHuiTi-3-85-Bold.woff") format("woff");
 }
 
 .text-token-text-primary {
@@ -1763,7 +1796,7 @@ body,
 html {
   height: 100%;
   font-family:
-    "AlibabaPuHuiTi-3-55-Regular",
+    "AlibabaPuHuiTi",
     "PingFang SC",
     /* 苹果设备优先使用苹方 */
     "Hiragino Sans GB",

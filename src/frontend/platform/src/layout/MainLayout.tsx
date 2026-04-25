@@ -1,8 +1,7 @@
 import {
     ApplicationIcon,
-    BookOpenIcon,
+    EducationIcon,
     EvaluatingIcon,
-    GithubIcon,
     KnowledgeIcon,
     LabelIcon,
     LogIcon,
@@ -11,17 +10,18 @@ import {
     SystemIcon,
     TechnologyIcon
 } from "@/components/bs-icons";
-import { LoadingIcon } from "@/components/bs-icons/loading";
 import { DatasetIcon } from "@/components/bs-icons/menu/dataset";
-import { DashboardIcon } from "@/components/bs-icons/menu/system";
 import { bsConfirm } from "@/components/bs-ui/alertDialog/useConfirm";
 import { SelectHover, SelectHoverItem } from "@/components/bs-ui/select/hover";
 import { locationContext } from "@/contexts/locationContext";
+import { resolveWorkspaceUrl } from "@/util/workspace";
 import i18next from "i18next";
-import { Check, ChevronDown, GanttChartIcon, Lock, MoonStar, Sun } from "lucide-react";
-import { Suspense, useContext, useEffect, useMemo, useState } from "react";
+import { Activity, Check, ChevronDown, ChevronLeft, ChevronRight, ExternalLink, Lock, MoonStar, Settings, Sun, Users } from "lucide-react";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { ErrorBoundary } from "react-error-boundary";
 import { useTranslation } from "react-i18next";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import CrashErrorComponent from "../components/CrashErrorComponent";
 import { Separator } from "../components/bs-ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../components/bs-ui/tooltip";
 import { darkContext } from "../contexts/darkContext";
@@ -31,12 +31,39 @@ import { captureAndAlertRequestErrorHoc } from "../controllers/request";
 import { User } from "../types/api/user";
 import HeaderMenu from "./HeaderMenu";
 
+type MenuItem = {
+    key: string;
+    label: string;
+    icon: JSX.Element;
+    to?: string;
+    href?: string;
+    target?: string;
+    onClick?: (e: React.MouseEvent) => void;
+};
+
+type MenuGroup = {
+    key: string;
+    title: string;
+    items: MenuItem[];
+};
+
 export default function MainLayout() {
     const { dark, setDark } = useContext(darkContext);
     const { appConfig } = useContext(locationContext)
     // 角色
-    const { user, setUser } = useContext(userContext);
+    const { user, userLoading, setUser } = useContext(userContext);
+    // auth 未完成前不渲染受保护内容，避免权限检查竞态
+    if (userLoading) return null;
     const { language, languageNames, options, changLanguage, t } = useLanguage(user)
+    const [collapsed, setCollapsed] = useState(false)
+    // 优化后的侧边栏样式
+    const sidebarWidthClass = collapsed ? "w-[72px] min-w-[72px] px-2" : "w-[200px] min-w-[200px] px-3"
+    const navBaseClass = "navlink group inline-flex items-center rounded-lg w-full h-9 transition-all duration-200 hover:translate-x-0.5"
+    const navPaddingClass = collapsed ? "justify-center px-2" : "gap-2.5 px-3"
+    const navTextClass = collapsed ? "hidden" : "text-sm font-medium whitespace-nowrap overflow-hidden text-ellipsis"
+    const navHoverClass = "hover:bg-[#F7F9FF] dark:hover:bg-gray-800 text-[#565772] dark:text-gray-300 hover:text-[#140E35] dark:hover:text-gray-100"
+    const toggleSidebar = () => setCollapsed(prev => !prev)
+    const toggleLabel = collapsed ? t('menu.expandSidebar') : t('menu.collapseSidebar')
 
     const handleLogout = () => {
         bsConfirm({
@@ -44,9 +71,13 @@ export default function MainLayout() {
             desc: `${t('menu.logoutContent')}？`,
             okTxt: t('system.confirm'),
             onOk(next) {
-                captureAndAlertRequestErrorHoc(logoutApi()).then(_ => {
+                captureAndAlertRequestErrorHoc(logoutApi()).then(() => {
                     setUser(null)
                     localStorage.removeItem('isLogin')
+                    // S-4: Clear WebSocket token and related auth data from localStorage on logout
+                    localStorage.removeItem('ws_token')
+                    localStorage.removeItem('token')
+                    localStorage.removeItem('userInfo')
                 })
                 next()
             }
@@ -60,172 +91,345 @@ export default function MainLayout() {
         navigator('/reset')
     }
 
-    // 系统管理员(超管、组超管)
+    // 系统管理员(简化后只有超管)
     const isAdmin = useMemo(() => {
-        return ['admin', 'group_admin'].includes(user.role)
+        return user.role === 'admin'
     }, [user])
 
-    const isMenu = (menu) => {
-        return user.web_menu.includes(menu) || user.role === 'admin'
-    }
+    const getInitialExpandedState = () => {
+        const defaults: Record<string, boolean> = {
+            workspace: true,
+            education: true,
+            square: true,
+            application: true,
+            model: true,
+            settings: true
+        };
+
+        if (typeof window === 'undefined') {
+            return defaults;
+        }
+
+        try {
+            const stored = localStorage.getItem('platform-sidebar-groups');
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                if (parsed && typeof parsed === 'object') {
+                    return { ...defaults, ...parsed };
+                }
+            }
+        } catch (error) {
+            // 忽略解析异常，采用默认展开状态
+        }
+
+        return defaults;
+    };
+
+    const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => getInitialExpandedState());
+    const workspaceLink = useMemo(() => resolveWorkspaceUrl(appConfig.workspaceUrl), [appConfig.workspaceUrl]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+        localStorage.setItem('platform-sidebar-groups', JSON.stringify(expandedGroups));
+    }, [expandedGroups]);
+
+    const handleToggleGroup = (key: string) => {
+        setExpandedGroups(prev => ({
+            ...prev,
+            [key]: !prev[key]
+        }));
+    };
+
+    const menuGroups = useMemo<MenuGroup[]>(() => {
+        const groups: MenuGroup[] = [];
+
+        const teachingItems: MenuItem[] = [];
+
+        teachingItems.push({
+            key: 'education-home',
+            label: t('menu.educationTeaching'),
+            icon: <EducationIcon className="h-5 w-5" />,
+            to: '/education'
+        });
+
+        if (teachingItems.length) {
+            groups.push({
+                key: 'education',
+                title: t('menu.groupEducation'),
+                items: teachingItems
+            });
+        }
+
+        const applicationItems: MenuItem[] = [];
+        applicationItems.push({
+            key: 'build',
+            label: t('menu.agentBuild'),
+            icon: <TechnologyIcon className="h-5 w-5" />,
+            to: '/build'
+        });
+
+        // 知识库、数据集、标注功能都移到智能体应用分组
+        applicationItems.push({
+            key: 'knowledge',
+            label: t('menu.knowledge'),
+            icon: <KnowledgeIcon className="h-5 w-5" />,
+            to: '/filelib'
+        });
+
+        applicationItems.push({
+            key: 'dataset',
+            label: t('menu.dataset'),
+            icon: <DatasetIcon className="h-5 w-5" />,
+            to: '/dataset'
+        });
+
+        applicationItems.push({
+            key: 'label',
+            label: t('menu.annotation'),
+            icon: <LabelIcon className="h-5 w-5" />,
+            to: '/label'
+        });
+
+        if (applicationItems.length) {
+            groups.push({
+                key: 'application',
+                title: t('menu.groupApplication'),
+                items: applicationItems
+            });
+        }
+
+        const modelItems: MenuItem[] = [];
+        modelItems.push({
+            key: 'model',
+            label: t('menu.models'),
+            icon: <ModelIcon className="h-5 w-5" />,
+            to: '/model'
+        });
+        modelItems.push({
+            key: 'evaluation',
+            label: t('menu.evaluation'),
+            icon: <EvaluatingIcon className="h-5 w-5" />,
+            to: '/evaluation'
+        });
+        if (modelItems.length) {
+            groups.push({
+                key: 'model',
+                title: t('menu.groupModel'),
+                items: modelItems
+            });
+        }
+
+        const settingItems: MenuItem[] = [];
+        if (isAdmin) {
+            // 工作台配置（从智能体构建移入）
+            settingItems.push({
+                key: 'workbench-config',
+                label: t('build.workbench'),
+                icon: <Settings className="h-5 w-5" />,
+                to: '/build/client'
+            });
+            // 系统模型配置（从模型管理移入）
+            settingItems.push({
+                key: 'system-model-config',
+                label: t('model.modelSystemConfig'),
+                icon: <Settings className="h-5 w-5" />,
+                to: '/model/system-config'
+            });
+            settingItems.push({
+                key: 'monitor',
+                label: t('menu.monitor'),
+                icon: <Activity className="h-5 w-5" />,
+                to: '/monitor'
+            });
+        }
+        if (isAdmin) {
+            settingItems.push({
+                key: 'log',
+                label: t('menu.log'),
+                icon: <LogIcon className="h-5 w-5" />,
+                to: '/log'
+            });
+            settingItems.push({
+                key: 'user-management',
+                label: t('menu.system'),
+                icon: <Users className="h-5 w-5" />,
+                to: '/sys'
+            });
+            settingItems.push({
+                key: 'system-settings',
+                label: t('menu.systemSettings'),
+                icon: <SystemIcon className="h-5 w-5" />,
+                to: '/sys/settings'
+            });
+        }
+        if (settingItems.length) {
+            groups.push({
+                key: 'settings',
+                title: t('menu.groupSettings'),
+                items: settingItems
+            });
+        }
+
+        return groups;
+    }, [appConfig, isAdmin, t]);
 
     return <div className="flex">
         <div className="bg-background-main w-full h-screen">
-            <div className="flex justify-between h-[64px] bg-background-main relative z-[21]">
-                <div className="flex h-9 my-[14px]">
-                    <div className="inline-block" >
-                        {/* @ts-ignore */}
-                        <img src={__APP_ENV__.BASE_URL + '/assets/bisheng/login-logo-small.png'} className="w-[104px] ml-[38px] rounded dark:w-[104px]" alt="" />
-                    </div>
+            <div className="flex justify-between items-center h-14 bg-white dark:bg-gray-900 border-b border-[#E5EAF4] dark:border-gray-800 px-6 relative z-[21]">
+                <div className="flex items-center">
+                    <a className="inline-flex items-center gap-2 min-w-0 text-sm font-semibold text-gray-900 dark:text-gray-100 no-underline" href='/workspace'>
+                        {appConfig.sidebarIcon?.image && (
+                            <img className="w-8 h-8 flex-shrink-0 object-contain" src={__APP_ENV__.BASE_URL + appConfig.sidebarIcon.image} alt="logo" />
+                        )}
+                        <span className="truncate">{appConfig.sidebarSlogan || 'E-Agent'}</span>
+                    </a>
                 </div>
                 <div>
                     <HeaderMenu />
                 </div>
-                <div className="flex w-fit relative z-10">
-                    <div className="flex">
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger className="h-8 w-8 bg-header-icon rounded-lg cursor-pointer my-4" onClick={() => setDark(!dark)}>
-                                    <div className="">
-                                        {dark ? (
-                                            <Sun className="side-bar-button-size dark:text-slate-50 mx-auto w-[13px] h-[13px]" />
-                                        ) : (
-                                            <MoonStar className="side-bar-button-size mx-auto w-[17px] h-[17px]" />
-                                        )}
-                                    </div>
-                                </TooltipTrigger>
-                                <TooltipContent><p>{t('menu.themeSwitch')}</p></TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                        <Separator className="mx-[4px] dark:bg-[#111111]" orientation="vertical" />
+                <div className="flex items-center gap-3">
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger
+                                className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                                onClick={() => setDark(!dark)}
+                            >
+                                {dark ? (
+                                    <Sun className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                                ) : (
+                                    <MoonStar className="w-4 h-4 text-gray-600" />
+                                )}
+                            </TooltipTrigger>
+                            <TooltipContent><p>{t('menu.themeSwitch')}</p></TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                    <Separator className="mx-[4px] dark:bg-[#111111]" orientation="vertical" />
+                    <div className="flex items-center gap-2 ml-2">
+                        <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                            <span className="text-sm font-medium text-blue-600 dark:text-blue-400">{user.user_name?.charAt(0)?.toUpperCase() || 'U'}</span>
+                        </div>
                         <SelectHover
                             triagger={
-                                <div className="h-8 px-3 bg-header-icon rounded-lg cursor-pointer my-4 flex items-center justify-center">
-                                    <span className="text-sm leading-8">{languageNames[language]}</span>
-                                    <ChevronDown className="ml-1 w-4 h-4" />
-                                </div>
-                            }>
-                            {Object.entries(options).map(([key, value]) => (
-                                <SelectHoverItem key={key} onClick={() => changLanguage(key)}>
-                                    <span>{value}</span>
-                                    {language === key && <Check className="w-4 h-4 absolute top-1/2 right-0 transform -translate-y-1/2" />}
-                                </SelectHoverItem>
-                            ))}
-                        </SelectHover>
-                        <Separator className="mx-[23px] h-6 border-l my-5 border-[#dddddd]" orientation="vertical" />
-                    </div>
-                    <div className="flex items-center h-7 my-4">
-                        {/* @ts-ignore */}
-                        <img className="h-7 w-7 rounded-2xl mr-4" src={__APP_ENV__.BASE_URL + '/assets/user.png'} alt="" />
-                        <SelectHover
-                            triagger={
-                                <span className="leading-8 text-[14px] mr-8 max-w-40 cursor-pointer text-ellipsis overflow-hidden whitespace-nowrap">
-                                    {user.user_name} <ChevronDown className="inline-block mt-[-2px]" />
+                                <span className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer flex items-center gap-1 max-w-32 truncate">
+                                    {user.user_name} <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
                                 </span>
                             }>
-                            {appConfig.benchMenu && isMenu('frontend') && <SelectHoverItem onClick={() => window.open('/workspace/')}><GanttChartIcon className="w-4 h-4 mr-1" /><span>{t('menu.workspace')}</span></SelectHoverItem>}
                             <SelectHoverItem onClick={JumpResetPage}><Lock className="w-4 h-4 mr-1" /><span>{t('menu.changePwd')}</span></SelectHoverItem>
                             <SelectHoverItem onClick={handleLogout}><QuitIcon className="w-4 h-4 mr-1" /><span>{t('menu.logout')}</span></SelectHoverItem>
                         </SelectHover>
                     </div>
                 </div>
             </div>
-            <div className="flex" style={{ height: "calc(100vh - 64px)" }}>
-                <div className="relative z-10 bg-background-main h-full w-[184px] min-w-[184px] px-3  shadow-x1 flex justify-between text-center ">
-                    <nav className="">
-                        {/* <NavLink to='/' className={`navlink inline-flex rounded-lg w-full px-6 hover:bg-nav-hover h-12 mb-[3.5px]`}>
-                            <ApplicationIcon className="h-6 w-6 my-[12px]" /><span className="mx-[14px] max-w-[48px] text-[14px] leading-[48px]">{t('menu.app')}</span>
-                        </NavLink> */}
-                        {
-                            isMenu('board') && <>
-                                <NavLink to='/dashboard ' className={`navlink inline-flex rounded-lg w-full px-6 hover:bg-nav-hover h-12 mb-[3.5px]`}>
-                                    <DashboardIcon className="h-6 w-6 my-[12px]" /><span className="mx-[14px] max-w-[48px] text-[14px] leading-[48px]">{t('menu.dashboard')}</span>
-                                </NavLink>
-                            </>
-                        }
-                        {
-                            isMenu('build') &&
-                            <NavLink to='/build' className={`navlink inline-flex rounded-lg w-full px-6 hover:bg-nav-hover h-12 mb-[3.5px]`} >
-                                <TechnologyIcon className="h-6 w-6 my-[12px]" /><span className="mx-[14px] max-w-[48px] text-[14px] leading-[48px]">{t('menu.skills')}</span>
-                            </NavLink>
-                        }
-                        {
-                            isMenu('knowledge') &&
-                            <NavLink to='/filelib' className={`navlink inline-flex rounded-lg w-full px-6 hover:bg-nav-hover h-12 mb-[3.5px]`}>
-                                <KnowledgeIcon className="h-6 w-6 my-[12px]" /><span className="mx-[14px] max-w-[48px] text-[14px] leading-[48px]">{t('menu.knowledge')}</span>
-                            </NavLink>
-                        }
-                        {
-                            user.role === 'admin' && <>
-                                <NavLink to='/dataset' className={`navlink inline-flex rounded-lg w-full px-6 hover:bg-nav-hover h-12 mb-[3.5px]`}>
-                                    <DatasetIcon className="h-6 w-6 my-[12px]" /><span className="mx-[14px] max-w-[48px] text-[14px] leading-[48px]">{t('menu.dataset')}</span>
-                                </NavLink>
-                            </>
-                        }
-                        {
-                            isMenu('model') &&
-                            <NavLink to='/model' className={`navlink inline-flex rounded-lg w-full px-6 hover:bg-nav-hover h-12 mb-[3.5px]`}>
-                                <ModelIcon className="h-6 w-6 my-[12px]" /><span className="mx-[14px] max-w-[48px] text-[14px] leading-[48px]">{t('menu.models')}</span>
-                            </NavLink>
-                        }
-                        {
-                            isMenu('evaluation') &&
-                            <NavLink to='/evaluation' className={`navlink inline-flex rounded-lg w-full px-6 hover:bg-nav-hover h-12 mb-[3.5px]`}>
-                                <EvaluatingIcon className="h-6 w-6 my-[12px]" /><span className="mx-[14px] max-w-[48px] text-[14px] leading-[48px]">{t('menu.evaluation')}</span>
-                            </NavLink>
-                        }
-                        {
-                            <NavLink to='/label' className={`navlink inline-flex rounded-lg w-full px-6 hover:bg-nav-hover h-12 mb-[3.5px]`}>
-                                <LabelIcon className="h-6 w-6 my-[12px]" /><span className="mx-[14px] max-w-[48px] text-[14px] leading-[48px]">{t('menu.annotation')}</span>
-                            </NavLink>
-                        }
-                        {
-                            isAdmin && <>
-                                <NavLink to='/log' className={`navlink inline-flex rounded-lg w-full px-6 hover:bg-nav-hover h-12 mb-[3.5px]`}>
-                                    <LogIcon className="h-6 w-6 my-[12px]" /><span className="mx-[14px] max-w-[56px] text-[14px] leading-[48px]">{t('menu.log')}</span>
-                                </NavLink>
-                            </>
-                        }
-                        {
-                            isAdmin && <>
-                                <NavLink to='/sys' className={`navlink inline-flex rounded-lg w-full px-6 hover:bg-nav-hover h-12 mb-[3.5px]`}>
-                                    <SystemIcon className="h-6 w-6 my-[12px]" /><span className="mx-[14px] max-w-[56px] text-[14px] leading-[48px]">{t('menu.system')}</span>
-                                </NavLink>
-                            </>
-                        }
-                    </nav>
-                    {!appConfig.noFace && <div className="absolute left-0 bottom-0 w-[180px] p-2">
-                        <div className="help flex items-between my-3">
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger className="h-[72px] w-[78px] cursor-pointer bg-background-tip rounded-lg hover:bg-[#1b1f23] hover:text-[white] transition-all dark:hover:bg-background-tip-darkhover">
-                                        <Link to={"https://github.com/dataelement/bisheng"} target="_blank">
-                                            <GithubIcon className="side-bar-button-size mx-auto w-5 h-5 " />
-                                            <span className="block text-[12px] mt-[8px] font-bold">{t("menu.github")}</span>
-                                        </Link>
-                                    </TooltipTrigger>
-                                    <TooltipContent><p>{t("menu.github")}</p></TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                            <Separator className="mx-1" orientation="vertical" />
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger className="h-[72px] w-[78px] cursor-pointer bg-background-tip rounded-lg p-0 align-top hover:bg-[#0055e3] hover:text-[white]  transition-all">
-                                        <Link className="m-0 p-0" to={"https://m7a7tqsztt.feishu.cn/wiki/ZxW6wZyAJicX4WkG0NqcWsbynde"} target="_blank">
-                                            <BookOpenIcon className=" mx-auto w-5 h-5" />
-                                            <span className="block text-[12px] mt-[8px] font-bold">{t("menu.bookopen")}</span>
-                                        </Link>
-                                    </TooltipTrigger>
-                                    <TooltipContent><p>{t('menu.document')}</p></TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
+            <div className="flex" style={{ height: "calc(100vh - 56px)" }}>
+                <div className={`relative z-10 bg-[rgba(255,255,255,0.8)] dark:bg-gray-900 h-full ${sidebarWidthClass} border-r border-[#E5EAF4] dark:border-gray-800 flex flex-col transition-all duration-300`}>
+                    <nav className="flex-1 overflow-y-auto py-4">
+                        {/* 进入工作台 - 独立入口 */}
+                        <div className="mb-3 px-1">
+                            <a
+                                href="/workspace/"
+                                className={`${navBaseClass} ${navPaddingClass} ${navHoverClass}`}
+                            >
+                                <div className="w-[18px] h-[18px] flex items-center justify-center shrink-0">
+                                    <ApplicationIcon className="h-5 w-5" />
+                                </div>
+                                {!collapsed && (
+                                    <>
+                                        <span className={navTextClass} title={t('menu.workspace')}>{t('menu.workspace')}</span>
+                                        <ExternalLink className="w-3 h-3 text-gray-400 shrink-0 ml-auto" />
+                                    </>
+                                )}
+                            </a>
+                            <div className="mt-3 border-b border-[#E5EAF4] dark:border-gray-800"></div>
                         </div>
-                    </div>}
+                        {menuGroups.map(group => {
+                            const isExpanded = collapsed ? true : expandedGroups[group.key] ?? true;
+                            return (
+                                <div className="mb-5" key={group.key}>
+                                    {!collapsed ? (
+                                        <button
+                                            type="button"
+                                            className="flex items-center justify-between w-full px-2 mb-2 group/title"
+                                            onClick={() => handleToggleGroup(group.key)}
+                                        >
+                                            <span className="text-[11px] font-medium text-[#9498AC] dark:text-gray-500 uppercase tracking-wider">{group.title}</span>
+                                            <ChevronDown className={`w-3 h-3 text-gray-400 dark:text-gray-500 transition-transform duration-200 ${isExpanded ? '' : '-rotate-90'}`} />
+                                        </button>
+                                    ) : (
+                                        <div className="w-8 h-px bg-gradient-to-r from-gray-300 dark:from-gray-600 to-transparent mx-auto mb-3"></div>
+                                    )}
+                                    {isExpanded && (
+                                        <div className="space-y-1">
+                                            {group.items.map(item => {
+                                                const iconElement = <div className="w-[18px] h-[18px] flex items-center justify-center shrink-0">{item.icon}</div>;
+                                                const content = (
+                                                    <>
+                                                        {iconElement}
+                                                        <span className={navTextClass} title={item.label}>{item.label}</span>
+                                                    </>
+                                                );
+
+                                                if (item.href) {
+                                                    return (
+                                                        <a
+                                                            key={item.key}
+                                                            href={item.href}
+                                                            target={item.target}
+                                                            rel={item.target === '_blank' ? "noopener noreferrer" : undefined}
+                                                            className={`${navBaseClass} ${navPaddingClass} ${navHoverClass}`}
+                                                            onClick={item.onClick}
+                                                        >
+                                                            {content}
+                                                        </a>
+                                                    );
+                                                }
+
+                                                return (
+                                                    <NavLink
+                                                        key={item.key}
+                                                        to={item.to!}
+                                                        end
+                                                        className={({ isActive }) =>
+                                                            `${navBaseClass} ${navPaddingClass} ${isActive
+                                                                ? 'bg-[#F1F5FF] dark:bg-blue-900/30 text-[#4658FF] dark:text-blue-400 font-semibold rounded-lg'
+                                                                : navHoverClass}`
+                                                        }
+                                                    >
+                                                        {content}
+                                                    </NavLink>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </nav>
+                    <div className="p-3 border-t border-[#E5EAF4] dark:border-gray-800">
+                        <button
+                            onClick={toggleSidebar}
+                            aria-label={toggleLabel}
+                            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-[#9498AC] dark:text-gray-400 hover:text-[#140E35] dark:hover:text-gray-200 hover:bg-[#F7F9FF] dark:hover:bg-gray-800 transition-all duration-200"
+                        >
+                            {collapsed ? (
+                                <ChevronRight className="w-4 h-4 transition-transform" />
+                            ) : (
+                                <>
+                                    <ChevronLeft className="w-4 h-4 transition-transform" />
+                                    <span className="text-xs">{toggleLabel}</span>
+                                </>
+                            )}
+                        </button>
+                    </div>
                 </div>
-                <div className="flex-1 bg-background-main-content rounded-lg w-[calc(100vw-184px)]">
-                    <Suspense fallback={<div className="flex items-center justify-center h-full"><LoadingIcon /></div>}>
+                <div className="flex-1 bg-[#F7F9FF] dark:bg-gray-950 min-w-0 overflow-y-auto">
+                    <ErrorBoundary
+                        onReset={() => window.location.href = window.location.href}
+                        FallbackComponent={CrashErrorComponent}
+                    >
                         <Outlet />
-                    </Suspense>
+                    </ErrorBoundary>
                 </div>
             </div>
         </div>
@@ -234,16 +438,6 @@ export default function MainLayout() {
         <div className="fixed w-full h-full top-0 left-0 bg-[rgba(0,0,0,0.4)] sm:hidden text-sm z-50">
             <div className="w-10/12 bg-gray-50 mx-auto mt-[30%] rounded-xl px-4 py-10">
                 <p className=" text-sm text-center">{t('menu.forBestExperience')}</p>
-                {
-                    !appConfig.isPro && <div className="flex mt-8 justify-center gap-4">
-                        <a href={"https://github.com/dataelement/bisheng"} target="_blank">
-                            <GithubIcon className="side-bar-button-size mx-auto" />Github
-                        </a>
-                        <a href={"https://m7a7tqsztt.feishu.cn/wiki/ZxW6wZyAJicX4WkG0NqcWsbynde"} target="_blank">
-                            <BookOpenIcon className="side-bar-button-size mx-auto" /> {t('menu.onlineDocumentation')}
-                        </a>
-                    </div>
-                }
             </div>
         </div>
     </div >
@@ -269,8 +463,8 @@ const useLanguage = (user: User) => {
     }
     return {
         language,
-        languageNames: { "zh-Hans": '中文', "en-US": 'English', ja: '日本語' },
-        options: { "zh-Hans": '中文', "en-US": 'English', ja: '日本語' },
+        languageNames: { "zh-Hans": '中文', "en-US": 'English' } as Record<string, string>,
+        options: { "zh-Hans": '中文', "en-US": 'English' } as Record<string, string>,
         changLanguage,
         t
     }

@@ -13,7 +13,7 @@ interface TooltipAnchorProps extends Ariakit.TooltipAnchorProps {
 }
 
 export const TooltipAnchor = forwardRef<HTMLDivElement, TooltipAnchorProps>(function TooltipAnchor(
-  { description,showSide, side = 'top', className, role, ...props },
+  { description, showSide, side = 'top', className, role, disabled, ...props },
   ref,
 ) {
   const tooltip = Ariakit.useTooltipStore({ placement: side });
@@ -50,7 +50,7 @@ export const TooltipAnchor = forwardRef<HTMLDivElement, TooltipAnchorProps>(func
         ref={ref}
         role={role}
         onKeyDown={handleKeyDown}
-        className={cn('cursor-pointer', className)}
+        className={cn('cursor-pointer', className, disabled && 'pointer-events-none opacity-50')}
       />
       {!showSide && (
               <AnimatePresence>

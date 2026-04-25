@@ -24,7 +24,6 @@ import PreviewParagraph from './PreviewParagraph';
 import { MainMetadataDialog, MetadataSideDialog } from './MetadataDialog';
 
 export default function Paragraphs({ fileId, onBack }) {
-    console.log('Props fileId:', fileId);
 
     const { t } = useTranslation('knowledge');
     const { id } = useParams();
@@ -114,7 +113,6 @@ export default function Paragraphs({ fileId, onBack }) {
 
             const filesData = res?.data || [];
             setRawFiles(filesData);
-            console.log('Fetched all files:', filesData.length);
 
             // 如果有传入的 fileId，确保 currentFile 被设置
             if (fileId && filesData.length > 0 && !currentFile) {
@@ -172,7 +170,6 @@ export default function Paragraphs({ fileId, onBack }) {
 
                     // First check if bbox is empty string
                     if (typeof firstChunk.metadata.bbox === 'string' && JSON.parse(firstChunk?.metadata?.bbox).chunk_bboxes === '') {
-                        console.log('bbox is empty string');
                         chunkBboxes = [];
                     } else {
                         // Parse JSON
@@ -188,7 +185,6 @@ export default function Paragraphs({ fileId, onBack }) {
             // Store boolean value for "is not empty array" (not the original array)
             const isBboxesNotEmpty = Array.isArray(chunkBboxes) && chunkBboxes.length > 0;
             setHasChunkBboxes(isBboxesNotEmpty);
-            console.log('chunk_bboxes is not empty:', isBboxesNotEmpty, 'Original data:', chunkBboxes);
 
             return response;
         }
@@ -208,7 +204,6 @@ export default function Paragraphs({ fileId, onBack }) {
 
     const handleChunkChange = useCallback((chunkIndex, text) => {
         let chunkIndexPage = chunkIndex % pageSize;
-        console.log('Converted localIndex:', chunkIndexPage);
 
         const bbox = { chunk_bboxes: selectedBbox };
 
@@ -231,7 +226,6 @@ export default function Paragraphs({ fileId, onBack }) {
     }, [id, currentFile, refreshData, selectedBbox, safeChunks, pageSize, selectedFileId]);
 
     const fetchFileUrl = useCallback(async (fileId) => {
-        console.log('Getting file URL:', fileId);
         if (!fileId) return '';
 
         try {
@@ -328,7 +322,6 @@ export default function Paragraphs({ fileId, onBack }) {
     }, [datalist, selectedFileId]);
 
     const handleFileChange = useCallback(async (newFileId, selectedFile) => {
-        console.log('File change triggered:', newFileId, 'Current selected:', selectedFile);
 
         // Immediately update UI to avoid flickering
         // const selectedFile = rawFiles.find(f => String(f.id) === newFileId);
@@ -896,7 +889,7 @@ export default function Paragraphs({ fileId, onBack }) {
             </div>
 
             {/* Pagination */}
-            <div className="bisheng-table-footer px-6">
+            <div className="eagent-table-footer px-6">
                 <AutoPagination
                     className="justify-end"
                     page={page}

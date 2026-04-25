@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { Search } from 'lucide-react';
+import { FileText, GraduationCap, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useRecoilValue } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 import { icons } from '~/components/Chat/Menus/Endpoints/Icons';
 import ConvoIconURL from '~/components/Endpoints/ConvoIconURL';
 import { useGetBsConfig, useGetEndpointsQuery } from '~/data-provider';
@@ -10,7 +10,7 @@ import { Constants, QueryKeys } from '~/data-provider/data-provider/src';
 import { useLocalize, useNewConvo } from '~/hooks';
 import store from '~/store';
 import { getEndpointField, getIconEndpoint, getIconKey } from '~/utils';
-import { Button } from '../ui';
+
 import AppsIcon from '../ui/icon/Apps';
 
 const NewChatButtonIcon = ({ conversation }: { conversation: TConversation | null }) => {
@@ -75,12 +75,12 @@ export default function NewChat({
   const queryClient = useQueryClient();
   /** Note: this component needs an explicit index passed if using more than one */
   const { newConversation: newConvo } = useNewConvo(index);
-  const { data: bsConfig } = useGetBsConfig()
 
   const navigate = useNavigate();
   const localize = useLocalize();
 
   const { conversation } = store.useCreateConversationAtom(index);
+  const [showKnowledge, setShowKnowledge] = useRecoilState(store.showKnowledge);
 
   const clickHandler = (event: React.MouseEvent<HTMLAnchorElement>) => {
     if (event.button === 0 && !(event.ctrlKey || event.metaKey)) {
@@ -96,29 +96,38 @@ export default function NewChat({
   };
 
   return (
-    <div className="sticky left-0 right-0 top-0 z-50 bg-[#F9FBFF]">
+    <div className="sticky left-0 right-0 top-0 z-50 bg-white dark:bg-gray-900">
       <div className="pb-0.5 last:pb-0" style={{ transform: 'none' }}>
-        <div className="mb-3 flex justify-between gap-3 px-3 py-2">
-          <div className="flex items-center gap-2">
-            {bsConfig?.sidebarIcon.image && <img className='w-10 overflow' src={__APP_ENV__.BASE_URL + bsConfig?.sidebarIcon.image} />}
-            <div className='dark:text-gray-50'>{bsConfig?.sidebarSlogan}</div>
-          </div>
-          <div className="cursor-pointer rounded-md p-1 hover:bg-slate-100">
-            {/* <CloseToggleIcon className="size-5" /> */}
-          </div>
-        </div>
-        <div className='flex gap-1 w-full'>
-          <Button variant="outline" className='shadow-sm h-10 rounded-xl px-3 flex-shrink-0'
+        <div className='flex flex-col w-full'>
+          {/* 智能体广场 */}
+          <div
+            className="flex items-center gap-1.5 h-10 rounded-xl px-3 cursor-pointer hover:bg-gray-100 transition-colors"
             onClick={() => {
               navigate('/apps');
-            }}>
+            }}
+          >
             <AppsIcon />
-            <span className="text-sm font-normal whitespace-nowrap ml-0.5">{localize('com_nav_app_center')}</span>
-          </Button>
-          {/* 新建btn */}
-          <Button
-            variant="outline"
-            className="shadow-sm h-10 rounded-xl px-3 flex-shrink-0"
+            <span className="text-sm font-medium whitespace-nowrap ml-0.5 text-gray-600 dark:text-gray-300">{localize('com_nav_app_center')}</span>
+          </div>
+          {/* 教学及开发平台 */}
+          <a
+            href="/build"
+            className="flex items-center gap-1.5 h-10 rounded-xl px-3 cursor-pointer hover:bg-gray-100 transition-colors no-underline text-inherit"
+          >
+            <GraduationCap className="icon-md flex-shrink-0" />
+            <span className="text-sm font-medium whitespace-nowrap ml-0.5 text-gray-600 dark:text-gray-300">{localize('com_nav_dev_center')}</span>
+          </a>
+          {/* 个人知识库 */}
+          <div
+            className="flex items-center gap-1.5 h-10 rounded-xl px-3 cursor-pointer hover:bg-gray-100 transition-colors"
+            onClick={() => setShowKnowledge(true)}
+          >
+            <FileText className="icon-md flex-shrink-0" />
+            <span className="text-sm font-medium whitespace-nowrap ml-0.5 text-gray-600 dark:text-gray-300">{localize('com_nav_personal_knowledge')}</span>
+          </div>
+          {/* 开始新对话 */}
+          <div
+            className="flex items-center gap-1.5 h-10 rounded-xl px-3 cursor-pointer hover:bg-gray-100 transition-colors"
             aria-label={localize('com_ui_new_chat')}
             onClick={() => {
               document.getElementById("create-convo-btn")?.click();
@@ -129,8 +138,8 @@ export default function NewChat({
             }}
           >
             <img className='size-[18px] grayscale' src={__APP_ENV__.BASE_URL + '/assets/chat2.png'} alt="" />
-            <span className="text-sm font-normal whitespace-nowrap ml-0.5">{localize('com_nav_start_new_chat')}</span>
-          </Button>
+            <span className="text-sm font-medium whitespace-nowrap ml-0.5 text-gray-600 dark:text-gray-300">{localize('com_nav_start_new_chat')}</span>
+          </div>
         </div>
       </div>
       <div id="create-convo-btn" className='opacity-0' onClick={clickHandler}></div>

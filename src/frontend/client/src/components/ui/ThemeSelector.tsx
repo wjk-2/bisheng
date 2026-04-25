@@ -1,5 +1,5 @@
 import React, { useContext, useCallback, useEffect, useState } from 'react';
-import { Sun, Moon, Monitor } from 'lucide-react';
+import { Sun, Moon } from 'lucide-react';
 import { ThemeContext } from '~/hooks';
 
 declare global {
@@ -9,12 +9,6 @@ declare global {
 }
 
 const Theme = ({ theme, onChange }: { theme: string; onChange: (value: string) => void }) => {
-  const themeIcons = {
-    system: <Monitor />,
-    dark: <Moon color="white" />,
-    light: <Sun />,
-  };
-
   const nextTheme = theme === 'dark' ? 'light' : 'dark';
   const label = `Switch to ${nextTheme} theme`;
 
@@ -45,7 +39,7 @@ const Theme = ({ theme, onChange }: { theme: string; onChange: (value: string) =
         }
       }}
     >
-      {themeIcons[theme]}
+      {theme === 'dark' ? <Moon color="white" /> : <Sun />}
     </button>
   );
 };
@@ -61,19 +55,11 @@ const ThemeSelector = ({ returnThemeOnly }: { returnThemeOnly?: boolean }) => {
         return;
       }
       window.lastThemeChange = now;
-
       setTheme(value);
       setAnnouncement(value === 'dark' ? 'Dark theme enabled' : 'Light theme enabled');
     },
     [setTheme],
   );
-
-  useEffect(() => {
-    if (theme === 'system') {
-      const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      setTheme(prefersDarkScheme ? 'dark' : 'light');
-    }
-  }, [theme, setTheme]);
 
   useEffect(() => {
     if (announcement) {
@@ -88,9 +74,6 @@ const ThemeSelector = ({ returnThemeOnly }: { returnThemeOnly?: boolean }) => {
 
   return (
     <div className="flex flex-col items-center justify-center bg-white pt-6 dark:bg-gray-900 sm:pt-0">
-      {/* <div className="absolute bottom-0 left-0 m-4">
-        <Theme theme={theme} onChange={changeTheme} />
-      </div> */}
       {announcement && (
         <div aria-live="polite" className="sr-only">
           {announcement}

@@ -3,12 +3,21 @@ import { LoadingIcon } from "@/components/bs-icons/loading";
 import { Dialog, DialogContent } from "@/components/bs-ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/bs-ui/tooltip";
 import Tip from "@/components/bs-ui/tooltip/tip";
+import DOMPurify from "dompurify";
 import { CircleHelp, Download, Import } from "lucide-react";
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getSourceChunksApi, splitWordApi } from "../../../controllers/API";
 import { downloadFile } from "../../../util/utils";
 import FileViewPanne from "./FileViewPanne";
+
+/**
+ * 转义正则表达式特殊字符
+ * 防止关键词中的特殊字符破坏正则语法或导致 ReDoS
+ */
+function escapeRegExp(str: string): string {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 // 顶部答案区
 const Anwser = ({ id, msg, onInit, onAdd, fullScreen = false }) => {
@@ -21,9 +30,13 @@ const Anwser = ({ id, msg, onInit, onAdd, fullScreen = false }) => {
         onInit([])
         const loadData = () => {
             splitWordApi(msg, id).then((res) => {
+                // 转义正则特殊字符，防止 ReDoS 和正则语法错误
+                const escapedKeywords = res.map(escapeRegExp)
                 // 匹配
-                const reg = new RegExp(`(${res.join('|')})`, 'g')
-                setHtml(msg.replace(reg, '<span>$1</span>'))
+                const reg = new RegExp(`(${escapedKeywords.join('|')})`, 'g')
+                const rawHtml = msg.replace(reg, '<span>$1</span>')
+                // DOMPurify 净化，防止 XSS
+                setHtml(DOMPurify.sanitize(rawHtml))
                 onInit(res)
             }).catch(e => {
                 // 自动重试
@@ -170,16 +183,16 @@ const ResultPanne = ({ chatId, words, data, onClose, onAdd, children, fullScreen
                             <div className="absolute right-1 top-1 gap-2 hidden group-hover:flex">
                                 {
                                     _file.parse_type === 'uns' && _file.fileUrl && <Tip content={t('chat.downloadPDFTooltip')}>
-                                        <a href="javascript:;" onClick={(event) => { downloadFile(checkSassUrl(_file.fileUrl), _file.fileName.replace(/\.[\w\d]+$/, '.pdf')); event.stopPropagation() }} >
+                                        <button type="button" className="p-1" onClick={(event) => { downloadFile(checkSassUrl(_file.fileUrl), _file.fileName.replace(/\.[\w\d]+$/, '.pdf')); event.stopPropagation() }} >
                                             <Import color="rgba(53,126,249,1)" size={22} strokeWidth={1.5}></Import>
-                                        </a>
+                                        </button>
                                     </Tip>
                                 }
                                 {
                                     _file.originUrl && <Tip content={t('chat.downloadOriginalTooltip')}>
-                                        <a href="javascript:;" onClick={(event) => { downloadFile(checkSassUrl(_file.originUrl), _file.fileName); event.stopPropagation() }} >
+                                        <button type="button" className="p-1" onClick={(event) => { downloadFile(checkSassUrl(_file.originUrl), _file.fileName); event.stopPropagation() }} >
                                             <Download color="rgba(53,126,249,1)" size={20} strokeWidth={1.5}></Download>
-                                        </a>
+                                        </button>
                                     </Tip>
                                 }
                             </div>

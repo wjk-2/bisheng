@@ -1,3 +1,4 @@
+import ast
 import pickle
 import typing
 from typing import Dict, Optional
@@ -14,6 +15,18 @@ from redis.sentinel import Sentinel
 from redis.asyncio.sentinel import Sentinel as AsyncSentinel
 from redis.asyncio.cluster import RedisCluster as AsyncRedisCluster
 from redis.asyncio import Redis as AsyncRedis
+
+# Lua 脚本：原子执行 INCR，仅在 key 首次创建时设置 TTL。
+# 保证两点：
+#   1. INCR 与 EXPIRE 之间不存在竞态窗口（单次 eval 为原子操作）
+#   2. 后续 incr 调用不会重置 TTL，计数器在预期时间点自然过期
+_INCR_WITH_TTL_LUA = """
+local current = redis.call('INCR', KEYS[1])
+if current == 1 then
+    redis.call('EXPIRE', KEYS[1], ARGV[1])
+end
+return current
+"""
 
 
 class RedisClient:
@@ -39,7 +52,7 @@ class RedisClient:
                 self.async_connection: typing.Union[AsyncRedisCluster, AsyncRedis] = AsyncRedisCluster.from_url(
                     cluster_url, **redis_conf, retry=Retry(ExponentialBackoff(), 6), cluster_error_retry_attempts=1)
                 return
-            hosts = [eval(x) for x in redis_conf.pop('sentinel_hosts')]
+            hosts = [ast.literal_eval(x) for x in redis_conf.pop('sentinel_hosts')]
             password = redis_conf.pop('sentinel_password')
             master = redis_conf.pop('sentinel_master')
             sentinel = Sentinel(sentinels=hosts, socket_timeout=0.1, sentinel_kwargs={'password': password})
@@ -89,8 +102,7 @@ class RedisClient:
         try:
             if pickled := pickle.dumps(value):
                 self.cluster_nodes(key)
-                result = self.connection.setnx(key, pickled)
-                self.connection.expire(key, expiration)
+                result = self.connection.set(key, pickled, nx=True, ex=expiration)
                 if not result:
                     return False
             return True
@@ -101,8 +113,7 @@ class RedisClient:
         try:
             if pickled := pickle.dumps(value):
                 await self.acluster_nodes(key)
-                result = await self.async_connection.setnx(key, pickled)
-                await self.async_connection.expire(key, expiration)
+                result = await self.async_connection.set(key, pickled, nx=True, ex=expiration)
                 if not result:
                     return False
             return True
@@ -312,23 +323,24 @@ class RedisClient:
             # Handle the case where the value is None or not picklable
             raise e
 
-    def incr(self, key, expiration=3600) -> int:
+    def incr(self, key, expiration=86400) -> int:
+        """原子递增计数器，TTL 仅在 key 首次创建时设置（不会被后续 incr 重置）。
+        默认过期时间 86400 秒（1 天）。调用方可按业务需要覆盖，
+        例如日配额计数器传入"距今天午夜的剩余秒数"。
+        """
         try:
             self.cluster_nodes(key)
-            value = self.connection.incr(key)
-            if expiration:
-                self.connection.expire(key, expiration)
-            return value
+            value = self.connection.eval(_INCR_WITH_TTL_LUA, 1, key, expiration)
+            return int(value)
         except Exception as e:
             raise e
 
-    async def aincr(self, key, expiration=3600) -> int:
+    async def aincr(self, key, expiration=86400) -> int:
+        """原子递增计数器（异步版），TTL 仅在 key 首次创建时设置。"""
         try:
             await self.acluster_nodes(key)
-            value = await self.async_connection.incr(key)
-            if expiration:
-                await self.async_connection.expire(key, expiration)
-            return value
+            value = await self.async_connection.eval(_INCR_WITH_TTL_LUA, 1, key, expiration)
+            return int(value)
         except Exception as e:
             raise e
 

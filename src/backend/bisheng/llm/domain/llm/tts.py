@@ -9,7 +9,7 @@ from bisheng.core.ai import BaseTTSClient, OpenAITTSClient, \
 from bisheng.llm.domain.const import LLMModelType, LLMServerType
 from bisheng.llm.domain.models import LLMServer, LLMModel
 from .base import BishengBase
-from ..utils import wrapper_bisheng_model_limit_check_async
+from ..utils import wrapper_eagent_model_limit_check_async
 
 
 async def _get_openai_params(params: dict, server_info: LLMServer, model_info: LLMModel) -> dict:
@@ -65,7 +65,7 @@ _tts_client_type = {
 }
 
 
-class BishengTTS(BishengBase):
+class EagentTTS(BishengBase):
     tts: BaseTTSClient = Field(..., description="ttsInstances")
 
     @classmethod
@@ -106,6 +106,6 @@ class BishengTTS(BishengBase):
         client = _tts_client_type[server_info.type]['client'](**new_params)
         return client
 
-    @wrapper_bisheng_model_limit_check_async
+    @wrapper_eagent_model_limit_check_async
     async def ainvoke(self, text: str, **kwargs) -> bytes:
         return await self.tts.synthesize(text, **kwargs)

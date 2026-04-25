@@ -70,7 +70,10 @@ class MarkTaskDao(MarkTaskBase):
     @classmethod
     def get_task_list_byuid(cls, user_id: int, task_id: int) -> MarkTask:
         with get_sync_db_session() as session:
-            statement = select(MarkTask).where(MarkTask.id == task_id)
+            statement = select(MarkTask).where(
+                MarkTask.id == task_id,
+                func.find_in_set(user_id, MarkTask.process_users) > 0
+            )
             return session.exec(statement).first()
 
     @classmethod
@@ -102,6 +105,7 @@ class MarkTaskDao(MarkTaskBase):
             user_id: Optional[int],
             page_size: int = 10,
             page_num: int = 1,
+            create_ids: Optional[List[int]] = None,
     ):
         with get_sync_db_session() as session:
             statement = select(MarkTask)
@@ -112,7 +116,11 @@ class MarkTaskDao(MarkTaskBase):
                 filter.append(MarkTask.status == status)
                 if user_id:
                     filter.append(func.find_in_set(user_id, MarkTask.process_users) > 0)
-            if create_id:
+            if create_ids:
+                # Filter by multiple creators using find_in_set
+                create_ids_str = ",".join(map(str, create_ids))
+                filter.append(func.find_in_set(MarkTask.create_id, create_ids_str) > 0)
+            elif create_id:
                 filter.append(MarkTask.create_id == create_id)
             if user_id:
                 filter_or.append(func.find_in_set(user_id, MarkTask.process_users) > 0)

@@ -127,7 +127,7 @@ const CreateDataSet = forwardRef(({ onChange }, ref) => {
                 </DialogHeader>
                 <div className="flex flex-col gap-4 py-2">
                     <div>
-                        <label htmlFor="dataSetName" className="bisheng-label">
+                        <label htmlFor="dataSetName" className="eagent-label">
                             <span className="text-red-500">*</span>{t('dataset.name')}
                         </label>
                         <Input
@@ -138,7 +138,7 @@ const CreateDataSet = forwardRef(({ onChange }, ref) => {
                         />
                     </div>
                     <div>
-                        <label htmlFor="importMethod" className="bisheng-label">{t('dataset.importMethod')}</label>
+                        <label htmlFor="importMethod" className="eagent-label">{t('dataset.importMethod')}</label>
                         <RadioGroup
                             defaultValue="local"
                             className="flex gap-6 mt-2"
@@ -157,7 +157,7 @@ const CreateDataSet = forwardRef(({ onChange }, ref) => {
                     {form.importMethod === 'local' && (
                         <div>
                             <div className="flex justify-between items-center">
-                                <label htmlFor="fileUpload" className="bisheng-label">
+                                <label htmlFor="fileUpload" className="eagent-label">
                                     <span className="text-red-500">*</span>{t('dataset.uploadFile')}
                                 </label>
                                 <div className="flex gap-2 items-center">
@@ -179,7 +179,7 @@ const CreateDataSet = forwardRef(({ onChange }, ref) => {
                     )}
                     {form.importMethod === 'qa' && (
                         <div>
-                            <label htmlFor="knowledgeLib" className="bisheng-label">
+                            <label htmlFor="knowledgeLib" className="eagent-label">
                                 <span className="text-red-500">*</span>{t('dataset.selectQaKnowledgeLib')}
                             </label>
                             <KnowledgeSelect

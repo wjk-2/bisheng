@@ -125,14 +125,8 @@
 	}
 }
 
-@font-face {
-	font-family: AlibabaPuHuiTi-3-55-Regular;
-	/* src: url("assets/text-security-disc.woff") format("woff"); */
-	src: url("assets/AlibabaPuHuiTi-3-55-Regular.otf") format("opentype");
-}
-
 :root {
-	--font-sans: 'AlibabaPuHuiTi-3-55-Regular'
+	--font-sans: 'AlibabaPuHuiTi'
 }
 
 /* pdf-text */
@@ -238,7 +232,7 @@
 }
 
 .bs-table-td {
-	background-color: #FBFBFB;
+	background-color: #FFFFFF;
 }
 
 .dark .bs-table-td {
@@ -246,7 +240,7 @@
 }
 
 .bs-table-row:nth-child(odd) .bs-table-td {
-	background-color: #f4f5f8;
+	background-color: #F7F9FF;
 }
 
 .dark .bs-table-row:nth-child(odd) .bs-table-td {
@@ -381,7 +375,7 @@
 }
 
 .flow-bg-logo::before {
-	content: "BISHENG";
+	content: "E-Agent";
 	/* 设置文字内容 */
 	font-size: 180px;
 	font-weight: bold;

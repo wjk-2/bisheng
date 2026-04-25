@@ -51,7 +51,7 @@ def parse_rt_embedding_conf(name, model_name, embedding_conf):
     server = LLMServer(
         name=f"RT",
         description='System upgrade automatically added',
-        type=LLMServerType.BISHENG_RT.value,
+        type=LLMServerType.EAGENT_RT.value,
         config={
             "host_base_url": embedding_conf.get("host_base_url", ''),
         },
@@ -118,12 +118,12 @@ def convert_sys_embeddings_to_mysql():
     if update_knowledge:
         KnowledgeDao.update_knowledge_list(update_knowledge)
 
-    if not need_add_server_index.get(LLMServerType.BISHENG_RT.value):
+    if not need_add_server_index.get(LLMServerType.EAGENT_RT.value):
         # Add a defaultRTservice provider
         server = LLMServer(
             name=f"RT_OLD",
             description='The system upgrade is automatically added, and it is not recommended to use it in the future',
-            type=LLMServerType.BISHENG_RT.value,
+            type=LLMServerType.EAGENT_RT.value,
             config={
                 "host_base_url": 'http://xxxx:8000',
             },

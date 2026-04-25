@@ -160,7 +160,6 @@ function toast({ description: descs = [], ...props }: Toast & { isAlert?: boolea
             id,
             open: true,
             onOpenChange: (open) => {
-                console.log('toast remove', id, open);
                 if (!open) dismiss()
             },
         },

@@ -1,0 +1,8 @@
+node_modules
+client/node_modules
+platform/node_modules
+.git
+*.log
+dist
+build
+.DS_Store

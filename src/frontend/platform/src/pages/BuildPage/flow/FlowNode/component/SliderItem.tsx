@@ -9,7 +9,7 @@ export default function SliderItem({ data, onChange, i18nPrefix }) {
     const { t } = useTranslation('flow')
 
     return <div className='node-item mb-4' data-key={data.key}>
-        <Label className='flex items-center bisheng-label'>
+        <Label className='flex items-center eagent-label'>
             {t(`${i18nPrefix}label`)}
             {data.help && <QuestionTooltip content={t(`${i18nPrefix}help`)} />}
         </Label>
@@ -39,7 +39,7 @@ export const SwitchSliderItem = ({ data, onChange, i18nPrefix }) => {
 
     return <div className='node-item mb-4' data-key={data.key}>
         <div className="flex justify-between items-center">
-            <Label className='flex items-center bisheng-label'>
+            <Label className='flex items-center eagent-label'>
                 {t(`${i18nPrefix}label`)}
                 {data.help && <QuestionTooltip content={t(`${i18nPrefix}help`)} />}
             </Label>

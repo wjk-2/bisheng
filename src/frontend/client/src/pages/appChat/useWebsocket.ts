@@ -29,6 +29,8 @@ export const useWebSocket = (helpers) => {
     const { showToast } = useToast();
     const [submitData, setSubmitData] = useRecoilState(submitDataState)
     const localize = useLocalize()
+    const retryCountRef = useRef(0)
+    const intentionalCloseRef = useRef(false)
 
     const websocket = wsMap.get(helpers.chatId)
     const currentChatId = useCurrentChatId(helpers.chatId)
@@ -50,7 +52,7 @@ export const useWebSocket = (helpers) => {
         wsMap.set(helpers.chatId, ws)
 
         ws.onopen = () => {
-            console.log("WebSocket connection established!");
+            retryCountRef.current = 0;
             helpers.clearError()
             if (helpers.flow.flow_type === 10) {
                 // 工作流初始化
@@ -91,7 +93,6 @@ export const useWebSocket = (helpers) => {
         ws.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data)
-                console.log('data :>> ', data);
                 handleMessages(data, ws)
 
                 if (data.type === 'close' && callBack) {
@@ -104,8 +105,19 @@ export const useWebSocket = (helpers) => {
         }
 
         ws.onclose = (event) => {
-            console.log('close chatId:>> ', helpers.chatId);
             console.error('ws close :>> ', event);
+            // 非主动关闭时自动重连（最多3次，递增延迟）
+            if (!event.wasClean && !intentionalCloseRef.current && retryCountRef.current < 3) {
+                retryCountRef.current++;
+                const delay = 1000 * retryCountRef.current;
+                setTimeout(() => {
+                    wsMap.delete(helpers.chatId);
+                    connect(callBack);
+                }, delay);
+                return;
+            }
+            retryCountRef.current = 0;
+            intentionalCloseRef.current = false;
             helpers.handleMsgError({ code: '', data: null }, true)
             // todo 错误消息写入消息下面
         }
@@ -213,9 +225,10 @@ export const useWebSocket = (helpers) => {
             if (currentChatId !== helpers.chatId) {
                 // 断开WebSocket连接
                 if (websocket && !helpers.running) {
-                    console.log('ws close', currentChatId, helpers.chatId)
+                    intentionalCloseRef.current = true;
                     websocket.close()
                     wsMap.delete(helpers.chatId)
+                    sessionInfoMap.delete(helpers.chatId)
                 }
             }
         }
@@ -261,9 +274,9 @@ export const useWebSocket = (helpers) => {
                 case ActionType.INPUT:
                     const sessionInfo = sessionInfoMap.get(helpers.chatId)
                     const node = submitData.flow.data.nodes.find(node => node.id === sessionInfo?.node_id)
-                    const tab = node.data.tab.value
+                    const tab = node?.data?.tab?.value
                     let variable = ''
-                    node.data.group_params.some(group =>
+                    node?.data?.group_params?.some(group =>
                         group.params.some(param => {
                             if (param.tab === tab) {
                                 variable = param.key

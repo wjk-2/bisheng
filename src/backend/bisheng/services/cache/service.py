@@ -156,7 +156,8 @@ class InMemoryCache(BaseCacheService, Service):
 
     def __contains__(self, key):
         """Check if the key is in the cache."""
-        return key in self._cache
+        with self._lock:
+            return key in self._cache
 
     def __getitem__(self, key):
         """Retrieve an item from the cache using the square bracket notation."""
@@ -172,7 +173,8 @@ class InMemoryCache(BaseCacheService, Service):
 
     def __len__(self):
         """Return the number of items in the cache."""
-        return len(self._cache)
+        with self._lock:
+            return len(self._cache)
 
     def __repr__(self):
         """Return a string representation of the InMemoryCache instance."""

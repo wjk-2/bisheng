@@ -181,18 +181,39 @@ async def submit_linsight_workbench(
             "data": json.dumps(response_data)
         }
 
-        # Task Title Generation
-        title_data = await LinsightWorkbenchImpl.task_title_generate(question=submit_obj.question,
-                                                                     chat_id=message_session_model.chat_id,
-                                                                     login_user=login_user)
+        # Task Title Generation + Intent Routing (merged into one LLM call)
+        title_data = await LinsightWorkbenchImpl.task_title_and_route(
+            question=submit_obj.question,
+            chat_id=message_session_model.chat_id,
+            login_user=login_user,
+            has_files=bool(submit_obj.files),
+            tools_count=len(submit_obj.tools) if submit_obj.tools else 0
+        )
 
         linsight_session_version_model.title = title_data.get("task_title")
         await LinsightSessionVersionDao.insert_one(linsight_session_version_model)
 
+        intent = title_data.get("intent", "sop_task")
+
+        # Send title event (keep backward compatibility)
         yield {
             "event": "linsight_workbench_title_generate",
             "data": json.dumps(title_data)
         }
+
+        # Send route decision event
+        yield {
+            "event": "linsight_route_decision",
+            "data": json.dumps({"intent": intent})
+        }
+
+        # For simple_qa: directly answer in the submit SSE stream
+        if intent == "simple_qa":
+            async for event in LinsightWorkbenchImpl.simple_qa_answer(
+                question=submit_obj.question,
+                session_version=linsight_session_version_model
+            ):
+                yield event
 
     return EventSourceResponse(event_generator())
 

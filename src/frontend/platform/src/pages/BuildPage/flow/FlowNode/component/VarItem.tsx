@@ -36,7 +36,7 @@ export default function VarItem({ data: paramItem, i18nPrefix }) {
 
     if (Array.isArray(paramItem.value) && paramItem.value.length > 0) return <div className="mb-2">
         <div className="outputs flex justify-between items-center">
-            <Label className="bisheng-label">
+            <Label className="eagent-label">
                 {t(`${i18nPrefix}label`)}
                 {paramItem.help && <QuestionTooltip content={t(`${i18nPrefix}help`)} />}
             </Label>
@@ -52,7 +52,7 @@ export default function VarItem({ data: paramItem, i18nPrefix }) {
     </div>
 
     return <div className="mb-4 flex justify-between items-center">
-        <Label className="flex items-center bisheng-label">
+        <Label className="flex items-center eagent-label">
             {t(`${i18nPrefix}label`)}
             {paramItem.help && <QuestionTooltip content={t(`${i18nPrefix}help`)} />}
         </Label>

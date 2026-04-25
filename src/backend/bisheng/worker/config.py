@@ -1,6 +1,8 @@
 from bisheng.common.services.config_service import settings
 
 broker_url = settings.celery_redis_url
+result_backend = settings.celery_redis_url
+result_expires = 3600
 
 task_serializer = 'json'
 result_serializer = 'json'

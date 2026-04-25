@@ -7,6 +7,7 @@ import { Button } from "@/components/bs-ui/button";
 import ActionButton from "@/components/bs-ui/button/actionButton";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/bs-ui/dialog";
 import TextInput from "@/components/bs-ui/input/textInput";
+import OnlineConfirmModal from "@/components/OnlineConfirmModal";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/bs-ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/bs-ui/radio";
 import { useToast } from "@/components/bs-ui/toast/use-toast";
@@ -39,6 +40,10 @@ const Header = ({ flow, nodes, onTabChange, preFlow, onPreFlowChange, onImportFl
     const navigate = useNavigate()
     const { state } = useLocation();
     const loca = state?.flow; // 获取传递的 flow 数据
+
+    // 上线选择弹窗状态
+    const [onlineModalOpen, setOnlineModalOpen] = useState(false);
+    const [onlineLoading, setOnlineLoading] = useState(false);
 
     // console.log('flow :>> ', flow);
 
@@ -76,29 +81,48 @@ const Header = ({ flow, nodes, onTabChange, preFlow, onPreFlowChange, onImportFl
                 variant: 'warning'
             })
         }
+        // 打开上线选择弹窗
+        setOnlineModalOpen(true);
+    }
 
-        await captureAndAlertRequestErrorHoc(saveWorkflow(version.id, {
-            ...flow,
-            name: version.name,
-            data: {
-                nodes: flow.nodes,
-                edges: flow.edges,
-                viewport: flow.viewport
+    // 处理上线确认
+    const handleOnlineConfirm = async (isPublic: number, category: string) => {
+        setOnlineLoading(true);
+        try {
+            await captureAndAlertRequestErrorHoc(saveWorkflow(version.id, {
+                ...flow,
+                name: version.name,
+                data: {
+                    nodes: flow.nodes,
+                    edges: flow.edges,
+                    viewport: flow.viewport
+                }
+            }))
+            setFlow({ ...flow })
+            // api请求，传递is_public(0=仅自己, 1=组内, 2=全部)和category参数
+            const res = await captureAndAlertRequestErrorHoc(onlineWorkflowApi(
+                flow.id,
+                version.id,
+                2,
+                isPublic,
+                category
+            ))
+            if (res === null) {
+                const publicText = isPublic === 2 ? '已公开发布到广场' : isPublic === 1 ? '已发布到组内' : '已发布（仅自己可见）';
+                message({
+                    variant: 'success',
+                    description: `${version?.name} ${publicText}`
+                })
+                setOnlineModalOpen(false);
+                window.history.length > 1 ? window.history.back() : navigate('/build/apps')
             }
-        }))
-        setFlow({ ...flow })
-        // api请求
-        const res = await captureAndAlertRequestErrorHoc(onlineWorkflowApi({ flow_id: flow.id, version_id: version.id, status: 2 }))
-        if (res === null) {
-            message({
-                variant: 'success',
-                description: `${version?.name} ${t('hasBeenLaunched')}`
-            })
-            window.history.length > 1 ? window.history.back() : navigate('/build/apps')
+        } finally {
+            setOnlineLoading(false);
         }
     }
+
     const handleOfflineClick = async () => {
-        const res = await captureAndAlertRequestErrorHoc(onlineWorkflowApi({ flow_id: flow.id, version_id: version.id, status: 1 }))
+        const res = await captureAndAlertRequestErrorHoc(onlineWorkflowApi(flow.id, version.id, 1))
         if (res === null) {
             message({
                 variant: 'success',
@@ -262,7 +286,7 @@ const Header = ({ flow, nodes, onTabChange, preFlow, onPreFlowChange, onImportFl
     }
 
     return (
-        <header className="flex justify-between items-center p-4 py-2 bisheng-bg border-b">
+        <header className="flex justify-between items-center p-4 py-2 eagent-bg border-b">
             {
                 loading && <div className=" fixed left-0 top-0 w-full h-screen bg-background/60 z-50 flex items-center justify-center">
                     <LoadIcon className="mr-2 text-gray-600" />
@@ -446,7 +470,7 @@ const Header = ({ flow, nodes, onTabChange, preFlow, onPreFlowChange, onImportFl
                 <DialogContent className="sm:max-w-[425px]" close={false}>
                     <DialogHeader>
                         <DialogTitle>{t('prompt')}</DialogTitle>
-                        <p className="bisheng-label pt-2">{isOnlineVersion ? t('onlineVersionMessage') : t('unsavedChangesMessage')}</p>
+                        <p className="eagent-label pt-2">{isOnlineVersion ? t('onlineVersionMessage') : t('unsavedChangesMessage')}</p>
                     </DialogHeader>
                     <DialogFooter>
                         <Button className="leave h-8" onClick={handleSaveAndClose}>
@@ -465,6 +489,13 @@ const Header = ({ flow, nodes, onTabChange, preFlow, onPreFlowChange, onImportFl
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+            {/* 上线选择弹窗 */}
+            <OnlineConfirmModal
+                visible={onlineModalOpen}
+                loading={onlineLoading}
+                onConfirm={handleOnlineConfirm}
+                onCancel={() => setOnlineModalOpen(false)}
+            />
         </header >
     );
 };
@@ -612,7 +643,6 @@ const useNodeEvent = (flow) => {
         //         return [t('parallelOutputNodes')];
         //     }
         // }
-        console.log('inputParallelNids, outputParallelNids :>> ', result);
 
         // 开始到结束流程是否完整
         const errorLine = branchLines.find(line => !line.end);

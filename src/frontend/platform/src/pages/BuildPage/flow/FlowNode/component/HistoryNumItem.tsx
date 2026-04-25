@@ -10,7 +10,7 @@ export default function HistoryNumItem({ data, onChange, i18nPrefix }) {
 
     return (
         <div className="flex items-center mb-4 nodrag -nopan">
-            <Label className="bisheng-label">{t('recent')}</Label> {/* 最近 */}
+            <Label className="eagent-label">{t('recent')}</Label> {/* 最近 */}
             <Input
                 type="number"
                 min={0}
@@ -28,7 +28,7 @@ export default function HistoryNumItem({ data, onChange, i18nPrefix }) {
                     }
                 }}
             />
-            <Label className="bisheng-label">{t('chatRecords')}</Label> {/* 条聊天记录 */}
+            <Label className="eagent-label">{t('chatRecords')}</Label> {/* 条聊天记录 */}
             <Badge variant="outline" className="bg-[#E6ECF6] text-[#2B53A0] ml-auto">
                 {data.key}
             </Badge>

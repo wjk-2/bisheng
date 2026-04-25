@@ -269,7 +269,6 @@ const ExcelPreview = ({ filePath }) => {
           const { images, imagePositions } = await extractImagesWithPositions(workbook);
           setImages(images);
           setImagePositions(imagePositions);
-          console.log(`[ExcelPreview] 提取到 ${images.length} 张图片`);
 
         } else {
           throw new Error(t('unsupportedType', { type: fileExt }));
@@ -321,7 +320,6 @@ const ExcelPreview = ({ filePath }) => {
         );
         if (columns.some(col => col !== "")) rows.push(columns);
       });
-      console.log("CSV parsed result (2D array):", rows);
       return rows;
     } catch (err) {
       console.error("CSV parsing error:", err);
@@ -642,7 +640,6 @@ const ExcelPreview = ({ filePath }) => {
                                     `;
                                   }}
                                   onLoad={(e) => {
-                                    console.log(`Image loaded successfully: ${actualRowIndex}-${cellIndex}`);
                                   }}
                                 />
                               </div>

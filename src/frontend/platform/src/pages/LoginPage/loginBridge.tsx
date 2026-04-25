@@ -2,7 +2,6 @@ import Separator from "@/components/bs-comp/chatComponent/Separator";
 import { Button } from "@/components/bs-ui/button";
 import { getSSOurlApi } from "@/controllers/API/pro";
 import { useEffect, useState } from "react";
-//@ts-ignore
 import Wxpro from "./icons/wxpro.svg?react";
 import { useTranslation } from "react-i18next";
 

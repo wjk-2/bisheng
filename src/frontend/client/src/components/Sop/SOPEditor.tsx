@@ -1,3 +1,4 @@
+import DOMPurify from 'dompurify';
 import { AnimatePresence, motion } from 'framer-motion';
 import { PencilLineIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -16,6 +17,10 @@ export const enum SopStatus {
     SopGenerating = 'sopGenerating',
     /* SOP生成完成 */
     SopGenerated = 'sopGenerated',
+    /* 简单问答回答中 */
+    SimpleQaAnswering = 'simpleQaAnswering',
+    /* 简单问答完成 */
+    SimpleQaCompleted = 'simpleQaCompleted',
     /* 开始执行 */
     Running = 'running',
     /* 执行完成 */
@@ -123,7 +128,6 @@ export const SOPEditor = ({ versionId, isSharePage, sopError, onRun }) => {
     const sopValueFuncRef = useRef<null | ((id) => void)>(null)
     const [disabled, setDisabled] = useStartDisable(linsight.status, linsight.sop)
     const handleChange = (val) => {
-        console.log('sop input :>> ');
         sopValueFuncRef.current = (_v) => {
             saveSop({
                 sop_content: val,
@@ -168,6 +172,21 @@ export const SOPEditor = ({ versionId, isSharePage, sopError, onRun }) => {
                 </div>
                 {/* <CopyButton text={linsight.sop} /> */}
             </div>
+
+            {/* 简单问答渲染 */}
+            {(linsight.status === SopStatus.SimpleQaAnswering || linsight.status === SopStatus.SimpleQaCompleted) && (
+                <div className='p-6 flex-1 min-h-0 overflow-auto'>
+                    {linsight.status === SopStatus.SimpleQaAnswering && !linsight.simpleAnswer && (
+                        <p className='text-sm flex gap-2'>
+                            <img className='size-5' src={__APP_ENV__.BASE_URL + '/assets/load.webp'} alt="" />
+                        </p>
+                    )}
+                    {linsight.simpleAnswer && (
+                        <div className='linsight-simple-qa-content linsight-markdown prose prose-sm max-w-none'
+                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(linsight.simpleAnswer.replace(/\n/g, '<br/>')) }} />
+                    )}
+                </div>
+            )}
 
             {linsight.status === SopStatus.SopGenerating && !linsight.sop?.trim() && <p className='p-6 text-sm flex gap-2'>
                 <img className='size-5' src={__APP_ENV__.BASE_URL + '/assets/load.webp'} alt="" />

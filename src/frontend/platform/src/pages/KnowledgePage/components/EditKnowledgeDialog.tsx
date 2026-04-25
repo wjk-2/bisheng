@@ -49,8 +49,8 @@ export default function KnowledgeBaseSettingsDialog({ initialName, initialDesc, 
             </DialogHeader>
             <div className="flex flex-col gap-8 py-6">
                 <div className="">
-                    <label htmlFor="name" className="bisheng-label">
-                        {t('name')}<span className="bisheng-tip">*</span>
+                    <label htmlFor="name" className="eagent-label">
+                        {t('name')}<span className="eagent-tip">*</span>
                     </label>
                     <div className="flex items-center mt-2">
                         <Input
@@ -63,10 +63,10 @@ export default function KnowledgeBaseSettingsDialog({ initialName, initialDesc, 
                             onChange={handleChange}
                         />
                     </div>
-                    {errors.name && <p className="bisheng-tip mt-1 text-red-500">{errors.name}</p>}
+                    {errors.name && <p className="eagent-tip mt-1 text-red-500">{errors.name}</p>}
                 </div>
                 <div className="">
-                    <label htmlFor="desc" className="bisheng-label">{t('desc')}</label>
+                    <label htmlFor="desc" className="eagent-label">{t('desc')}</label>
                     <div className="flex items-center mt-2">
                         <Textarea
                             id="desc"

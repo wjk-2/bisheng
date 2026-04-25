@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import axios, { AxiosError, AxiosRequestConfig } from 'axios';
+import axios, { AxiosRequestConfig } from 'axios';
 import i18next from "i18next";
 
 // 报错的时候是否弹窗
@@ -72,39 +72,21 @@ async function _patch(url: string, data?: any, options?: AxiosRequestConfig) {
   return response.data;
 }
 
-let isRefreshing = false;
-let failedQueue: { resolve: (value?: any) => void; reject: (reason?: any) => void }[] = [];
-
-// const refreshToken = (retry?: boolean): Promise<t.TRefreshTokenResponse | undefined> =>
-//   _post(endpoints.refreshToken(retry));
-
-// const dispatchTokenUpdatedEvent = (token: string) => {
-//   setTokenHeader(token);
-//   window.dispatchEvent(new CustomEvent('tokenUpdated', { detail: token }));
-// };
-
-const processQueue = (error: AxiosError | null, token: string | null = null) => {
-  failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
-  });
-  failedQueue = [];
-};
+// S-5/37: Token refresh logic is intentionally disabled. This system uses HttpOnly cookie
+// authentication (same-domain shared between Platform and Client). On 401, we clear local
+// state and redirect to the login page. This is a design choice — cookie-based auth does
+// not require frontend token refresh.
 
 customAxios.interceptors.response.use(
   (response) => {
     if (response.data.status_code === 403) {
-      // console.log('response :>> ', response);
+      // S-35: ERROR_REQUEST_PATH stores a URL path (non-sensitive) for post-login redirect
       localStorage.setItem('ERROR_REQUEST_PATH', response.config.url || '')
       location.href = `${__APP_ENV__.BASE_URL}/c/new?error=11403`;
       return response
     }
 
     if (response.config.showError && response.data && response.data.status_code !== 200) {
-      console.log('业务错误:>> ', response.config.url, response.data);
       window.showToast?.({ message: i18next.t(`api_errors.${response.data.status_code}`, response.data.data), status: 'error' });
     }
     return response;
@@ -123,60 +105,23 @@ customAxios.interceptors.response.use(
     }
 
     if (error.response.status === 401 && !originalRequest._retry) {
-      console.warn('401 error, refreshing token');
+      // Share 路由无需登录，401 直接 reject，不跳转
+      if (location.pathname.includes('/share/')) {
+        return Promise.reject(error);
+      }
+
+      console.warn('401 Unauthorized — session expired, cleaning up local state');
       originalRequest._retry = true;
 
-      if (import.meta.env.MODE === 'production') {
-        localStorage.setItem('LOGIN_PATHNAME', location.pathname)
-        location.href = `${location.origin}${__APP_ENV__.BISHENG_HOST}`
-      }
-      // } else {
-      //   if (location.pathname.indexOf('login') === -1) {
-      //     // location.href = '/workspace/login';
-      //   }
-      // }
-      // location.href = '/'
+      // Clean up local auth state before redirecting
+      localStorage.removeItem('ws_token');
+      localStorage.removeItem('token');
+      localStorage.removeItem('userInfo');
 
-      // if (isRefreshing) {
-      //   try {
-      //     const token = await new Promise((resolve, reject) => {
-      //       failedQueue.push({ resolve, reject });
-      //     });
-      //     // originalRequest.headers['Authorization'] = 'Bearer ' + token;
-      //     return await customAxios(originalRequest);
-      //   } catch (err) {
-      //     return Promise.reject(err);
-      //   }
-      // }
-
-      // isRefreshing = true;
-
-      try {
-        // const response = await refreshToken(
-        //   // Handle edge case where we get a blank screen if the initial 401 error is from a refresh token request
-        //   originalRequest.url?.includes('api/auth/refresh') === true ? true : false,
-        // );
-
-        // const token = response?.token ?? '';
-
-        // if (token) {
-        //   originalRequest.headers['Authorization'] = 'Bearer ' + token;
-        //   dispatchTokenUpdatedEvent(token);
-        //   processQueue(null, token);
-        //   return await customAxios(originalRequest);
-        // } else if (window.location.href.includes('share/')) {
-        //   console.log(
-        //     `Refresh token failed from shared link, attempting request to ${originalRequest.url}`,
-        //   );
-        // } else {
-        //   window.location.href = '/login';
-        // }
-      } catch (err) {
-        processQueue(err as AxiosError, null);
-        return Promise.reject(err);
-      } finally {
-        isRefreshing = false;
-      }
+      // R-06: 开发/生产环境行为统一，401 均重定向到登录页
+      // S-35: LOGIN_PATHNAME stores current path (non-sensitive) for post-login redirect
+      localStorage.setItem('LOGIN_PATHNAME', location.pathname)
+      location.href = location.origin + '/'
     }
 
     return Promise.reject(error);

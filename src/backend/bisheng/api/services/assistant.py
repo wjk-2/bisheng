@@ -37,7 +37,7 @@ from bisheng.utils import get_request_ip
 
 
 class AssistantService(BaseService, AssistantUtils):
-    UserCache: InMemoryCache = InMemoryCache()
+    UserCache: InMemoryCache = InMemoryCache(max_size=200)
 
     @classmethod
     def get_assistant(cls,
@@ -87,8 +87,7 @@ class AssistantService(BaseService, AssistantUtils):
         for one in res:
             one.logo = cls.get_logo_share_link(one.logo)
             simple_assistant = cls.return_simple_assistant_info(one)
-            if one.user_id == user.user_id or user.is_admin():
-                simple_assistant.write = True
+            simple_assistant.write = user.is_admin() or user.access_check(one.user_id, one.id, AccessType.ASSISTANT_WRITE)
             simple_assistant.group_ids = assistant_group_dict.get(one.id, [])
             simple_assistant.tags = flow_tags.get(one.id, [])
             data.append(simple_assistant)
@@ -111,13 +110,54 @@ class AssistantService(BaseService, AssistantUtils):
         assistant = await AssistantDao.aget_one_assistant(assistant_id)
         if not assistant or assistant.is_delete:
             raise AssistantNotExistsError()
-        # Check if you have permission to access the information
-        if not await login_user.async_access_check(assistant.user_id, assistant.id, AccessType.ASSISTANT_READ):
 
-            if (share_link is None
-                    or share_link.meta_data is None
-                    or share_link.meta_data.get("flowId") != assistant.id):
-                raise UnAuthorizedError()
+        # 检查权限：
+        # is_public: 0=仅自己, 1=组内, 2=全部
+        is_online = assistant.status == AssistantStatus.ONLINE.value
+
+        if is_online:
+            if assistant.is_public == 2:
+                # 公开到所有用户：允许访问
+                pass
+            elif assistant.is_public == 1:
+                # 仅组织内可见：检查用户是否在同一组
+                from bisheng.database.models.group_resource import GroupResourceDao, ResourceTypeEnum
+                from bisheng.database.models.user_group import UserGroupDao
+
+                assistant_groups = await GroupResourceDao.aget_resource_group(
+                    ResourceTypeEnum.ASSISTANT,
+                    assistant.id
+                )
+                if assistant_groups:
+                    # 获取智能体所属的组ID列表
+                    assistant_group_ids = [g.group_id for g in assistant_groups]
+                    # 获取当前用户所属的组
+                    user_groups = await UserGroupDao.aget_user_group(login_user.user_id)
+                    user_group_ids = [ug.group_id for ug in user_groups]
+                    # 检查是否有交集
+                    if set(assistant_group_ids) & set(user_group_ids):
+                        # 用户和智能体在同一组内，允许访问
+                        pass
+                    else:
+                        # 不在同一组，需要检查角色授权
+                        if not await login_user.async_access_check(assistant.user_id, assistant.id, AccessType.ASSISTANT_READ):
+                            if share_link is None or not share_link.is_valid(assistant.id):
+                                raise UnAuthorizedError()
+                else:
+                    # 智能体没有关联组，需要检查角色授权
+                    if not await login_user.async_access_check(assistant.user_id, assistant.id, AccessType.ASSISTANT_READ):
+                        if share_link is None or not share_link.is_valid(assistant.id):
+                            raise UnAuthorizedError()
+            else:
+                # is_public=0 或其他情况：需要检查权限
+                if not await login_user.async_access_check(assistant.user_id, assistant.id, AccessType.ASSISTANT_READ):
+                    if share_link is None or not share_link.is_valid(assistant.id):
+                        raise UnAuthorizedError()
+        else:
+            # 非上线状态需要检查权限
+            if not await login_user.async_access_check(assistant.user_id, assistant.id, AccessType.ASSISTANT_READ):
+                if share_link is None or not share_link.is_valid(assistant.id):
+                    raise UnAuthorizedError()
 
         tool_list = []
         flow_list = []
@@ -232,7 +272,7 @@ class AssistantService(BaseService, AssistantUtils):
         """ Clean up associated assistant resources """
         logger.info(f"delete_assistant_hook id: {assistant.id}, user: {login_user.user_id}")
         # Write Audit Log
-        AuditLogService.delete_build_assistant(login_user, get_request_ip(request), assistant.id)
+        AuditLogService.delete_build_assistant(login_user, get_request_ip(request), assistant)
 
         # Clean up associations with user groups
         GroupResourceDao.delete_group_resource_by_third_id(assistant.id, ResourceTypeEnum.ASSISTANT)
@@ -246,6 +286,8 @@ class AssistantService(BaseService, AssistantUtils):
     async def auto_update_stream(cls, assistant_id: str, prompt: str, login_user: UserPayload):
         """ Regenerate Assistant Prompts and Tool Selection, Only call the model capability without modifying the database data """
         assistant = AssistantDao.get_one_assistant(assistant_id)
+        if not assistant:
+            raise AssistantNotExistsError()
         assistant.prompt = prompt
 
         # Inisialisasillm
@@ -340,8 +382,8 @@ class AssistantService(BaseService, AssistantUtils):
 
     @classmethod
     async def update_status(cls, request: Request, login_user: UserPayload, assistant_id: str,
-                            status: int) -> bool:
-        """ Update Assistant Status """
+                            status: int, is_public: int = 0, category: str = '其他') -> bool:
+        """ Update Assistant Status and Public Setting """
         assistant = AssistantDao.get_one_assistant(assistant_id)
         if not assistant:
             raise AssistantNotExistsError()
@@ -349,7 +391,7 @@ class AssistantService(BaseService, AssistantUtils):
         if not login_user.access_check(assistant.user_id, assistant.id, AccessType.ASSISTANT_WRITE):
             raise UnAuthorizedError()
         # Equal status without modification
-        if assistant.status == status:
+        if assistant.status == status and assistant.is_public == is_public and assistant.category == category:
             return True
 
         # Try to initializeagent, go online if initialization is successful, otherwise not go online
@@ -361,6 +403,8 @@ class AssistantService(BaseService, AssistantUtils):
                 logger.exception('online agent init failed')
                 raise AssistantInitError(exception=e)
         assistant.status = status
+        assistant.is_public = is_public
+        assistant.category = category
         AssistantDao.update_assistant(assistant)
         telemetry_service.log_event_sync(user_id=login_user.user_id, event_type=BaseTelemetryTypeEnum.EDIT_APPLICATION,
                                          trace_id=trace_id_var.get())

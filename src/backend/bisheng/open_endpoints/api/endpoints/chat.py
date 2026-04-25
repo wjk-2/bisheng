@@ -2,7 +2,7 @@ import json
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Body, WebSocket, status
+from fastapi import APIRouter, Body, HTTPException, WebSocket, status
 from fastapi.middleware.wsgi import WSGIMiddleware
 from loguru import logger
 
@@ -109,6 +109,10 @@ def sync_message(*,
                  message_list: List[SyncMessage] = Body(embed=True),
                  user_id: int = Body(default=None, embed=True)):
     flow_id = flow_id.hex
+    if user_id is not None:
+        if not isinstance(user_id, int) or user_id <= 0:
+            raise HTTPException(status_code=400, detail='user_id must be a positive integer')
+        logger.warning('sync_message called with explicit user_id={}, flow_id={}', user_id, flow_id)
     user_id = user_id if user_id else settings.get_from_db('default_operator').get('user')
 
     batch_message = [

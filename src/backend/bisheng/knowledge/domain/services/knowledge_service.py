@@ -148,7 +148,7 @@ class KnowledgeService:
                 user_metadata = user_metadata_dict.pop(old_field_name, None)
                 if user_metadata is not None:
                     user_metadata["updated_at"] = int(datetime.now().timestamp())
-                    user_metadata[new_field_name] = user_metadata
+                    user_metadata_dict[new_field_name] = user_metadata
 
             knowledge_file.user_metadata = user_metadata_dict
 

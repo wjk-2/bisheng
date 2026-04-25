@@ -167,13 +167,13 @@ export default function Conversation({
   return (
     <div
       className={cn(
-        "group relative mt-2 flex h-10 w-full items-center rounded-lg hover:bg-[#EBEFF8]",
-        isActiveConvo ? "bg-[#EBEFF8]" : "",
+        "group relative mt-2 flex h-10 w-full items-center rounded-lg hover:bg-gray-100",
+        isActiveConvo ? "bg-gray-100" : "",
         isSmallScreen ? "h-12" : ""
       )}
     >
       {renaming ? (
-        <div className="absolute inset-0 z-20 flex w-full items-center rounded-lg bg-[#EBEFF8] p-1.5">
+        <div className="absolute inset-0 z-20 flex w-full items-center rounded-lg bg-gray-100 p-1.5">
           <input
             ref={inputRef}
             type="text"
@@ -218,7 +218,7 @@ export default function Conversation({
           onClick={clickHandler}
           className={cn(
             "flex grow cursor-pointer items-center gap-2 overflow-hidden whitespace-nowrap break-all rounded-lg px-2 py-2",
-            isActiveConvo ? "bg-[#EBEFF8]" : ""
+            isActiveConvo ? "bg-gray-100" : ""
           )}
           title={title ?? ""}
         >

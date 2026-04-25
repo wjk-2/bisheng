@@ -1,14 +1,12 @@
 import { lazy, useEffect } from "react";
 import { Navigate, createBrowserRouter } from "react-router-dom";
 import MainLayout from "../layout/MainLayout";
-import { LoginPage } from "../pages/LoginPage/login";
-import { ResetPwdPage } from "../pages/LoginPage/resetPwd";
+const LoginPage = lazy(() => import("../pages/LoginPage/login").then(m => ({ default: m.LoginPage })));
+const ResetPwdPage = lazy(() => import("../pages/LoginPage/resetPwd").then(m => ({ default: m.ResetPwdPage })));
 import Page403 from "../pages/Page403";
 import Page404 from "../pages/Page404";
 import { AppNumType } from "../types/app";
 import RouteErrorBoundary from "./RouteErrorBoundary";
-import EditorPage from "@/pages/Dashboard/editor";
-import SharePage from "@/pages/Dashboard/share";
 
 // 异步加载页面组件
 const Templates = lazy(() => import("@/pages/BuildPage/appTemps"));
@@ -20,7 +18,7 @@ const SkillPage = lazy(() => import("@/pages/BuildPage/skills/editSkill"));
 const L2Edit = lazy(() => import("@/pages/BuildPage/skills/l2Edit"));
 const SkillToolsPage = lazy(() => import("@/pages/BuildPage/tools"));
 const SkillChatPage = lazy(() => import("@/pages/ChatAppPage"));
-const ChatAssitantShare = lazy(() => import("@/pages/ChatAppPage/chatAssitantShare"));
+const ChatAssistantShare = lazy(() => import("@/pages/ChatAppPage/chatAssitantShare"));
 const ChatShare = lazy(() => import("@/pages/ChatAppPage/chatShare"));
 const ChatPro = lazy(() => import("@/pages/ChatAppPage/chatWebview"));
 const DataSetPage = lazy(() => import("@/pages/DataSetPage"));
@@ -43,16 +41,25 @@ const Management = lazy(() => import("@/pages/ModelPage/manage"));
 const Report = lazy(() => import("@/pages/Report"));
 const SystemPage = lazy(() => import("@/pages/SystemPage"));
 const ResoucePage = lazy(() => import("@/pages/resoucePage"));
-const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const EducationLayout = lazy(() => import("@/pages/EducationPage/EducationLayout"));
+const EducationPage = lazy(() => import("@/pages/EducationPage"));
+const CourseDetail = lazy(() => import("@/pages/EducationPage/CourseDetail"));
+const ChapterLearning = lazy(() => import("@/pages/EducationPage/ChapterLearning"));
+const ProgressPage = lazy(() => import("@/pages/EducationPage/ProgressPage"));
+const PracticeEnvironment = lazy(() => import("@/pages/EducationPage/PracticeEnvironment"));
+const GuidedBuilder = lazy(() => import("@/pages/EducationPage/GuidedBuilder"));
+const CreationSuccess = lazy(() => import("@/pages/EducationPage/CreationSuccess"));
+const MonitorPage = lazy(() => import("@/pages/Monitor"));
+const Deployment = lazy(() => import("@/pages/ModelPage/deployment"));
+const SystemConfig = lazy(() => import("@/pages/ModelPage/manage/SystemModelConfig"));
 
 const baseConfig = {
-  //@ts-ignore
   basename: __APP_ENV__.BASE_URL
 }
 
 const RedirectToExternalLink = () => {
   useEffect(() => {
-    const path = import.meta.env.DEV ? '/admin' : '/workspace/'
+    const path = import.meta.env.DEV ? '/platform' : '/workspace/'
     window.location.href = window.location.origin + path;
   }, []);
 
@@ -60,32 +67,31 @@ const RedirectToExternalLink = () => {
 };
 
 const privateRouter = [
-  { path: "/", element: <RedirectToExternalLink /> },
+  { path: "/", element: <Navigate to="/build" replace /> },
   {
     path: "/",
     element: <MainLayout />,
     errorElement: <RouteErrorBoundary />,
     children: [
-      // { path: "", element: <SkillChatPage />, },
-      { path: "filelib", element: <KnowledgePage />, permission: 'knowledge', },
-      { path: "filelib/:id", element: <FilesPage />, permission: 'knowledge', },
-      { path: "filelib/upload/:id", element: <FilesUpload />, permission: 'knowledge', },
-      { path: "filelib/adjust/:fileId", element: <AdjustFilesUpload />, permission: 'knowledge', },
-      { path: "filelib/qalib/:id", element: <QasPage />, permission: 'knowledge', },
-      { path: "build/apps", element: <Apps />, permission: 'build', },
-      // { path: "build/assist", element: <SkillAssisPage />, permission: 'build', },
-      // { path: "build/skills", element: <SkillsPage />, permission: 'build', },
-      // @ts-ignore
-      { path: "build/tools", element: <SkillToolsPage />, permission: 'build', },
-      { path: "build/client", element: <WorkBenchPage />, permission: 'build' },
+      { path: "filelib", element: <KnowledgePage /> },
+      { path: "filelib/:id", element: <FilesPage /> },
+      { path: "filelib/upload/:id", element: <FilesUpload /> },
+      { path: "filelib/adjust/:fileId", element: <AdjustFilesUpload /> },
+      { path: "filelib/qalib/:id", element: <QasPage /> },
+      { path: "build/apps", element: <Apps /> },
+      { path: "build/tools", element: <SkillToolsPage /> },
+      { path: "build/client", element: <WorkBenchPage /> },
       { path: "build", element: <Navigate to="apps" replace /> },
-      { path: "build/skill", element: <L2Edit />, permission: 'build', },
-      { path: "build/skill/:id/:vid", element: <L2Edit />, permission: 'build', },
-      { path: "build/temps/:type", element: <Templates />, permission: 'build', },
+      { path: "build/skill", element: <L2Edit /> },
+      { path: "build/skill/:id/:vid", element: <L2Edit /> },
+      { path: "build/temps/:type", element: <Templates /> },
       { path: "model/management", element: <Management /> },
       { path: "model/finetune", element: <Finetune /> },
-      { path: "model", element: <Navigate to="management" replace /> },
-      { path: "sys", element: <SystemPage />, permission: 'sys' },
+      { path: "model/deployment", element: <Deployment /> },
+      { path: "model/system-config", element: <SystemConfig /> },
+      { path: "model", element: <Navigate to="deployment" replace /> },
+      { path: "sys", element: <SystemPage /> },
+      { path: "sys/settings", element: <SystemPage /> },
       { path: "log", element: <LogPage /> },
       { path: "log/chatlog/:fid/:cid/:type", element: <AppChatDetail /> },
       { path: "evaluation", element: <EvaluatingPage /> },
@@ -94,11 +100,22 @@ const privateRouter = [
       { path: "label", element: <LabelPage /> },
       { path: "label/:id", element: <TaskApps /> },
       { path: "label/chat/:id/:fid/:cid/:type", element: <TaskAppChats /> },
-      { path: "dashboard", element: <Dashboard /> },
+      {
+        path: "education",
+        element: <EducationLayout />,
+        children: [
+          { index: true, element: <EducationPage /> },
+          { path: "courses/:courseId", element: <CourseDetail /> },
+          { path: "courses/:courseId/chapters/:chapterId", element: <ChapterLearning /> },
+          { path: "progress", element: <ProgressPage /> },
+          { path: "practice", element: <PracticeEnvironment /> },
+          { path: "guided-builder", element: <GuidedBuilder /> },
+          { path: "success", element: <CreationSuccess /> },
+        ],
+      },
+      { path: "monitor", element: <MonitorPage /> },
     ],
   },
-  { path: "dashboard/:id", element: <EditorPage />, errorElement: <RouteErrorBoundary />, permission: 'board', },
-  { path: "dashboard/share/:boardId", element: <SharePage />, errorElement: <RouteErrorBoundary /> },
   { path: "model/doc", element: <Doc />, errorElement: <RouteErrorBoundary /> },
   {
     path: "/skill/:id/",
@@ -133,7 +150,7 @@ const privateRouter = [
   { path: "/chat", element: <SkillChatPage />, errorElement: <RouteErrorBoundary /> },
   { path: "/chat/:id/", element: <ChatShare />, errorElement: <RouteErrorBoundary /> },
   { path: "/chat/flow/:id/", element: <ChatShare type={AppNumType.FLOW} />, errorElement: <RouteErrorBoundary /> },
-  { path: "/chat/assistant/:id/", element: <ChatAssitantShare />, errorElement: <RouteErrorBoundary /> },
+  { path: "/chat/assistant/:id/", element: <ChatAssistantShare />, errorElement: <RouteErrorBoundary /> },
   { path: "/report/:id/", element: <Report />, errorElement: <RouteErrorBoundary /> },
   { path: "/diff/:id/:vid/:cid", element: <DiffFlowPage />, errorElement: <RouteErrorBoundary /> },
   { path: "/reset", element: <ResetPwdPage />, errorElement: <RouteErrorBoundary /> },
@@ -142,31 +159,7 @@ const privateRouter = [
   { path: "*", element: <Navigate to="/404" replace /> }
 ]
 
-export const getPrivateRouter = (permissions) => {
-  const filterMenuItem = (_privateRouter) => {
-    const result = _privateRouter.reduce((res, cur) => {
-      // 递归
-      if (cur.children?.length) {
-        cur.children = filterMenuItem(cur.children)
-      }
-
-      const { permission, ...other } = cur
-      if (permission && !permissions.includes(permission)) {
-        return res
-      }
-
-      res.push(other)
-      return res
-    }, [])
-
-    return result
-  }
-
-  return createBrowserRouter(permissions ? filterMenuItem(privateRouter) : [],
-    baseConfig)
-}
-
-export const getAdminRouter = () => {
+export const getRouter = () => {
   return createBrowserRouter(privateRouter,
     baseConfig)
 }
@@ -176,7 +169,7 @@ export const publicRouter = createBrowserRouter([
   { path: "/reset", element: <ResetPwdPage />, errorElement: <RouteErrorBoundary /> },
   { path: "/chat/:id/", element: <ChatShare />, errorElement: <RouteErrorBoundary /> },
   { path: "/chat/flow/:id/", element: <ChatShare type={AppNumType.FLOW} />, errorElement: <RouteErrorBoundary /> },
-  { path: "/chat/assistant/:id/", element: <ChatAssitantShare />, errorElement: <RouteErrorBoundary /> },
+  { path: "/chat/assistant/:id/", element: <ChatAssistantShare />, errorElement: <RouteErrorBoundary /> },
   { path: "/resouce/:cid/:mid", element: <ResoucePage />, errorElement: <RouteErrorBoundary /> },
   { path: "/403", element: <Page403 /> },
   { path: "*", element: <LoginPage /> }

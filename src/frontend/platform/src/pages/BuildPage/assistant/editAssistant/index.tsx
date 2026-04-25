@@ -10,8 +10,7 @@ import { useAssistantStore } from "@/store/assistantStore";
 import { OnlineState } from "@/types/flow";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useLocation } from "react-router";
-import { unstable_useBlocker as useBlocker, useNavigate, useParams } from "react-router-dom";
+import { unstable_useBlocker as useBlocker, useLocation, useNavigate, useParams } from "react-router-dom";
 import Header from "./Header";
 import Prompt from "./Prompt";
 import Setting from "./Setting";
@@ -82,23 +81,27 @@ export default function editAssistant() {
     }
 
     // Publish assistant online
-    const handleOnline = async (online) => {
+    // isPublic: 0=仅自己, 1=组内, 2=全部
+    const handleOnline = async (online, isPublic: number = 0, category: string = '其他') => {
         if (!handleCheck()) return
         if (online) {
             await handleSave()
-            await captureAndAlertRequestErrorHoc(changeAssistantStatusApi(assistantState.id, 2)).then(res => {
+            // 上线时传递 is_public(0/1/2) 和 category 参数
+            await captureAndAlertRequestErrorHoc(changeAssistantStatusApi(assistantState.id, 2, isPublic, category)).then(res => {
                 if (res === false) return
+                const publicText = isPublic === 2 ? '已公开发布到广场' : isPublic === 1 ? '已发布到组内' : '已发布（仅自己可见）';
                 message({
                     title: t('prompt'),
                     variant: 'success',
-                    description: t('skills.onlineSuccessful')
+                    description: publicText
                 })
             })
             setTimeout(() => {
                 navigate('/build')
             }, 1200);
         } else {
-            captureAndAlertRequestErrorHoc(changeAssistantStatusApi(assistantState.id, 1)).then(res => {
+            // 下线时保留原有的 is_public 和 category 状态
+            captureAndAlertRequestErrorHoc(changeAssistantStatusApi(assistantState.id, 1, assistantState.is_public || 0, assistantState.category || '其他')).then(res => {
                 if (res === false) return
                 changeStatus(1)
             })

@@ -142,7 +142,6 @@ function Avatar({
     }
 
     if (sharedUploadCondition && createMutation.data.id) {
-      console.log('[AssistantAvatar] Uploading Avatar after Assistant Creation');
 
       const formData = new FormData();
       formData.append('file', input, input.name);
@@ -182,7 +181,6 @@ function Avatar({
 
       if (!assistant_id) {
         // wait for successful form submission before uploading avatar
-        console.log('[AssistantAvatar] No assistant_id, will wait until form submission + upload');
         return;
       }
 

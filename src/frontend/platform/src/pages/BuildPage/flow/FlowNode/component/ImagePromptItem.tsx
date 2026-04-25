@@ -69,7 +69,7 @@ export default function ImagePromptItem({ nodeId, data, onChange, onVarEvent, i1
 
     return <div className='node-item mb-4' data-key={data.key}>
         <div className=" flex justify-between items-center">
-            <Label className="flex items-center bisheng-label">
+            <Label className="flex items-center eagent-label">
                 {t(`${i18nPrefix}label`)}
                 {data.help && <QuestionTooltip content={t(`${i18nPrefix}help`)} />}
             </Label>

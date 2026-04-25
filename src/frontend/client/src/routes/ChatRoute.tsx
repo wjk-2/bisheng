@@ -13,12 +13,11 @@ import {
 import type { TPreset } from '~/data-provider/data-provider/src';
 import { Constants, EModelEndpoint } from '~/data-provider/data-provider/src';
 import { useGetModelsQuery } from '~/data-provider/data-provider/src/react-query';
-import { useAppStartup, useAssistantListMap, useLocalize, useNewConvo } from '~/hooks';
+import { useAppStartup, useAssistantListMap, useAuthContext, useLocalize, useNewConvo } from '~/hooks';
 import { getErrorI18nKey } from '~/pages/appChat/store/constants';
 import store from '~/store';
 import temporaryStore from '~/store/temporary';
 import { getDefaultModelSpec, getModelSpecIconURL } from '~/utils';
-import useAuthRedirect from './useAuthRedirect';
 import { getDeleteFlowApi } from '~/api/apps';
 
 export default function ChatRoute() {
@@ -27,7 +26,7 @@ export default function ChatRoute() {
   useHealthCheck();
   const { data: startupConfig } = useGetStartupConfig();
 
-  const { isAuthenticated, user } = useAuthRedirect();
+  const { isAuthenticated, user } = useAuthContext();
   const setIsTemporary = useRecoilCallback(
     ({ set }) =>
       (value: boolean) => {

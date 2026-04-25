@@ -7,31 +7,31 @@ from bisheng.finetune.domain.models.server import Server, ServerCreate, ServerDa
 from ...common.errcode.http_error import NotFoundError
 
 # build router
-router = APIRouter(prefix='/server', tags=['server'], dependencies=[Depends(UserPayload.get_login_user)])
+router = APIRouter(prefix='/server', tags=['server'])
 
 
 @router.post('/add')
-async def add_server(*, server: ServerCreate):
+async def add_server(*, server: ServerCreate, login_user: UserPayload = Depends(UserPayload.get_admin_user)):
     db_server = Server.model_validate(server)
     db_server = await ServerDao.insert(db_server)
     return resp_200(db_server)
 
 
 @router.get('/list_server')
-async def list_server():
+async def list_server(login_user: UserPayload = Depends(UserPayload.get_login_user)):
     rt_server = await ServerDao.find_all_server()
     rt_server = rt_server or []
     return resp_200(rt_server)
 
 
 @router.delete('/{server_id}', status_code=200)
-async def delete_server(*, server_id: int):
+async def delete_server(*, server_id: int, login_user: UserPayload = Depends(UserPayload.get_admin_user)):
     await ServerDao.delete(server_id)
     return resp_200(None)
 
 
 @router.get('/model/{deploy_id}')
-async def get_model_deploy(*, deploy_id: int):
+async def get_model_deploy(*, deploy_id: int, login_user: UserPayload = Depends(UserPayload.get_login_user)):
     model_deploy = await ModelDeployDao.find_model(deploy_id)
     if not ModelDeployDao:
         raise NotFoundError()

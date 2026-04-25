@@ -21,8 +21,11 @@ from bisheng.utils import generate_uuid
 from bisheng.worker.main import bisheng_celery
 from bisheng_langchain.vectorstores import ElasticKeywordsSearch, Milvus
 
+# 从 knowledge_imp 导入常量
+from bisheng.api.services.knowledge_imp import FILE_COPY_PAGE_SIZE
 
-@bisheng_celery.task(acks_late=True)
+
+@bisheng_celery.task(acks_late=True, time_limit=7200, soft_time_limit=6900)
 def file_copy_celery(param: json) -> str:
     """Copy a Knowledge Base file to another Knowledge Base
     1. mysqlCopy of
@@ -38,7 +41,7 @@ def file_copy_celery(param: json) -> str:
         source_knowledge_id,
         target_id,
     )
-    page_size = 20
+    page_size = FILE_COPY_PAGE_SIZE
     page_num = 1
     source_knowledge = KnowledgeDao.query_by_id(source_knowledge_id)
     target_knowledge = KnowledgeDao.query_by_id(target_id)
@@ -271,12 +274,13 @@ def insert_es(li: List, target: ElasticKeywordsSearch):
     logger.info("copy_es_done pk_size={}", len(res_list))
 
 
-@bisheng_celery.task(acks_late=True)
+@bisheng_celery.task(acks_late=True, time_limit=7200, soft_time_limit=6900)
 def parse_knowledge_file_celery(file_id: int, preview_cache_key: str = None, callback_url: str = None):
     """ Asynchronously parse one incoming successful file """
     trace_id_var.set(f'parse_file_{file_id}')
     logger.info(
         f"parse_knowledge_file_celery start preview_cache_key={preview_cache_key}, callback_url={callback_url}")
+    knowledge = None
     try:
         # After the warehousing is successful, it is judged whether the file information still exists, and if not, it is deleted.
         _, knowledge = _parse_knowledge_file(file_id, preview_cache_key, callback_url)
@@ -285,10 +289,12 @@ def parse_knowledge_file_celery(file_id: int, preview_cache_key: str = None, cal
     finally:
         db_file = KnowledgeFileDao.get_file_by_ids([file_id])
         if not db_file:
-            logger.debug(f"delete_knowledge_file_celery file_id={file_id}")
+            logger.info(f"file_id={file_id} was deleted during parsing, cleaning up vector data")
             # If it does not exist, it may have been deleted during the parsing process,
             # and the data of the vector database needs to be deleted.
-            delete_vector_files([db_file[0].id], knowledge)
+            # Use file_id directly since we no longer have db_file record
+            if knowledge:
+                delete_vector_files([file_id], knowledge)
 
 
 def _parse_knowledge_file(file_id: int, preview_cache_key: str = None, callback_url: str = None):
@@ -332,11 +338,12 @@ def _parse_knowledge_file(file_id: int, preview_cache_key: str = None, callback_
     return db_file, db_knowledge
 
 
-@bisheng_celery.task(acks_late=True)
+@bisheng_celery.task(acks_late=True, time_limit=7200, soft_time_limit=6900)
 def retry_knowledge_file_celery(file_id: int, preview_cache_key: str = None, callback_url: str = None):
     """ Retry parsing a file that failed to enter the repository or has a different name """
     trace_id_var.set(f'retry_knowledge_file_{file_id}')
     logger.info("retry_knowledge_file_celery start file_id={}", file_id)
+    knowledge = None
     try:
         delete_knowledge_file_vectors(
             file_ids=[file_id], clear_minio=False
@@ -352,13 +359,13 @@ def retry_knowledge_file_celery(file_id: int, preview_cache_key: str = None, cal
         logger.error("retry_knowledge_file_celery error: {}", str(e))
     finally:
         db_file = KnowledgeFileDao.get_file_by_ids([file_id])
-        if not db_file:
+        if not db_file and knowledge:
             logger.debug(f"delete_knowledge_file_celery file_id={file_id}")
             # If it does not exist, it may have been deleted during the parsing process, and the data of the vector database needs to be deleted.
-            delete_vector_files([db_file[0].id], knowledge)
+            delete_vector_files([file_id], knowledge)
 
 
-@bisheng_celery.task()
+@bisheng_celery.task(acks_late=True, time_limit=7200, soft_time_limit=6900)
 def delete_knowledge_file_celery(file_ids: List[int], knowledge_id: int, clear_minio: bool = True):
     """ Asynchronous deletion of knowledge files and their vectors """
     trace_id_var.set(f'delete_knowledge_file_{file_ids}')

@@ -1,5 +1,5 @@
 import { atom, selector } from "recoil"
-import type { BishengConfig, Chat, RunningStatus, SubmitData, WebSocketStatus } from "~/@types/chat"
+import type { EagentConfig, Chat, RunningStatus, SubmitData, WebSocketStatus } from "~/@types/chat"
 
 // 所有会话数据的Map存储  (key: chatId) 
 /**
@@ -65,9 +65,9 @@ export const chatFileState = atom<{ name: string, path: string }[]>({
     default: [],
 })
 
-// 毕昇配置信息
-export const bishengConfState = atom<BishengConfig | null>({
-    key: "bishengConfState",
+// E-Agent 配置信息
+export const eagentConfState = atom<EagentConfig | null>({
+    key: "eagentConfState",
     default: null,
 })
 

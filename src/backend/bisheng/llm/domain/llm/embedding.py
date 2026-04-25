@@ -11,7 +11,7 @@ from bisheng.core.ai import OllamaEmbeddings, OpenAIEmbeddings, AzureOpenAIEmbed
 from bisheng.llm.domain.const import LLMServerType, LLMModelType
 from .base import BishengBase
 from ..models import LLMModel, LLMServer
-from ..utils import wrapper_bisheng_model_limit_check
+from ..utils import wrapper_eagent_model_limit_check
 
 
 def _get_user_kwargs(model_config: dict) -> dict:
@@ -86,7 +86,7 @@ _node_type: Dict = {
 }
 
 
-class BishengEmbedding(BishengBase, Embeddings):
+class EagentEmbedding(BishengBase, Embeddings):
     """ Use the embedding model that has been launched in model management """
 
     embedding_ctx_length: int = Field(default=8192, description='embeddingModel Context Length')
@@ -97,7 +97,7 @@ class BishengEmbedding(BishengBase, Embeddings):
     embeddings: Optional[Embeddings] = Field(default=None)
 
     @classmethod
-    async def get_bisheng_embedding(cls, **kwargs) -> Self:
+    async def get_eagent_embedding(cls, **kwargs) -> Self:
         return await cls.get_class_instance(**kwargs)
 
     def __init__(self, **kwargs):
@@ -122,7 +122,7 @@ class BishengEmbedding(BishengBase, Embeddings):
         if not ignore_online and not model_info.online:
             raise Exception(f'{server_info.name}under{model_info.model_name}The model is offline, please contact the administrator to launch the corresponding model')
         logger.debug(
-            f'init_bisheng_embedding: server_id: {server_info.id}, model_id: {model_info.id}')
+            f'init_eagent_embedding: server_id: {server_info.id}, model_id: {model_info.id}')
         self.model_info: LLMModel = model_info
         self.server_info: LLMServer = server_info
         self.model_name = model_info.model_name
@@ -132,8 +132,8 @@ class BishengEmbedding(BishengBase, Embeddings):
         try:
             self.embeddings = class_object(**params)
         except Exception as e:
-            logger.exception('init_bisheng_embedding error')
-            raise Exception(f'Inisialisasibisheng embeddingComponent failed, please check the configuration or contact the administrator.Error message:{e}')
+            logger.exception('init_eagent_embedding error')
+            raise Exception(f'Init eagent embedding component failed, please check the configuration or contact the administrator. Error message: {e}')
 
     @staticmethod
     def _get_embedding_class(server_type: str) -> type[Embeddings]:
@@ -158,7 +158,7 @@ class BishengEmbedding(BishengBase, Embeddings):
         params = params_handler(default_params, server_config, model_config)
         return params
 
-    @wrapper_bisheng_model_limit_check
+    @wrapper_eagent_model_limit_check
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         """embedding"""
         ret = self.embeddings.embed_documents(texts)
@@ -169,7 +169,7 @@ class BishengEmbedding(BishengBase, Embeddings):
                 ret = [(np.array(doc) / np.linalg.norm(doc)).tolist() for doc in ret]
         return ret
 
-    @wrapper_bisheng_model_limit_check
+    @wrapper_eagent_model_limit_check
     def embed_query(self, text: str) -> List[float]:
         """embedding"""
         ret = self.embeddings.embed_query(text)

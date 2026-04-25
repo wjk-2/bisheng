@@ -66,7 +66,7 @@ export default function CreateTemp({ flow, open, type, setOpen, onCreated }) {
                 </DialogHeader>
                 <div className='flex flex-col gap-4 py-2'>
                     <div className=''>
-                        <label htmlFor='name' className='bisheng-label'>
+                        <label htmlFor='name' className='eagent-label'>
                             {type === AppType.SKILL ? t('skills.skillName') : type === AppType.ASSISTANT ? t('build.assistantName') : t('build.workFlowName')}
                         </label>
                         <Input
@@ -77,7 +77,7 @@ export default function CreateTemp({ flow, open, type, setOpen, onCreated }) {
                         />
                     </div>
                     <div className=''>
-                        <label htmlFor='roleAndTasks' className='bisheng-label'>
+                        <label htmlFor='roleAndTasks' className='eagent-label'>
                             {t('skills.description')}
                         </label>
                         <Textarea

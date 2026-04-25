@@ -1,30 +1,52 @@
+/** 边数据 */
+interface EdgeData {
+  source: string;
+  target: string;
+}
+
+/** 节点数据 */
+interface NodeData {
+  id: string;
+  type?: string;
+  position?: { x: number; y: number };
+  data?: Record<string, unknown>;
+}
+
 // 技能&工作流详情
 export interface FlowData {
-  create_time: string; // ISO 8601 format date string
+  create_time: string;
   data: {
-    edges: any[]; // Replace 'any' with a more specific type if you know the structure
-    nodes: any[]; // Replace 'any' with a more specific type if you know the structure
-    viewport: Record<string, unknown>; // Or a more specific type if viewport structure is known
+    edges: EdgeData[];
+    nodes: NodeData[];
+    viewport: Record<string, unknown>;
   };
   description: string;
   flow_type: number;
-  guide_word: null | string; // Assuming it can be null or string
+  guide_word: string | null;
   id: string;
   logo: string;
   name: string;
   status: number;
-  update_time: string; // ISO 8601 format date string
-  user_id: null | string; // Assuming it can be null or string
+  update_time: string;
+  user_id: string | null;
+}
+
+/** 文件附件类型 */
+interface FileAttachment {
+  data: string;
+  type: string;
+  data_type: string;
+  file_name?: string;
 }
 
 //
 export type ChatMessageType = {
-  message: string | Object;
+  message: string | Record<string, unknown> | unknown[];
   template?: string;
   isSend: boolean;
   thought?: string;
   category?: string;
-  files?: Array<{ data: string; type: string; data_type: string, file_name?: string }>;
+  files?: FileAttachment[];
   chatKey: string;
   end: boolean;
   id?: number;
@@ -35,7 +57,7 @@ export type ChatMessageType = {
   /** 用户名 */
   sender?: string;
   /** @某人 */
-  receiver?: any;
+  receiver?: Record<string, unknown>;
   liked?: boolean;
   extra?: string;
   create_time: string;
@@ -58,15 +80,15 @@ export interface Chat {
 }
 
 export interface SubmitData {
-  input?: string,
-  action: string,
-  chatId?: string,
-  flowId?: string,
-  nodeId?: string,
-  msgId?: string,
-  data?: any,
-  flow?: FlowData,
-  files?: any[]
+  input?: string;
+  action: string;
+  chatId?: string;
+  flowId?: string;
+  nodeId?: string;
+  msgId?: string;
+  data?: Record<string, unknown>;
+  flow?: FlowData;
+  files?: FileAttachment[];
 }
 
 export interface WebSocketStatus {
@@ -82,9 +104,9 @@ export interface RunningStatus {
   /** 输入框禁用状态 */
   inputDisabled: boolean;
   /** 失败原因 */
-  error: { code: string, data: any };
+  error: { code: string; data: unknown };
   /** 展示form表单 */
-  inputForm: any;
+  inputForm: Record<string, unknown>;
   /** 展示上传按钮 */
   showUpload: boolean;
   /** 展示stop按钮 */
@@ -95,8 +117,8 @@ export interface RunningStatus {
   showReRun?: boolean;
 }
 
-// 毕昇配置
-export type BishengConfig = {
+// E-Agent 配置
+export type EagentConfig = {
   env: string;
   uns_support: string[];
   office_url: string;

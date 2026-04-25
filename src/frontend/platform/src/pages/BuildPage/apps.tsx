@@ -1,6 +1,5 @@
 import CardComponent from "@/components/bs-comp/cardComponent";
 import AppAvator from "@/components/bs-comp/cardComponent/avatar";
-import LabelShow from "@/components/bs-comp/cardComponent/LabelShow";
 import AppTempSheet from "@/components/bs-comp/sheets/AppTempSheet";
 import { LoadingIcon } from "@/components/bs-icons/loading";
 import { MoveOneIcon } from "@/components/bs-icons/moveOne";
@@ -10,13 +9,13 @@ import { Button } from "@/components/bs-ui/button";
 import { SearchInput } from "@/components/bs-ui/input";
 import AutoPagination from "@/components/bs-ui/pagination/autoPagination";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/bs-ui/select";
-import SelectSearch from "@/components/bs-ui/select/select";
 import { useToast } from "@/components/bs-ui/toast/use-toast";
+import OnlineConfirmModal from "@/components/OnlineConfirmModal";
 import { userContext } from "@/contexts/userContext";
 import { readTempsDatabase } from "@/controllers/API";
 import { changeAssistantStatusApi, deleteAssistantApi } from "@/controllers/API/assistant";
 import { deleteFlowFromDatabase, getAppsApi, saveFlowToDatabase, updataOnlineState } from "@/controllers/API/flow";
-import { onlineWorkflow } from "@/controllers/API/workflow";
+import { onlineWorkflow, onlineWorkflowApi } from "@/controllers/API/workflow";
 import { captureAndAlertRequestErrorHoc } from "@/controllers/request";
 import { AppNumType, AppType } from "@/types/app";
 import { FlowType } from "@/types/flow";
@@ -26,7 +25,7 @@ import { useContext, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import CreateApp from "./CreateApp";
-import { useCreateTemp, useErrorPrompt, useQueryLabels } from "./hook";
+import { useCreateTemp, useErrorPrompt } from "./hook";
 import CardSelectVersion from "./skills/CardSelectVersion";
 import CreateTemp from "./skills/CreateTemp";
 
@@ -81,31 +80,81 @@ export default function apps() {
 
     const { open: tempOpen, tempType, flowRef, toggleTempModal } = useCreateTemp()
 
+    // 上线选择弹窗状态
+    const [onlineModalOpen, setOnlineModalOpen] = useState(false);
+    const [onlineLoading, setOnlineLoading] = useState(false);
+    const [pendingOnlineData, setPendingOnlineData] = useState<any>(null);
+
     // on/off line
     const handleCheckedChange = (checked, data) => {
+        // 上线时三种类型均需弹出可见范围/分类选择窗口
+        if (checked) {
+            setPendingOnlineData(data);
+            setOnlineModalOpen(true);
+            return;
+        }
+        // 下线直接处理，无需选择
+        return executeOnlineOffline(checked, data, 0);
+    }
+
+    // 实际执行上线/下线操作
+    // isPublic: 0=仅自己, 1=组内, 2=全部
+    const executeOnlineOffline = (checked, data, isPublic: number, category?: string) => {
         if (data.flow_type === 1) {
-            return captureAndAlertRequestErrorHoc(updataOnlineState(data.id, data, checked).then(res => {
+            return captureAndAlertRequestErrorHoc(updataOnlineState(data.id, data, checked, isPublic, category).then(res => {
                 if (res) {
-                    refreshData((item) => item.id === data.id, { status: checked ? 2 : 1 })
+                    refreshData((item) => item.id === data.id, { status: checked ? 2 : 1, is_public: isPublic, category: category || '其他' })
                 }
                 return res
             }))
         } else if (data.flow_type === 5) {
-            return captureAndAlertRequestErrorHoc(changeAssistantStatusApi(data.id, checked ? 2 : 1)).then(res => {
+            return captureAndAlertRequestErrorHoc(changeAssistantStatusApi(data.id, checked ? 2 : 1, isPublic, category || '其他')).then(res => {
                 if (res === null) {
-                    refreshData((item) => item.id === data.id, { status: checked ? 2 : 1 })
+                    refreshData((item) => item.id === data.id, { status: checked ? 2 : 1, is_public: isPublic, category: category || '其他' })
                 }
                 return res
             })
         } else if (data.flow_type === 10) {
-            return captureAndAlertRequestErrorHoc(onlineWorkflow(data, checked ? 2 : 1)).then(res => {
-                if (res) {
-                    refreshData((item) => item.id === data.id, { status: checked ? 2 : 1 })
+            // 工作流上线需要version_id，从version_list中获取当前版本
+            const currentVersion = data.version_list?.find(v => v.is_current === 1);
+            if (!currentVersion) {
+                message({ variant: 'error', description: '未找到当前版本' });
+                return Promise.resolve(false);
+            }
+            return captureAndAlertRequestErrorHoc(onlineWorkflowApi(
+                data.id,
+                currentVersion.id,
+                checked ? 2 : 1,
+                isPublic,
+                category || '其他'
+            )).then(res => {
+                if (res === null) {
+                    refreshData((item) => item.id === data.id, { status: checked ? 2 : 1, is_public: isPublic, category: category || '其他' })
                 }
                 return res
             })
         }
     }
+
+    // 处理上线确认
+    // isPublic: 0=仅自己, 1=组内, 2=全部
+    const handleOnlineConfirm = async (isPublic: number, category: string) => {
+        if (!pendingOnlineData) return;
+        setOnlineLoading(true);
+        try {
+            await executeOnlineOffline(true, pendingOnlineData, isPublic, category);
+            setOnlineModalOpen(false);
+            setPendingOnlineData(null);
+        } finally {
+            setOnlineLoading(false);
+        }
+    };
+
+    // 处理取消上线
+    const handleOnlineCancel = () => {
+        setOnlineModalOpen(false);
+        setPendingOnlineData(null);
+    };
 
     const typeCnNames = {
         1: t('build.skill'),
@@ -153,8 +202,7 @@ export default function apps() {
             const [flow] = await readTempsDatabase(type, tempId)
 
             flow.name = `${flow.name}-${generateUUID(5)}`
-            // @ts-ignore
-            captureAndAlertRequestErrorHoc(saveFlowToDatabase({ ...flow, id: flow.flow_id }).then((res: any) => {
+            captureAndAlertRequestErrorHoc(saveFlowToDatabase({ ...flow, id: flow.flow_id }).then((res) => {
                 res.user_name = user.user_name
                 res.write = true
                 // setOpen(false)
@@ -173,31 +221,15 @@ export default function apps() {
         }
     }
 
-    const { selectLabel, setSelectLabel, setSearchKey, filteredOptions, allOptions, refetchLabels } = useQueryLabels(t)
-    const handleLabelSearch = (id) => {
-        setSelectLabel(allOptions.find(l => l.value === id))
-        filterData({ tag_id: id })
-    }
-
     const tempTypeRef = useRef(null)
     return <div className="h-full relative">
-        <div className="px-10 py-10 h-full overflow-y-scroll scrollbar-hide relative bg-background-main border-t">
+        <div className="px-10 py-10 h-full overflow-y-scroll scrollbar-hide relative border-t" style={{ background: 'var(--studio-page-bg)' }}>
             <div className="flex gap-4">
                 <SearchInput className="w-64" placeholder={t('build.searchApp')} onChange={(e) => search(e.target.value)}></SearchInput>
                 <SelectType all onChange={(v) => {
                     tempTypeRef.current = v
                     filterData({ type: v })
                 }} />
-                <SelectSearch
-                    value={!selectLabel.value ? '' : selectLabel.value}
-                    options={allOptions}
-                    selectPlaceholder={t('chat.allLabels')}
-                    inputPlaceholder={t('chat.searchLabels')}
-                    selectClass="w-52"
-                    onOpenChange={() => setSearchKey('')}
-                    onChange={(e) => setSearchKey(e.target.value)}
-                    onValueChange={handleLabelSearch}>
-                </SelectSearch>
                 {user.role === 'admin' && <Button
                     variant="ghost"
                     className="hover:bg-gray-50 flex gap-2 dark:hover:bg-[#34353A] ml-auto"
@@ -210,7 +242,7 @@ export default function apps() {
                     ? <div className="absolute w-full h-full top-0 left-0 flex justify-center items-center z-10 bg-[rgba(255,255,255,0.6)] dark:bg-blur-shared">
                         <LoadingIcon />
                     </div>
-                    : <div className="mt-6 flex gap-2 flex-wrap pb-20 min-w-[980px]">
+                    : <div className="mt-6 grid grid-cols-4 gap-4 pb-20 min-w-[980px]">
                         <AppTempSheet onSelect={handleCreateApp} onCustomCreate={handleCreateApp}>
                             <CardComponent<FlowType>
                                 data={null}
@@ -254,15 +286,6 @@ export default function apps() {
                                             showPop={item.status !== 2}
                                             data={item}
                                         ></CardSelectVersion> : null)}
-                                    labelPannel={
-                                        <LabelShow
-                                            data={item}
-                                            user={user}
-                                            type={item.flow_type}
-                                            all={filteredOptions}
-                                            onChange={refetchLabels}>
-                                        </LabelShow>
-                                    }
                                     footer={
                                         <Badge className={`absolute py-0 px-1 right-0 bottom-0 rounded-none rounded-br-md  ${item.flow_type === AppNumType.SKILL && 'bg-gray-950'} ${item.flow_type === AppNumType.ASSISTANT && 'bg-[#fdb136]'}`}>
                                             {typeCnNames[item.flow_type]}
@@ -277,11 +300,18 @@ export default function apps() {
         {/* add template */}
         <CreateTemp flow={flowRef.current} type={tempType} open={tempOpen} setOpen={() => toggleTempModal()} onCreated={() => { }} ></CreateTemp>
         {/* footer */}
-        <div className="flex justify-between absolute bottom-0 left-0 w-full bg-background-main h-16 items-center px-10">
+        <div className="flex justify-between absolute bottom-0 left-0 w-full h-16 items-center px-10 bg-transparent">
             <p className="text-sm text-muted-foreground break-keep">{t('build.manageYourApplications')}</p>
             <AutoPagination className="m-0 w-auto justify-end" page={page} pageSize={pageSize} total={total} onChange={setPage}></AutoPagination>
         </div>
         {/* create flow&assistant */}
         <CreateApp ref={createAppModalRef} />
+        {/* 上线选择弹窗 */}
+        <OnlineConfirmModal
+            visible={onlineModalOpen}
+            loading={onlineLoading}
+            onConfirm={handleOnlineConfirm}
+            onCancel={handleOnlineCancel}
+        />
     </div>
 };

@@ -109,7 +109,6 @@ export default function ActionsInput({
   });
 
   const saveAction = handleSubmit((authFormData) => {
-    console.log('authFormData', authFormData);
     const currentAssistantId = assistant_id ?? '';
     if (!currentAssistantId) {
       // alert user?
@@ -227,7 +226,7 @@ export default function ActionsInput({
             </button> */}
             <select
               id="example-schema"
-              onChange={(e) => console.log(e.target.value)}
+              onChange={() => { /* TODO: implement schema selection */ }}
               className="border-token-border-medium h-8 min-w-[100px] rounded-lg border bg-transparent px-2 py-0 text-sm"
             >
               <option value="label">{localize('com_ui_examples')}</option>

@@ -6,7 +6,7 @@ import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogT
 import { Switch } from "@/components/bs-ui/switch";
 import { useToast } from "@/components/bs-ui/toast/use-toast";
 import Tip from "@/components/bs-ui/tooltip/tip";
-import { downloadFile, formatDate } from "@/util/utils";
+import { downloadFile, formatDate, formatDateTime } from "@/util/utils";
 import { ArrowLeft, SquareCheckBig, SquareX, Trash2 } from "lucide-react";
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -23,7 +23,7 @@ import {
     TableHeader,
     TableRow
 } from "../../components/bs-ui/table";
-import { deleteQa, generateSimilarQa, getQaDetail, getQaFile, getQaList, updateQa, updateQaStatus } from "../../controllers/API";
+import { deleteQa, generateSimilarQa, getKnowledgeDetailApi, getQaDetail, getQaFile, getQaList, updateQa, updateQaStatus } from "../../controllers/API";
 import { captureAndAlertRequestErrorHoc } from "../../controllers/request";
 import { useTable } from "../../util/hook";
 import { ImportQa } from "./components/ImportQa";
@@ -170,7 +170,7 @@ const EditQa = forwardRef(function ({ knowlageId, onChange }, ref) {
                 </DialogHeader>
                 <div className="flex flex-col gap-4 py-2">
                     <div>
-                        <label htmlFor="question" className="bisheng-label">
+                        <label htmlFor="question" className="eagent-label">
                             <span className="text-red-500">*</span>{t('question')}
                         </label>
                         <Input
@@ -181,7 +181,7 @@ const EditQa = forwardRef(function ({ knowlageId, onChange }, ref) {
                         />
                     </div>
                     <div>
-                        <label htmlFor="similarQuestions" className="bisheng-label">{t('similarQuestions')}</label>
+                        <label htmlFor="similarQuestions" className="eagent-label">{t('similarQuestions')}</label>
                         <InputList
                             className="max-h-60 overflow-y-auto"
                             value={form.similarQuestions}
@@ -192,7 +192,7 @@ const EditQa = forwardRef(function ({ knowlageId, onChange }, ref) {
                         </Button>
                     </div>
                     <div>
-                        <label htmlFor="answer" className="bisheng-label">
+                        <label htmlFor="answer" className="eagent-label">
                             <span className="text-red-500">*</span>{t('answer')}
                         </label>
                         <Textarea
@@ -257,23 +257,15 @@ export default function QasPage() {
         }
     }, [datalist])
 
-    // Modify useEffect to handle title processing
     useEffect(() => {
-        // Handle potential format issues with window.libname
-        let libName = '';
-        if (window.libname) {
-            if (Array.isArray(window.libname) && window.libname.length > 0) {
-                libName = window.libname[0];
-            } else if (typeof window.libname === 'string') {
-                libName = window.libname;
-            }
-            // Store only the name in localStorage
-            localStorage.setItem('libname', libName);
-        } else {
-            libName = localStorage.getItem('libname') || '';
-        }
-        setTitle(libName || t('unknownKnowledgeBase')); // Provide default text
-    }, []);
+        if (!id) return
+        getKnowledgeDetailApi([Number(id)]).then((res) => {
+            const item = res?.[0] as { name: string } | undefined
+            setTitle(item?.name || t('unknownKnowledgeBase'))
+        }).catch(() => {
+            setTitle(t('unknownKnowledgeBase'))
+        })
+    }, [id]);
 
     const handleEnableSelected = async () => {
         if (!selectedItems.length) return;
@@ -556,7 +548,7 @@ export default function QasPage() {
                                         {/* {['未知', '手动创建', '标注导入', 'api导入', '批量导入'][el.source]} */}
                                         {t(sourceTypeKeys[el.source] || sourceTypeKeys[0])}
                                     </TableCell>
-                                    <TableCell>{el.update_time.replace('T', ' ')}</TableCell>
+                                    <TableCell>{formatDateTime(el.update_time)}</TableCell>
                                     <TableCell>{el.user_name}</TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">
@@ -607,7 +599,7 @@ export default function QasPage() {
                     </Table>
                 </div>
             </div>
-            <div className="bisheng-table-footer px-6 justify-end">
+            <div className="eagent-table-footer px-6 justify-end">
                 <div>
                     <AutoPagination
                         page={page}

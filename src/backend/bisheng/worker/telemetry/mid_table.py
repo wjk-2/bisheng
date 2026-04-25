@@ -48,7 +48,7 @@ def convert_flow_type(flow_type: int) -> ApplicationTypeEnum:
     return flow_type_mapping.get(flow_type, ApplicationTypeEnum.UNKNOWN)
 
 
-@bisheng_celery.task()
+@bisheng_celery.task(time_limit=600, soft_time_limit=540, autoretry_for=(Exception,), retry_kwargs={'max_retries': 3}, retry_backoff=True, retry_backoff_max=300)
 def sync_mid_user_increment(start_date: str = None, end_date: str = None):
     trace_id_var.set(f"sync_mid_user_increment_task_{generate_uuid()}")
     mid_table = UserIncrement()
@@ -91,7 +91,7 @@ def get_user_from_ids_with_cache(user_ids: List[int], user_map: dict):
     return user_map
 
 
-@bisheng_celery.task()
+@bisheng_celery.task(time_limit=600, soft_time_limit=540, autoretry_for=(Exception,), retry_kwargs={'max_retries': 3}, retry_backoff=True, retry_backoff_max=300)
 def sync_mid_app_increment(start_date: str = None, end_date: str = None):
     # Placeholder for syncing mid_app_increment table
     trace_id_var.set(f"sync_mid_app_increment_task_{generate_uuid()}")
@@ -140,7 +140,7 @@ def sync_mid_app_increment(start_date: str = None, end_date: str = None):
     logger.info("Successfully synced mid_app_increment table.")
 
 
-@bisheng_celery.task()
+@bisheng_celery.task(time_limit=600, soft_time_limit=540, autoretry_for=(Exception,), retry_kwargs={'max_retries': 3}, retry_backoff=True, retry_backoff_max=300)
 def sync_mid_knowledge_increment(start_date: str = None, end_date: str = None):
     # Placeholder for syncing mid_knowledge_increment table
     trace_id_var.set(f"sync_mid_knowledge_increment_task_{generate_uuid()}")
@@ -186,7 +186,7 @@ def sync_mid_knowledge_increment(start_date: str = None, end_date: str = None):
     logger.info("Successfully synced mid_knowledge_increment table.")
 
 
-@bisheng_celery.task()
+@bisheng_celery.task(time_limit=600, soft_time_limit=540, autoretry_for=(Exception,), retry_kwargs={'max_retries': 3}, retry_backoff=True, retry_backoff_max=300)
 def sync_mid_user_interact_dtl(start_date: str = None, end_date: str = None):
     # Placeholder for syncing mid_user_interact_dtl table
     trace_id_var.set(f"sync_mid_user_interact_dtl_task_{generate_uuid()}")

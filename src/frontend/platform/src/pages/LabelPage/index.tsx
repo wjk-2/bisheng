@@ -103,7 +103,7 @@ function CreateModal({ open, setOpen, onSuccess }) {
             </DialogHeader>
             <div className="flex flex-col gap-4 py-2">
                 <div className="">
-                    <label htmlFor="name" className="bisheng-label">{t('label.selectAppsToLabel')}</label>
+                    <label htmlFor="name" className="eagent-label">{t('label.selectAppsToLabel')}</label>
                     <MultiSelect
                         contentClassName=" max-w-[630px]"
                         multiple
@@ -119,7 +119,7 @@ function CreateModal({ open, setOpen, onSuccess }) {
                 </div>
                 {count ? <p className="text-sm text-gray-500">{t('label.unmarkedConversationCount')}: {count}</p> : null}
                 <div className="">
-                    <label htmlFor="name" className="bisheng-label">{t('label.selectLabelers')}</label>
+                    <label htmlFor="name" className="eagent-label">{t('label.selectLabelers')}</label>
                     <UsersSelect
                         multiple
                         value={users}
@@ -212,7 +212,18 @@ export default function Tasks() {
                                     (task.mark_process || []).map(name => <p>{name}</p>)
                                 }</TableCell>
                                 <TableCell className="text-right">
-                                    <Link to={`/label/${task.id}`}><Button variant="link" className="px-0 pl-4" >{t('label.view')}</Button></Link>
+                                    <Link to={`/label/${task.id}`}>
+                                        <Button variant="link" className="px-0 pl-4">{t('label.view')}</Button>
+                                    </Link>
+                                    {user.user_id === task.create_id && (
+                                        <Button
+                                            variant="link"
+                                            className="px-0 pl-4 text-red-600 hover:text-red-800"
+                                            onClick={() => handleDelete(task.id)}
+                                        >
+                                            {t('label.delete')}
+                                        </Button>
+                                    )}
                                 </TableCell>
                             </TableRow>
                         ))}
@@ -226,7 +237,7 @@ export default function Tasks() {
                     </TableFooter>
                 </Table>
             </div>
-            <div className="bisheng-table-footer bg-background-login px-2">
+            <div className="eagent-table-footer bg-background-login px-2">
                 <AutoPagination
                     className="float-right justify-end w-full mr-6"
                     page={page}

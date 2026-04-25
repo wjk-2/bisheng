@@ -21,11 +21,12 @@ from bisheng.knowledge.domain.models.knowledge import KnowledgeDao, KnowledgeTyp
 from bisheng.knowledge.domain.models.knowledge import KnowledgeState
 from bisheng.llm.domain.const import LLMModelType
 from bisheng.llm.domain.models import LLMDao, LLMServer, LLMModel
+from bisheng.api.v1.schemas import WorkstationConfig
 from bisheng.llm.domain.schemas import LLMServerInfo, LLMModelInfo, KnowledgeLLMConfig, AssistantLLMConfig, \
     EvaluationLLMConfig, AssistantLLMItem, LLMServerCreateReq, WorkbenchModelConfig, WSModel
 from bisheng.utils import generate_uuid, md5_hash
 from bisheng.utils.mask_data import JsonFieldMasker
-from ..llm import BishengASR, BishengLLM, BishengTTS, BishengEmbedding
+from ..llm import EagentASR, EagentLLM, EagentTTS, EagentEmbedding
 from ..llm.rerank import BishengRerank
 
 
@@ -39,7 +40,12 @@ class LLMService:
         server_ids = []
         for one in llm_servers:
             server_ids.append(one.id)
-            ret.append(LLMServerInfo(**one.model_dump(exclude={'config'})))
+            info = LLMServerInfo(**one.model_dump(exclude={'config'}))
+            # 标记来源
+            config = one.config or {}
+            if config.get("_source") == "gpustack":
+                info.source = "gpustack"
+            ret.append(info)
 
         llm_models = await LLMDao.aget_model_by_server_ids(server_ids)
         server_dicts = {}
@@ -100,7 +106,7 @@ class LLMService:
                 if one.model_type == LLMModelType.LLM.value:
                     await cls.get_bisheng_llm(model_id=one.id, ignore_online=True, **common_params)
                 elif one.model_type == LLMModelType.EMBEDDING.value:
-                    await cls.get_bisheng_embedding(model_id=one.id, ignore_online=True, **common_params)
+                    await cls.get_eagent_embedding(model_id=one.id, ignore_online=True, **common_params)
                 elif one.model_type == LLMModelType.ASR.value:
                     await cls.get_bisheng_asr(model_id=one.id, ignore_online=True, **common_params)
                 elif one.model_type == LLMModelType.TTS.value:
@@ -130,7 +136,25 @@ class LLMService:
 
     @classmethod
     async def delete_llm_server(cls, request: Request, login_user: UserPayload, server_id: int) -> bool:
-        """ Delete a service provider """
+        """ Delete a service provider, also clean up chat config """
+        # B++: 删除前先清理 WorkstationConfig 中该 server 下的所有模型
+        try:
+            models = await LLMDao.aget_model_by_server_ids([server_id])
+            model_ids = {str(m.id) for m in models}
+            if model_ids:
+                config = await ConfigDao.aget_config(ConfigKeyEnum.WORKSTATION)
+                if config and config.value:
+                    ws_config = WorkstationConfig(**json.loads(config.value))
+                    current_models = ws_config.models if isinstance(ws_config.models, list) else []
+                    new_models = [m for m in current_models if m.id not in model_ids]
+                    if len(new_models) != len(current_models):
+                        ws_config.models = new_models
+                        config.value = ws_config.model_dump_json()
+                        await ConfigDao.async_insert_config(config)
+                        logger.info(f'Cleaned {len(current_models) - len(new_models)} models from chat config for server {server_id}')
+        except Exception as e:
+            logger.warning(f'Failed to clean chat config for server {server_id}: {e}')
+
         await LLMDao.adelete_server_by_id(server_id)
         return True
 
@@ -164,13 +188,18 @@ class LLMService:
                 bisheng_model = await cls.get_bisheng_llm(model_id=model.id, ignore_online=True, **common_params)
                 await bisheng_model.ainvoke('hello')
             elif model.model_type == LLMModelType.EMBEDDING.value:
-                bisheng_embed = await cls.get_bisheng_embedding(model_id=model.id, ignore_online=True, **common_params)
+                bisheng_embed = await cls.get_eagent_embedding(model_id=model.id, ignore_online=True, **common_params)
                 await bisheng_embed.aembed_query('hello')
             elif model.model_type == LLMModelType.TTS.value:
                 bisheng_tts = await cls.get_bisheng_tts(model_id=model.id, ignore_online=True, **common_params)
                 await bisheng_tts.ainvoke('hello')
             elif model.model_type == LLMModelType.ASR.value:
-                example_file_path = os.path.join(os.path.dirname(__file__), "./asr_example.wav")
+                # 使用绝对路径获取 ASR 示例文件
+                example_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "asr_example.wav")
+                if not os.path.exists(example_file_path):
+                    logger.warning(f"ASR example file not found: {example_file_path}")
+                    LLMDao.update_model_status(model.id, 1, "ASR 示例文件不存在")
+                    return
                 with open(example_file_path, 'rb') as f:
                     bisheng_asr = await cls.get_bisheng_asr(model_id=model.id, ignore_online=True, **common_params)
                     await bisheng_asr.ainvoke(f)
@@ -362,7 +391,7 @@ class LLMService:
         knowledge_llm = cls.get_knowledge_llm()
         if not knowledge_llm.embedding_model_id:
             return None
-        return cls.get_bisheng_knowledge_embedding_sync(model_id=knowledge_llm.embedding_model_id,
+        return cls.get_eagent_knowledge_embedding_sync(model_id=knowledge_llm.embedding_model_id,
                                                         invoke_user_id=invoke_user_id)
 
     @classmethod
@@ -439,16 +468,16 @@ class LLMService:
     @classmethod
     async def get_bisheng_llm(cls, **kwargs) -> BaseChatModel:
         """ Initialize LiftedllmConversation Model """
-        return await BishengLLM.get_bisheng_llm(**kwargs)
+        return await EagentLLM.get_bisheng_llm(**kwargs)
 
     @classmethod
     def get_bisheng_llm_sync(cls, **kwargs) -> BaseChatModel:
         """ Initialize LiftedllmConversation Model """
-        return BishengLLM(**kwargs)
+        return EagentLLM(**kwargs)
 
     @classmethod
     async def get_bisheng_linsight_llm(cls, invoke_user_id: int, **kwargs) -> BaseChatModel:
-        return await BishengLLM.get_bisheng_llm(app_id=ApplicationTypeEnum.LINSIGHT.value,
+        return await EagentLLM.get_bisheng_llm(app_id=ApplicationTypeEnum.LINSIGHT.value,
                                                 app_name=ApplicationTypeEnum.LINSIGHT.value,
                                                 app_type=ApplicationTypeEnum.LINSIGHT,
                                                 user_id=invoke_user_id,
@@ -463,19 +492,19 @@ class LLMService:
         return BishengRerank(**kwargs)
 
     @classmethod
-    async def get_bisheng_embedding(cls, **kwargs) -> Embeddings:
+    async def get_eagent_embedding(cls, **kwargs) -> Embeddings:
         """ Initialize LiftedembeddingModels """
-        return await BishengEmbedding.get_bisheng_embedding(**kwargs)
+        return await EagentEmbedding.get_eagent_embedding(**kwargs)
 
     @classmethod
-    def get_bisheng_embedding_sync(cls, **kwargs) -> Embeddings:
+    def get_eagent_embedding_sync(cls, **kwargs) -> Embeddings:
         """ Initialize LiftedembeddingModels """
-        return BishengEmbedding(**kwargs)
+        return EagentEmbedding(**kwargs)
 
     @classmethod
     async def get_bisheng_daily_embedding(cls, invoke_user_id: int, model_id: int) -> Embeddings:
         """ Get dailyembeddingModels """
-        return await cls.get_bisheng_embedding(model_id=model_id,
+        return await cls.get_eagent_embedding(model_id=model_id,
                                                app_id=ApplicationTypeEnum.DAILY_CHAT.value,
                                                app_name=ApplicationTypeEnum.DAILY_CHAT.value,
                                                app_type=ApplicationTypeEnum.DAILY_CHAT,
@@ -484,7 +513,7 @@ class LLMService:
     @classmethod
     async def get_bisheng_linsight_embedding(cls, invoke_user_id: int, model_id: int) -> Embeddings:
         """ Get Ideas DefaultembeddingModels """
-        return await cls.get_bisheng_embedding(model_id=model_id,
+        return await cls.get_eagent_embedding(model_id=model_id,
                                                app_id=ApplicationTypeEnum.LINSIGHT.value,
                                                app_name=ApplicationTypeEnum.LINSIGHT.value,
                                                app_type=ApplicationTypeEnum.LINSIGHT,
@@ -493,30 +522,30 @@ class LLMService:
     @classmethod
     async def get_bisheng_knowledge_embedding(cls, invoke_user_id: int, model_id: int) -> Embeddings:
         """ Get Knowledge Base DefaultsembeddingModels """
-        return await cls.get_bisheng_embedding(model_id=model_id,
+        return await cls.get_eagent_embedding(model_id=model_id,
                                                app_id=ApplicationTypeEnum.KNOWLEDGE_BASE.value,
                                                app_name=ApplicationTypeEnum.KNOWLEDGE_BASE.value,
                                                app_type=ApplicationTypeEnum.KNOWLEDGE_BASE,
                                                user_id=invoke_user_id)
 
     @classmethod
-    def get_bisheng_knowledge_embedding_sync(cls, invoke_user_id: int, model_id: int) -> Embeddings:
+    def get_eagent_knowledge_embedding_sync(cls, invoke_user_id: int, model_id: int) -> Embeddings:
         """ Get Knowledge Base DefaultsembeddingModels """
-        return cls.get_bisheng_embedding_sync(model_id=model_id,
+        return cls.get_eagent_embedding_sync(model_id=model_id,
                                               app_id=ApplicationTypeEnum.KNOWLEDGE_BASE.value,
                                               app_name=ApplicationTypeEnum.KNOWLEDGE_BASE.value,
                                               app_type=ApplicationTypeEnum.KNOWLEDGE_BASE,
                                               user_id=invoke_user_id)
 
     @classmethod
-    async def get_bisheng_asr(cls, **kwargs) -> BishengASR:
+    async def get_bisheng_asr(cls, **kwargs) -> EagentASR:
         """ Initialize LiftedasrModels """
-        return await BishengASR.get_bisheng_asr(**kwargs)
+        return await EagentASR.get_bisheng_asr(**kwargs)
 
     @classmethod
-    async def get_bisheng_tts(cls, **kwargs) -> BishengTTS:
+    async def get_bisheng_tts(cls, **kwargs) -> EagentTTS:
         """ Initialize LiftedttsModels """
-        return await BishengTTS.get_bisheng_tts(**kwargs)
+        return await EagentTTS.get_bisheng_tts(**kwargs)
 
     @classmethod
     async def update_evaluation_llm(cls, data: EvaluationLLMConfig) \
@@ -596,7 +625,7 @@ class LLMService:
             config_old_obj = WorkbenchModelConfig(**json.loads(config.value)) if config else WorkbenchModelConfig()
             if (config_obj.embedding_model.id and config_old_obj.embedding_model is None or
                     config_obj.embedding_model.id != config_old_obj.embedding_model.id):
-                embeddings = await cls.get_bisheng_embedding(model_id=config_obj.embedding_model.id,
+                embeddings = await cls.get_eagent_embedding(model_id=config_obj.embedding_model.id,
                                                              app_id=ApplicationTypeEnum.LINSIGHT.value,
                                                              app_name=ApplicationTypeEnum.LINSIGHT.value,
                                                              app_type=ApplicationTypeEnum.LINSIGHT,
@@ -707,3 +736,92 @@ class LLMService:
         # The tmp bucket automatically clears files older than 7 days, so set the expiration time to 6 days
         await redis_client.aset(cache_key, cache_value, expiration=6 * 24 * 3600)
         return cache_value
+
+    # ===== B++ 新增：启用/禁用模型到 Workspace 对话 =====
+
+    @classmethod
+    async def enable_model_chat(cls, model_id: int, display_name: Optional[str] = None) -> dict:
+        """将模型添加到 WorkstationConfig.models[] 中，使其在 Workspace 对话中可用"""
+        model = await LLMDao.aget_model_by_id(model_id)
+        if not model:
+            raise NotFoundError.http_exception()
+
+        server = await LLMDao.aget_server_by_id(model.server_id)
+        if not server:
+            raise NotFoundError.http_exception()
+
+        # 读取 WorkstationConfig
+        config = await ConfigDao.aget_config(ConfigKeyEnum.WORKSTATION)
+        if config and config.value:
+            ws_config = WorkstationConfig(**json.loads(config.value))
+        else:
+            ws_config = WorkstationConfig()
+            config = Config(key=ConfigKeyEnum.WORKSTATION.value, value='{}')
+
+        current_models = ws_config.models if isinstance(ws_config.models, list) else []
+
+        # 幂等：已存在则直接返回
+        for m in current_models:
+            if m.id == str(model_id):
+                return {'enabled': True, 'model_id': model_id, 'message': 'already enabled'}
+
+        # 构造 WSModel 并追加
+        ws_model = WSModel(
+            key=f'{server.id}_{model_id}',
+            id=str(model_id),
+            name=model.model_name,
+            displayName=display_name or model.name or model.model_name,
+        )
+        current_models.append(ws_model)
+        ws_config.models = current_models
+
+        # 写回 Config 表
+        config.value = ws_config.model_dump_json()
+        await ConfigDao.async_insert_config(config)
+
+        logger.info(f'Enabled model {model_id} ({model.model_name}) to chat')
+        return {'enabled': True, 'model_id': model_id}
+
+    @classmethod
+    async def disable_model_chat(cls, model_id: int) -> dict:
+        """从 WorkstationConfig.models[] 中移除模型"""
+        config = await ConfigDao.aget_config(ConfigKeyEnum.WORKSTATION)
+        if not config or not config.value:
+            return {'enabled': False, 'model_id': model_id}
+
+        ws_config = WorkstationConfig(**json.loads(config.value))
+        current_models = ws_config.models if isinstance(ws_config.models, list) else []
+
+        new_models = [m for m in current_models if m.id != str(model_id)]
+
+        if len(new_models) != len(current_models):
+            ws_config.models = new_models
+            config.value = ws_config.model_dump_json()
+            await ConfigDao.async_insert_config(config)
+            logger.info(f'Disabled model {model_id} from chat')
+
+        return {'enabled': False, 'model_id': model_id}
+
+    @classmethod
+    async def get_model_chat_status(cls, model_id: int) -> dict:
+        """查询模型是否已在 Workspace 对话列表中"""
+        config = await ConfigDao.aget_config(ConfigKeyEnum.WORKSTATION)
+        if not config or not config.value:
+            return {'enabled': False, 'model_id': model_id}
+
+        ws_config = WorkstationConfig(**json.loads(config.value))
+        current_models = ws_config.models if isinstance(ws_config.models, list) else []
+
+        enabled = any(m.id == str(model_id) for m in current_models)
+        return {'enabled': enabled, 'model_id': model_id}
+
+    @classmethod
+    async def get_chat_enabled_ids(cls) -> list:
+        """返回所有已启用到对话的 model_id 列表"""
+        config = await ConfigDao.aget_config(ConfigKeyEnum.WORKSTATION)
+        if not config or not config.value:
+            return []
+
+        ws_config = WorkstationConfig(**json.loads(config.value))
+        current_models = ws_config.models if isinstance(ws_config.models, list) else []
+        return [m.id for m in current_models]

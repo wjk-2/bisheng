@@ -374,6 +374,21 @@ class KnowledgeFileDao(KnowledgeFileBase):
           }]
         :return: Eligible Knowledge FilesIDVertical
         """
+        # SQL injection prevention: whitelist allowed comparison operators
+        ALLOWED_COMPARISONS = {'=', '!=', '>', '<', '>=', '<=', 'LIKE', 'like', 'IN', 'in', 'IS', 'is'}
+
+        def validate_comparison(comparison: str) -> str:
+            """Validate comparison operator against whitelist"""
+            if comparison not in ALLOWED_COMPARISONS:
+                raise ValueError(f"Invalid comparison operator: {comparison}")
+            return comparison
+
+        def sanitize_field_name(name: str) -> str:
+            """Sanitize field name to prevent SQL injection - only allow alphanumeric and underscore"""
+            import re
+            if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', name):
+                raise ValueError(f"Invalid field name: {name}")
+            return name
 
         statement = "select id from knowledgefile where knowledge_id = :knowledge_id and "
         params = {"knowledge_id": knowledge_id}
@@ -382,7 +397,9 @@ class KnowledgeFileDao(KnowledgeFileBase):
         field_statement = []
         for metadata_filter in metadata_filters:
             for key, key_info in metadata_filter.items():
-                key_comparison = key_info['comparison']
+                # Sanitize field name and comparison operator
+                key = sanitize_field_name(key)
+                key_comparison = validate_comparison(key_info['comparison'])
                 key_value = key_info['value']
                 extra_filter = key_info.get('extra_filter')
                 if key_value is not None:
@@ -396,7 +413,8 @@ class KnowledgeFileDao(KnowledgeFileBase):
                         params_index += 1
                         params_key = f"tmp_params_{params_index}"
                         params[params_key] = sub_info['value']
-                        sub_statement += f" AND {key} {sub_info['comparison']} :{params_key}"
+                        sub_comparison = validate_comparison(sub_info['comparison'])
+                        sub_statement += f" AND {key} {sub_comparison} :{params_key}"
                     sub_statement = f"({sub_statement})"
                 field_statement.append(sub_statement)
                 params_index += 1

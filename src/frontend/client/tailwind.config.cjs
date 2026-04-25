@@ -7,7 +7,7 @@ module.exports = {
   darkMode: ['class'],
   theme: {
     fontFamily: {
-      sans: ['Inter', 'sans-serif'],
+      sans: ['AlibabaPuHuiTi', 'Inter', 'sans-serif'],
       mono: ['Roboto Mono', 'monospace'],
     },
     // fontFamily: {
@@ -63,6 +63,13 @@ module.exports = {
         },
         'blue-main': '#4d6bfe',
         'brand-purple': '#ab68ff',
+        'studio-primary': 'var(--studio-primary)',
+        'studio-title': 'var(--studio-title)',
+        'studio-text': 'var(--studio-text)',
+        'studio-desc': 'var(--studio-desc)',
+        'studio-divide': 'var(--studio-divide)',
+        'studio-moduleBg': 'var(--studio-moduleBg)',
+        'studio-tagBg': 'var(--studio-tagBg)',
         'presentation': 'var(--presentation)',
         'text-primary': 'var(--text-primary)',
         'text-secondary': 'var(--text-secondary)',

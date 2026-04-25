@@ -66,7 +66,6 @@ export default function FileUploadStep4({ data, kId, hasRepeat }) {
             try {
                 // Fix pending file ID exception (previously was [0], should actually take frontend file ID)
                 const pendingFileIds = Array.from(processingRef.current);
-                console.log("Correct pending file IDs:", pendingFileIds); // Should now be ['fe9d1b', 'd3b66c', ...]
 
                 // Keep API parameters unchanged (backend may filter by knowledge_id, file_ids can pass frontend IDs or leave empty)
                 const res = await readFileByLibDatabase({
@@ -87,13 +86,11 @@ export default function FileUploadStep4({ data, kId, hasRepeat }) {
                             // Double confirmation: remove current file id from processingRef
                             if (processingRef.current.has(file.id)) {
                                 processingRef.current.delete(file.id);
-                                console.log(`移除待处理ID: ${file.id}，剩余待处理: ${processingRef.current.size}`);
                             }
                             updatedFiles[index] = { ...file, progress: 'end' };
                         } else if (resItem && resItem.status === 3) {
                             if (processingRef.current.has(file.id)) {
                                 processingRef.current.delete(file.id);
-                                console.log(`移除待处理ID: ${file.id}（失败），剩余待处理: ${processingRef.current.size}`);
                             }
                             updatedFiles[index] = { ...file, progress: 'end', error: true, reason: resItem.remark || t('parseFailed') };
                         }
@@ -144,7 +141,6 @@ export default function FileUploadStep4({ data, kId, hasRepeat }) {
         // Mark as complete when processing set is empty
         // if (processingRef.current.size === 0 && fileIdsRef.current.length > 0) {
         if (processingRef.current.size === 0) {
-            console.log('所有文件处理完成');
             if (timerRef.current) {
                 clearInterval(timerRef.current);
             }
@@ -154,7 +150,6 @@ export default function FileUploadStep4({ data, kId, hasRepeat }) {
         }
     }, [files]); // Depend on file status changes
 
-    console.log('files :>> ', files);
 
     let finalId = kid;
     if (kId) {
@@ -172,8 +167,6 @@ export default function FileUploadStep4({ data, kId, hasRepeat }) {
             t('retrieveDocumentKnowledge'),
             "",
             flow))
-        history.pushState(null, null, __APP_ENV__.BASE_URL + '/build/apps');
-
         navigate('/flow/' + res.id);
     }
 

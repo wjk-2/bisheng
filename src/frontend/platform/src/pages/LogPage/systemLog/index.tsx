@@ -8,13 +8,20 @@ import { getActionsApi, getActionsByModuleApi, getLogsApi, getModulesApi, getOpe
 import { getUserGroupsApi } from "@/controllers/API/user";
 import { useTable } from "@/util/hook";
 import { formatDate } from "@/util/utils";
-import { useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LoadingIcon } from "@/components/bs-icons/loading";
+import { userContext } from "@/contexts/userContext";
 
 const useGroups = () => {
+    const { user } = useContext(userContext);
     const [groups, setGroups] = useState([])
     const loadData = () => {
+        // 只有管理员才能调用此 API
+        if (user.role !== 'admin') {
+            setGroups([])
+            return
+        }
         getUserGroupsApi().then((res: any) => setGroups(res.records))
     }
     return { groups, loadData }
@@ -173,7 +180,7 @@ export default function SystemLog() {
         </div>
         {/* Pagination */}
         {/* <Pagination count={10}></Pagination> */}
-        <div className="bisheng-table-footer bg-background-login">
+        <div className="eagent-table-footer bg-background-login">
             <p className="desc pl-4">{t('log.auditManagement')}</p>
             <AutoPagination
                 className="float-right justify-end w-full mr-6"

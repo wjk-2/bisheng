@@ -1,3 +1,4 @@
+import { useToast } from "@/components/bs-ui/toast/use-toast";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../../components/bs-ui/button";
@@ -19,9 +20,11 @@ interface IProps {
     onFilter: ({ type, rt }) => void,
     rtClick: () => void,
     onCreate: () => void,
+    isAdmin?: boolean,
 }
-export default function FinetuneHead({ onSearch, onFilter, rtClick, onCreate }: IProps) {
-    const { t } = useTranslation()
+export default function FinetuneHead({ onSearch, onFilter, rtClick, onCreate, isAdmin = false }: IProps) {
+    const { t } = useTranslation('model')
+    const { message } = useToast();
 
     const [type, setType] = useState('all')
     const [rt, setRt] = useState('all')
@@ -36,6 +39,11 @@ export default function FinetuneHead({ onSearch, onFilter, rtClick, onCreate }: 
         setRt(val)
         onFilter({ type, rt: val })
     }
+
+    // 权限不足提示
+    const showPermissionDenied = () => {
+        message({ variant: 'warning', description: '暂无权限，请联系管理员' });
+    };
 
     // rts
     const [services, setServices] = useState([])
@@ -54,13 +62,14 @@ export default function FinetuneHead({ onSearch, onFilter, rtClick, onCreate }: 
         onSearch(inputRef.current.value)
     }
 
-    return <div className="flex justify-between pb-4 border-b ml-2">
+    return <div className="flex justify-between pb-4 border-b mx-4">
         <div className="flex gap-4">
             <ToggleGroup type="single" defaultValue={type} onValueChange={handleTypeChange} className="border rounded-md">
                 <ToggleGroupItem value="all">{t('finetune.all')}</ToggleGroupItem>
                 <ToggleGroupItem value="4">{t('finetune.successful')}</ToggleGroupItem>
                 <ToggleGroupItem value="1">{t('finetune.inProgress')}</ToggleGroupItem>
-                <ToggleGroupItem value="2">{t('finetune.failedAborted')}</ToggleGroupItem>
+                <ToggleGroupItem value="2">{t('finetune.failed')}</ToggleGroupItem>
+                <ToggleGroupItem value="3">{t('finetune.canceled')}</ToggleGroupItem>
             </ToggleGroup>
             <Select defaultValue={rt} onValueChange={handleRtChange}>
                 <SelectTrigger className="w-[180px]">
@@ -68,18 +77,16 @@ export default function FinetuneHead({ onSearch, onFilter, rtClick, onCreate }: 
                 </SelectTrigger>
                 <SelectContent>
                     <SelectGroup>
-                        <SelectItem value="all">{t('finetune.all')}</SelectItem>
-                        {
-                            services.map(service => <SelectItem key={service.id} value={service.id}>{service.name}</SelectItem>)
-                        }
+                        <SelectItem value="all">{t('finetune.allRTServices')}</SelectItem>
+                        {services.map(el => <SelectItem key={el.id} value={String(el.id)}>{el.name}</SelectItem>)}
                     </SelectGroup>
                 </SelectContent>
             </Select>
-            <SearchInput ref={inputRef} placeholder={t('finetune.modelName')} onChange={useDebounce(handleSearch, 600, false)}></SearchInput>
+            <SearchInput ref={inputRef} placeholder={t('finetune.searchModelName')} onSearch={handleSearch} />
         </div>
-        <div className="flex gap-4 mr-2">
-            <Button className="dark:text-[#ECECEC]" onClick={onCreate}>{t('finetune.createTrainingTask')}</Button>
-            <Button variant="black" className="dark:text-[#ECECEC] dark:bg-[#34353A]" onClick={rtClick}>{t('finetune.rtServiceManagement')}</Button>
+        <div className="flex gap-4">
+            <Button variant="outline" onClick={rtClick}>{t('finetune.rtServiceManagement')}</Button>
+            <Button onClick={() => isAdmin ? onCreate() : showPermissionDenied()}>{t('finetune.createTrainingTask')}</Button>
         </div>
     </div>
-};
+}

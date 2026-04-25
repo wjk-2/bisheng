@@ -1,5 +1,6 @@
 import asyncio
 import concurrent.futures
+import os
 import threading
 import time
 from typing import Dict, List, Set, Tuple
@@ -18,7 +19,7 @@ class ThreadPoolManager:
         # Design one syndication per sync thread
         self.future_dict: Dict[str, List[concurrent.futures.Future]] = {}
         self.async_task: Dict[str, List[concurrent.futures.Future]] = {}
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()
 
     def submit(self, key: str, fn, *args, **kwargs):
         with self.lock:
@@ -109,7 +110,10 @@ class ThreadPoolManager:
 
 
 # Create a thread pool manager
-thread_pool = ThreadPoolManager(5)
+# Use env var BISHENG_THREAD_POOL_SIZE or default to Python's ThreadPoolExecutor strategy
+_default_workers = min(32, (os.cpu_count() or 4) + 4)
+_thread_pool_size = int(os.environ.get('BISHENG_THREAD_POOL_SIZE', _default_workers))
+thread_pool = ThreadPoolManager(_thread_pool_size)
 
 if __name__ == '__main__':
     def wait_(name: str):

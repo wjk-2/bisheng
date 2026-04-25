@@ -1,7 +1,7 @@
 import request from "./request";
 
-// 毕昇config
-export async function getBysConfigApi() {
+// E-Agent config
+export async function getEagentConfigApi() {
     return await request.get('/api/v1/env')
 }
 
@@ -274,7 +274,6 @@ export const uploadFileWithProgress = async (file, callback, type: 'knowledge' |
             onUploadProgress: (progressEvent) => {
                 const { loaded, total } = progressEvent;
                 const progress = Math.round((loaded * 100) / total);
-                console.log(`Upload progress: ${file.name} ${progress}%`);
                 callback(progress)
                 // You can update your UI with the progress information here
             },
@@ -285,7 +284,6 @@ export const uploadFileWithProgress = async (file, callback, type: 'knowledge' |
 
         data && callback(100);
 
-        console.log('Upload complete:', data);
         return data.data
         // Handle the response data as needed
     } catch (error) {
@@ -374,14 +372,21 @@ export async function getAppsApi({ page = 1, pageSize = 8, keyword, tag_id = -1,
 }
 
 
-export const getChatOnlineApi = async (page, keyword, tag_id, disableLimit = 8) => {
-    const params = {
+// 获取在线智能体列表（按分类筛选）
+export const getChatOnlineApi = async (
+    page: number,
+    keyword: string,
+    limit: number = 20,
+    category?: string
+) => {
+    const params: any = {
         page,
         keyword,
-        limit: disableLimit
+        limit
     }
-    if (tag_id !== -1 && tag_id != null) {
-        params.tag_id = tag_id
+    // 按分类筛选
+    if (category) {
+        params.category = category
     }
 
     return await request.get(`/api/v1/chat/online`, { params })

@@ -101,7 +101,6 @@ export default function RuleFile({
 
   // Use useEffect to monitor changes in originalSplitRule
   useEffect(() => {
-    console.log('originalSplitRule updated:', originalSplitRule);
   }, [originalSplitRule]);
 
   // Strategy initialization
@@ -172,7 +171,6 @@ export default function RuleFile({
           : (prev || {});
 
         const updated = { ...current, [snakeKey]: storedValue };
-        console.log('Updated value:', updated);
         return updated; // Ensure updated object is returned
       });
     } else {

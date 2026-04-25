@@ -50,7 +50,6 @@ export default function RunTest({ nodeId }) {
             ) {
                 const currentfile = (e.target as HTMLInputElement).files[0];
                 currentfile.text().then((text) => {
-                    console.log(text, "text");
                     overQuestions(text.split('\n'))
                 });
             }

@@ -245,7 +245,6 @@ export const useGenerateSop = (versionId, setVersionId, setVersions) => {
         })
 
         sse.addEventListener('open', () => {
-            console.log('connection is opened');
             // setLoading(false)
         });
 
@@ -270,7 +269,6 @@ export const useGenerateSop = (versionId, setVersionId, setVersions) => {
 
     useEffect(() => {
         if (linsightSubmission) {
-            console.log('linsightSubmission :>> ', linsightSubmission);
 
             // 新建会话获取详情
             if (linsightSubmission.isNew) {
@@ -364,12 +362,51 @@ export const useGenerateSop = (versionId, setVersionId, setVersions) => {
                             updatedAt: ""
                         });
                     });
-                    // 开启生成sop
-                    generateSop(versionId, linsightSubmission.sameSopId)
+                    // 注意：不再在此处调用 generateSop，改为由 linsight_route_decision 事件驱动
                 })
 
+                // 路由决策事件 - 根据意图决定是否生成 SOP
+                sse.addEventListener('linsight_route_decision', (e: MessageEvent) => {
+                    const data = JSON.parse(e.data);
+                    updateLinsight(versionId, { intent: data.intent });
+                    if (data.intent === 'sop_task') {
+                        // 走原有 SOP 流程
+                        generateSop(versionId, linsightSubmission.sameSopId);
+                    } else {
+                        // 简单问答：更新状态，等待流式回答
+                        updateLinsight(versionId, {
+                            status: SopStatus.SimpleQaAnswering,
+                            simpleAnswer: ''
+                        });
+                    }
+                });
+
+                // 简单问答流式回答事件
+                sse.addEventListener('simple_qa_chunk', (e: MessageEvent) => {
+                    const data = JSON.parse(e.data);
+                    updateLinsight(versionId, (prev: any) => ({
+                        simpleAnswer: (prev.simpleAnswer || '') + data.content
+                    }));
+                });
+
+                // 简单问答完成事件
+                sse.addEventListener('simple_qa_complete', () => {
+                    updateLinsight(versionId, { status: SopStatus.SimpleQaCompleted });
+                    setLoading(false);
+                });
+
+                // 简单问答错误事件
+                sse.addEventListener('simple_qa_error', (e: MessageEvent) => {
+                    const data = JSON.parse(e.data);
+                    showToast({
+                        message: '回答生成失败：' + data.error,
+                        status: 'error',
+                    });
+                    setError(true);
+                    setLoading(false);
+                });
+
                 sse.addEventListener('open', () => {
-                    console.log('connection is opened');
                 });
 
                 sse.addEventListener('error', async (e: MessageEvent) => {

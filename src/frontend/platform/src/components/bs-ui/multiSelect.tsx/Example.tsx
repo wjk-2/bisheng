@@ -4,7 +4,7 @@ import { useState } from "react"
 import { MultiSelect, type Option } from "./index"
 
 const mockOptions: Option[] = [
-    { label: "毕昇", value: "bisheng" },
+    { label: "E-Agent", value: "eagent" },
     { label: "CHATGPT", value: "openai" },
     { label: "DEEPSEEK", value: "deepseek" },
     { label: "GPT-4", value: "gpt4" },
@@ -42,7 +42,6 @@ export default function MultiSelectDemo() {
     }
 
     const handleFetchByIds = async (ids: string[]): Promise<Option[]> => {
-        console.log("[v0] Fetching options for IDs:", ids)
 
         // Simulate API delay
         await new Promise((resolve) => setTimeout(resolve, 1000))
@@ -62,7 +61,6 @@ export default function MultiSelectDemo() {
             }
         })
 
-        console.log("[v0] Fetched options:", results)
         return results
     }
 

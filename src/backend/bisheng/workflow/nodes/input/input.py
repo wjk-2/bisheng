@@ -93,7 +93,7 @@ class InputNode(BaseNode):
         for key, value in self.node_params.items():
             ret[key] = value
             key_info = self._node_params_map[key]
-            label, _ = self.parse_msg_with_variables(key_info.get('value')) if key_info.get('value') else key
+            label, _ = self.parse_msg_with_variables(key_info.get('value')) if key_info.get('value') else (key, [])
             if key_info['type'] == 'file':
                 new_params = self.parse_upload_file(key, key_info, value)
                 ret.update(new_params)
@@ -235,7 +235,12 @@ class InputNode(BaseNode):
                     'document_name': file_name,
                     'knowledge_id': self.workflow_id,
                     'upload_time': int(time.time()),
+                    'update_time': int(time.time()),
                     'bbox': '',  # Temporary files cannot be traced because the source files are not persisted
+                    'abstract': metadata.get('abstract') or '',
+                    'uploader': metadata.get('uploader') or '',
+                    'updater': metadata.get('updater') or '',
+                    'user_metadata': metadata.get('user_metadata') or {},
                 })
                 new_metadata.append(metadata)
 

@@ -212,7 +212,6 @@ export default function VectorStoreSidePanel() {
   const localize = useLocalize();
   const deleteVectorStore = (id: string | undefined) => {
     // Define delete functionality here
-    console.log(`Deleting VectorStore with id: ${id}`);
   };
 
   return (
@@ -230,7 +229,6 @@ export default function VectorStoreSidePanel() {
               placeholder={localize('com_files_filter')}
               value={''}
               onChange={() => {
-                console.log('changed');
               }}
               className="max-w-sm border-border-light placeholder:text-text-secondary"
             />
@@ -238,7 +236,6 @@ export default function VectorStoreSidePanel() {
           <div className="w-1/3">
             <VectorStoreButton
               onClick={() => {
-                console.log('Add Vector Store');
               }}
             />
           </div>

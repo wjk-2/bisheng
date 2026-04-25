@@ -98,10 +98,7 @@ export default function taskApps() {
                                 </TableCell>
                                 <TableCell>{['', t('label.unannotated'), t('label.annotated'), t('label.noAnnotationRequired')][el.mark_status || 1]}</TableCell>
                                 <TableCell>{el.mark_user || '-'}</TableCell>
-                                <TableCell className="text-right" onClick={() => {
-                                    // @ts-ignore
-                                    // window.libname = el.name;
-                                }}>
+                                <TableCell className="text-right">
                                     {
                                         el.chat_id && <Link
                                             to={`/label/chat/${id}/${el.flow_id}/${el.chat_id}/${el.flow_type}`}
@@ -121,7 +118,7 @@ export default function taskApps() {
                     </TableFooter>
                 </Table>
             </div>
-            <div className="bisheng-table-footer bg-background-login px-2">
+            <div className="eagent-table-footer bg-background-login px-2">
                 <AutoPagination
                     className="float-right justify-end w-full mr-6"
                     page={page}

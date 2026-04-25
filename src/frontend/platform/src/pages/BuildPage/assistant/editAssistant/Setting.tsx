@@ -51,7 +51,7 @@ export default function Setting() {
           </AccordionTrigger>
           <AccordionContent className="py-2">
             <div className="mb-4 px-6">
-              <label htmlFor="model" className="bisheng-label">
+              <label htmlFor="model" className="eagent-label">
                 {t("build.model")}
               </label>
               <ModelSelect
@@ -62,7 +62,7 @@ export default function Setting() {
               />
             </div>
             <div className="mb-4 px-6">
-              <label htmlFor="slider" className="bisheng-label">
+              <label htmlFor="slider" className="eagent-label">
                 {t("build.temperature")}
               </label>
               <Temperature
@@ -73,7 +73,7 @@ export default function Setting() {
               ></Temperature>
             </div>
             <div className="mb-4 px-6">
-              <label htmlFor="slider" className="bisheng-label flex gap-1">
+              <label htmlFor="slider" className="eagent-label flex gap-1">
                 {t("build.maxToken")}
                 <QuestionTooltip content={t("build.maxTokenTip")}></QuestionTooltip>
               </label>
@@ -90,7 +90,7 @@ export default function Setting() {
           </AccordionTrigger>
           <AccordionContent className="py-2">
             <div className="mb-4 px-6">
-              <label htmlFor="open" className="bisheng-label">
+              <label htmlFor="open" className="eagent-label">
                 {t("build.openingStatement")}
               </label>
               <Textarea
@@ -104,13 +104,13 @@ export default function Setting() {
                 }
               ></Textarea>
               {assistantState.guide_word.length > 1000 && (
-                <p className="bisheng-tip mt-1">
+                <p className="eagent-tip mt-1">
                   {t("build.maximumPromptLength")}
                 </p>
               )}
             </div>
             <div className="mb-4 px-6">
-              <label htmlFor="open" className="bisheng-label flex gap-1">
+              <label htmlFor="open" className="eagent-label flex gap-1">
                 {t("build.guidingQuestions")}
                 <TooltipProvider delayDuration={200}>
                   <Tooltip>
@@ -153,7 +153,7 @@ export default function Setting() {
               </PopoverTrigger>
               <PopoverContent className="w-[560px]">
                   <div className="flex justify-between">
-                      <label htmlFor="model" className="bisheng-label">{t('build.callingMethod')}</label>
+                      <label htmlFor="model" className="eagent-label">{t('build.callingMethod')}</label>
                       <div>
                           <RadioCard checked={false} title={t('build.autoCall')} description={t('build.autoCallDescription')} calssName="mb-4"></RadioCard>
                           <RadioCard checked title={t('build.onDemandCall')} description={t('build.onDemandCallDescription')} calssName="mt-4"></RadioCard>

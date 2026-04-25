@@ -279,7 +279,9 @@ export default function FileView({
         // sass环境使用sass地址
         const pdfUrl = fileUrl.replace(/https?:\/\/[^\/]+/, __APP_ENV__.BASE_URL);  // '/doc.pdf';
         pdfjsLib.GlobalWorkerOptions.workerSrc = __APP_ENV__.BASE_URL + '/pdf.worker.min.js';
-        pdfjsLib.getDocument(pdfUrl).promise.then(async (pdfDocument) => {
+        // CVE-2024-4367: 禁用 eval 防止恶意 PDF 执行任意 JS
+        pdfjsLib.GlobalWorkerOptions.isEvalSupported = false;
+        pdfjsLib.getDocument({ url: pdfUrl, isEvalSupported: false }).promise.then(async (pdfDocument) => {
             pdfPageCache = {}
             const page = pdfPageCache[1] || await pdfDocument.getPage(1);
             pdfPageCache[1] = page
@@ -291,7 +293,6 @@ export default function FileView({
             setLoading(false)
             setNotFound(false)
         }).catch(e => {
-            console.log('e :>> ', e);
             setNotFound(true)
         })
     }, [fileUrl])
@@ -336,7 +337,6 @@ export default function FileView({
                 const [sx, sy, ex, ey] = item.label
                 const pageH = (key - startIndex) * (boxSize.width / pageScale * scale)
                 if (x <= sx && y <= sy + pageH && x1 >= ex && y1 >= ey + pageH) {
-                    console.log('item.id :>> ', item.id);
                     selects.push({ id: item.id, active: !item.active })
                 }
             })

@@ -3,6 +3,10 @@ import concurrent.futures
 import json
 import time
 from collections import defaultdict
+# NOTE(C-10): threading.Queue is intentionally used here instead of asyncio.Queue.
+# The Queue is passed to synchronous Handler tasks running in ThreadPoolManager (thread pool),
+# where producers are sync threads and consumers are in the async event loop.
+# threading.Queue is the correct choice for cross-thread/async communication in this pattern.
 from queue import Queue
 from typing import Any, Dict, List
 
@@ -90,7 +94,7 @@ class ChatManager:
         self.chat_history = ChatHistory()
         self.cache_manager = cache_manager
         self.cache_manager.attach(self.update)
-        self.in_memory_cache = InMemoryCache()
+        self.in_memory_cache = InMemoryCache(max_size=500, expiration_time=3600)
         self.task_manager: List[asyncio.Task] = []
         # Connected clients
         self.active_clients: Dict[str, ChatClient] = {}
@@ -130,17 +134,25 @@ class ChatManager:
             self.active_connections.pop(get_cache_key(client_id, chat_id), None)
 
     async def send_message(self, client_id: str, chat_id: str, message: str):
-        websocket = self.active_connections[get_cache_key(client_id, chat_id)]
-        await websocket.send_text(message)
+        try:
+            websocket = self.active_connections[get_cache_key(client_id, chat_id)]
+            await websocket.send_text(message)
+        except Exception as e:
+            logger.error('send_message failed client_id={} chat_id={} error={}', client_id, chat_id, e)
+            self.disconnect(client_id, chat_id)
 
     async def send_json(self, client_id: str, chat_id: str, message: ChatMessage, add=True):
         message.flow_id = client_id
         message.chat_id = chat_id
-        websocket = self.active_connections[get_cache_key(client_id, chat_id)]
-        # Add message thread
+        # Persist chat history before sending to ensure records are not lost on send failure
         if add:
             self.chat_history.add_message(client_id, chat_id, message)
-        await websocket.send_json(message.dict())
+        try:
+            websocket = self.active_connections[get_cache_key(client_id, chat_id)]
+            await websocket.send_json(message.dict())
+        except Exception as e:
+            logger.error('send_json failed client_id={} chat_id={} error={}', client_id, chat_id, e)
+            self.disconnect(client_id, chat_id)
 
     async def close_connection(self,
                                flow_id: str,
@@ -388,7 +400,6 @@ class ChatManager:
                             if isinstance(e, concurrent.futures.CancelledError):
                                 continue
                             logger.exception('feature_key={} {}', future_key, e)
-                            erro_resp = ChatResponse(**base_param)
                             context = context_dict.get(future_key)
                             if context.get('status') == 'init':
                                 raise LLMExecutionError(exception=e, error=str(e))
@@ -396,13 +407,6 @@ class ChatManager:
                                 raise DocumentParseError(exception=e, error=str(e))
                             else:
                                 raise InputDataParseError(exception=e, error=str(e))
-
-                            context['status'] = 'init'
-                            await self.send_json(context.get('flow_id'), context.get('chat_id'),
-                                                 erro_resp)
-                            erro_resp.type = 'close'
-                            await self.send_json(context.get('flow_id'), context.get('chat_id'),
-                                                 erro_resp)
         except WebSocketDisconnect as e:
             logger.info(f'act=rcv_client_disconnect {str(e)}')
         except BaseErrorCode as e:
@@ -570,7 +574,7 @@ class ChatManager:
         with get_sync_db_session() as session:
             gragh_data = session.get(Flow, flow_id)
             if not gragh_data:
-                message = SkillDeletedError()
+                return None, SkillDeletedError()
             if gragh_data.status != 2:
                 message = SkillNotOnlineError()
         gragh_data = gragh_data.data
@@ -602,11 +606,11 @@ class ChatManager:
             await self.send_json(client_id, chat_id, step_resp, add=False)
             await self.send_json(client_id, chat_id, start_resp)
             logger.info('input_file start_log')
-            await asyncio.sleep(-1)  # Quick Skip
+            await asyncio.sleep(0)  # Quick Skip
         elif has_variable:
             await self.send_json(client_id, chat_id, start_resp)
             logger.info('input_variable start_log')
-            await asyncio.sleep(-1)  # Quick Skip
+            await asyncio.sleep(0)  # Quick Skip
         return has_file, graph_data
 
     async def preper_action(self, client_id, chat_id, langchain_obj_key, payload,
@@ -652,7 +656,7 @@ class ChatManager:
             else:
                 step_resp.intermediate_steps = 'File parsing complete, start execution'
                 await self.send_json(client_id, chat_id, step_resp, add=False)
-        await asyncio.sleep(-1)  # Quick Skip
+        await asyncio.sleep(0)  # Quick Skip
         return action, over
 
     # async def init_langchain_object(self, flow_id, chat_id, user_id, graph_data):

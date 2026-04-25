@@ -27,6 +27,10 @@ class BishengBase(BaseModel):
     async def get_class_instance(cls, **kwargs: Dict) -> Self:
         model_id: int | None = kwargs.pop('model_id', None)
         model_info, server_info = await cls.get_model_server_info(model_id)
+        if not model_info:
+            raise Exception(f'模型(id={model_id})不存在或已被删除，请重新选择模型')
+        if not server_info:
+            raise Exception(f'模型(id={model_id})对应的服务商不存在或已被删除，请重新配置')
         instance = cls(
             model_id=model_id,
             model_name=model_info.model_name,

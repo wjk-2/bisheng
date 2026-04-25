@@ -7,6 +7,7 @@ import { User } from "../types/api/user";
 
 type userContextType = {
     user: any; // {} loading null login
+    userLoading: boolean; // true 表示正在获取用户信息，避免权限检查竞态
     setUser: (newState: User) => void;
     savedComponents: any;
     addSavedComponent: (newCom: any, overrid: boolean, rename?: boolean) => Promise<any>;
@@ -17,6 +18,7 @@ type userContextType = {
 // const userInfoLocalStr = localStorage.getItem('UUR_INFO')
 const initialValue = {
     user: {}, // userInfoLocalStr ? JSON.parse(atob(userInfoLocalStr)) : null,
+    userLoading: true,
     setUser: () => { },
     savedComponents: [],
     addSavedComponent: () => null,
@@ -28,6 +30,7 @@ export const userContext = createContext<userContextType>(initialValue);
 
 export function UserProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<any>(initialValue.user);
+    const [userLoading, setUserLoading] = useState(true);
     const [savedComponents, setSavedComponents] = useState([]);
 
     const loadComponents = async () => {
@@ -91,11 +94,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
     
     useLayoutEffect(() => {
-        // 链接ar参数存cookie（免登录接口）
-        const cookie = location.search.match(/(?<=token=)[^&]+/g)?.[0]
-        if (cookie) {
-            document.cookie = `access_token_cookie=${cookie}; path=/`;
-            localStorage.setItem('isLogin', '1')
+        // 链接参数存cookie（免登录接口）— 仅接受合法JWT格式
+        const tokenMatch = location.search.match(/(?<=token=)[^&]+/g)?.[0]
+        if (tokenMatch) {
+            const token = decodeURIComponent(tokenMatch)
+            // Validate JWT format: three base64url segments separated by dots
+            if (/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(token)) {
+                document.cookie = `access_token_cookie=${token}; path=/`;
+                localStorage.setItem('isLogin', '1')
+            }
             location.href = location.origin + location.pathname;
             return
         }
@@ -112,6 +119,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
             logoutApi().then(_ => {
                 setUser(null)
                 localStorage.removeItem('isLogin')
+                // S-4: Clear WebSocket token on forced logout (remote login)
+                localStorage.removeItem('ws_token')
+                localStorage.removeItem('token')
+                localStorage.removeItem('userInfo')
             })
 
             toast({
@@ -121,6 +132,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         }
         // 获取用户信息
         getUserInfo().then(res => {
+            setUserLoading(false)
             setUser(res.user_id ? res : null)
             const { user_id, web_menu = [] } = res;
 
@@ -129,45 +141,29 @@ export function UserProvider({ children }: { children: ReactNode }) {
             // 是否有访问后台权限
             if (/^(\/\w+)?\/chat/.test(location.pathname)) return // 排除免登陆
 
-            if (res.role !== 'admin' && !web_menu.includes('backend')) {
-                location.href = `${location.origin}/workspace/c/new?error=90001`;
+            // 恢复权限检查 - 使用 web_menu 判断是否有后台权限
+            if (!web_menu || web_menu.length === 0) {
+                location.href = `${location.origin}/workspace/c/new`;
                 return;
             }
 
             const BASE_URL = __APP_ENV__.BASE_URL
             const pathName = location.pathname.replace(BASE_URL, '');
 
-            // Jump to the route based on permissions 
-            if (pathName === '/admin') {
-                const MENU_ROUTE_MAP = [
-                    { key: 'board', path: '/dashboard' },
-                    { key: 'build', path: '/build/apps' },
-                    { key: 'knowledge', path: '/filelib' },
-                    { key: 'model', path: '/model/management' },
-                    { key: 'evaluation', path: '/evaluation' },
-                    { key: 'label', path: '/label' }, // 兜底选项放在最后
-                ];
-                const target = MENU_ROUTE_MAP.find(item => web_menu.includes(item.key));
-                if (target) {
-                    history.pushState(null, '', BASE_URL + target.path);
-                } else {
-                    history.pushState(null, '', BASE_URL + '/label');
-                }
-            } else {
-                // 403
-                const MENU_KEY_MAP = {
-                    '/dashboard': 'board',
-                    '/build/apps': 'build',
-                    '/filelib': 'knowledge',
-                    '/model/management': 'model',
-                    '/evaluation': 'evaluation',
-                }
-                const menuName = MENU_KEY_MAP[pathName]
-                if (menuName && res.role !== 'admin' && !web_menu.includes(menuName)) {
-                    history.pushState(null, '', BASE_URL + '/403');
-                }
+            // /platform 入口：跳转到默认页面
+            if (pathName === '/platform') {
+                location.replace(BASE_URL + '/build');
+                return;
+            }
+
+            // 管理员专属页面拦截（唯一有效的前端权限检查）
+            const ADMIN_ONLY_PATHS = ['/sys', '/monitor', '/log', '/model/system-config', '/build/client'];
+            if (res.role !== 'admin' && ADMIN_ONLY_PATHS.some(p => pathName === p || pathName.startsWith(p + '/'))) {
+                location.href = BASE_URL + '/403';
+                return;
             }
         }).catch(e => {
+            setUserLoading(false)
             setUser(null)
         })
     }, [])
@@ -175,7 +171,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     return (
         <userContext.Provider
             value={{
-                user, setUser, savedComponents, checkComponentsName, delComponent, addSavedComponent
+                user, userLoading, setUser, savedComponents, checkComponentsName, delComponent, addSavedComponent
             }}
         >
             {children}

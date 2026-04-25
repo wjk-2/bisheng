@@ -121,7 +121,7 @@ export const TaskFlow = ({ versionId, isSharePage, setVersions, setVersionId }) 
                         <div className='size-10 mx-auto'>
                             <img
                                 className='size-full grayscale opacity-20'
-                                src={__APP_ENV__.BASE_URL + bsConfig?.sidebarIcon.image}
+                                src={__APP_ENV__.BASE_URL + (bsConfig?.sidebarIcon?.image || '')}
                                 alt="Loading"
                             />
                         </div>

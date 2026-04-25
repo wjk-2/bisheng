@@ -127,7 +127,7 @@ export function getUser(): Promise<t.TUser> {
   return request.get(endpoints.user()).then(res => {
     const { user_id, user_name, create_time, update_time, role, web_menu } = res.data;
     if (role !== 'admin' && !web_menu.includes('frontend')) {
-      location.href = `${location.origin}${__APP_ENV__.BISHENG_HOST}?error=90002`  // workspace useErrorPrompt
+      location.href = location.origin + '/?error=90002'  // workspace useErrorPrompt
     }
     return {
       "_id": user_id,
@@ -274,7 +274,7 @@ export const getStartupConfig = (): Promise<config.TStartupConfig> => {
   })
 };
 
-export const getBishengConfig = (): Promise<config.BsConfig> => {
+export const getEagentConfig = (): Promise<config.BsConfig> => {
   return request.get(endpoints.bsConfig()).then(res => res.data);
 };
 
@@ -885,6 +885,33 @@ export function getRole(roleName: string): Promise<r.TRole> {
     },
     "AGENTS": {
       "SHARED_GLOBAL": false,
+      "USE": true,
+      "CREATE": true
+    },
+    "MULTI_CONVO": {
+      "USE": true
+    },
+    "TEMPORARY_CHAT": {
+      "USE": true
+    },
+    "RUN_CODE": {
+      "USE": true
+    },
+    "__v": 0
+  });
+  if (roleName === 'ADMIN') return Promise.resolve({
+    "_id": "67c9645671e602aa6aece754",
+    "name": "ADMIN",
+    "BOOKMARKS": {
+      "USE": true
+    },
+    "PROMPTS": {
+      "SHARED_GLOBAL": true,
+      "USE": true,
+      "CREATE": true
+    },
+    "AGENTS": {
+      "SHARED_GLOBAL": true,
       "USE": true,
       "CREATE": true
     },

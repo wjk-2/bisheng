@@ -71,7 +71,7 @@ class LangfusePlugin(CallbackPlugin):
         try:
             langfuse_instance = self.get()
             if langfuse_instance is not None and hasattr(langfuse_instance, 'trace'):
-                trace = langfuse_instance.trace(CreateTrace(name='bisheng-' + _id, id=_id))
+                trace = langfuse_instance.trace(CreateTrace(name='eagent-' + _id, id=_id))
                 if trace:
                     return trace.getNewHandler()
 

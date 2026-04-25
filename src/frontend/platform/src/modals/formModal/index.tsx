@@ -255,7 +255,6 @@ export default function FormModal({
       );
       const newWs = new WebSocket(urlWs);
       newWs.onopen = () => {
-        console.log("WebSocket connection established!");
       };
       newWs.onmessage = (event) => {
         const data = JSON.parse(event.data);
@@ -266,7 +265,6 @@ export default function FormModal({
         handleOnClose(event);
       };
       newWs.onerror = (ev) => {
-        console.log(ev, "error");
         if (flow.id === "") {
           // connectWS();
         } else {
@@ -285,7 +283,6 @@ export default function FormModal({
       if (flow.id === "") {
         // connectWS();
       }
-      console.log(error);
     }
   }
 
@@ -547,8 +544,8 @@ export default function FormModal({
                         👋{" "}
                       </span>
                       <br />
-                      <div className="bisheng-chat-desc">
-                        <span className="bisheng-chat-desc-span">
+                      <div className="eagent-chat-desc">
+                        <span className="eagent-chat-desc-span">
                           Start the conversation and click on the agent's analysis process{" "}
                           <span>
                             <THOUGHTS_ICON className="mx-1 inline h-5 w-5 animate-bounce " />
@@ -560,8 +557,8 @@ export default function FormModal({
                   )}
                   <div ref={ref}></div>
                 </div>
-                <div className="bisheng-chat-input-div">
-                  <div className="bisheng-chat-input">
+                <div className="eagent-chat-input-div">
+                  <div className="eagent-chat-input">
                     <ChatInput
                       chatValue={chatValue}
                       noInput={!chatKey}

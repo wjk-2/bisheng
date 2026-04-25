@@ -168,7 +168,7 @@ ${t('build.exampleTwo', { ns: 'bs' })}
                         if (['rag', 'llm', 'agent', 'qa_retriever'].includes(node.data.type)) {
                             node.data.group_params.forEach(group =>
                                 group.params.forEach(param => {
-                                    if (param.type === 'bisheng_model') {
+                                    if (param.type === 'eagent_model') {
                                         param.value = workflowModelId;
                                     } else if (param.type === 'agent_model') {
                                         param.value = assistantModelId;
@@ -190,8 +190,7 @@ ${t('build.exampleTwo', { ns: 'bs' })}
                 if (appType === AppType.ASSISTANT) {
                     const res = await captureAndAlertRequestErrorHoc(createAssistantsApi(formData.name, formData.desc, formData.url));
                     if (res) {
-                        //@ts-ignore
-                        window.assistantCreate = true // Mark the created assistant 
+                        window.assistantCreate = true // Mark the created assistant
                         navigate('/assistant/' + res.id)
                     }
                 } else {
@@ -228,7 +227,7 @@ ${t('build.exampleTwo', { ns: 'bs' })}
                     </DialogHeader>
                     <div className="flex flex-col mt-2">
                         <div className="mb-6">
-                            <label htmlFor="name" className="bisheng-label">
+                            <label htmlFor="name" className="eagent-label">
                                 {appType === AppType.ASSISTANT ? t('assistantAvatar') : t('workflowAvatar')}
                             </label>
                             <Avator value={previewAvatar} className="mt-3" onChange={uploadAvator}>
@@ -236,9 +235,9 @@ ${t('build.exampleTwo', { ns: 'bs' })}
                             </Avator>
                         </div>
                         <div className="mb-6">
-                            <label htmlFor="name" className="bisheng-label">
+                            <label htmlFor="name" className="eagent-label">
                                 {appType === AppType.ASSISTANT ? t('build_assistantName') : t('name')}
-                                <span className="bisheng-tip">*</span>
+                                <span className="eagent-tip">*</span>
                             </label>
                             <Input
                                 id="name"
@@ -250,10 +249,10 @@ ${t('build.exampleTwo', { ns: 'bs' })}
                                 value={formData.name}
                                 onChange={handleChange}
                             />
-                            {errors.name && <p className="bisheng-tip mt-1">{errors.name}</p>}
+                            {errors.name && <p className="eagent-tip mt-1">{errors.name}</p>}
                         </div>
                         <div className="mb-6">
-                            <label htmlFor="desc" className="bisheng-label">
+                            <label htmlFor="desc" className="eagent-label">
                                 {appType === AppType.ASSISTANT ? t('build_roleAndTasks') : t('description')}
                             </label>
                             <Textarea
@@ -265,7 +264,7 @@ ${t('build.exampleTwo', { ns: 'bs' })}
                                 value={formData.desc}
                                 onChange={handleChange}
                             />
-                            {errors.desc && <p className="bisheng-tip mt-1">{errors.desc}</p>}
+                            {errors.desc && <p className="eagent-tip mt-1">{errors.desc}</p>}
                         </div>
                     </div>
                     {/* Workflow Security Review */}

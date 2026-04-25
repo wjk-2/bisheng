@@ -1,3 +1,5 @@
+from typing import Optional
+
 from fastapi import APIRouter, Request, Depends, Body, Query, BackgroundTasks, UploadFile
 
 from bisheng.common.dependencies.user_deps import UserPayload
@@ -147,4 +149,42 @@ async def update_workflow_llm(request: Request, login_user: UserPayload = Depend
 async def get_assistant_llm_list(request: Request, login_user: UserPayload = Depends(UserPayload.get_login_user)):
     """ Get a list of optional models for the assistant """
     ret = await LLMService.get_assistant_llm_list(request, login_user)
+    return resp_200(data=ret)
+
+
+# ===== B++ 新增：模型对话启用管理 =====
+
+@router.post('/chat/enable', summary='启用模型到 Workspace 对话')
+async def enable_model_chat(request: Request,
+                            login_user: UserPayload = Depends(UserPayload.get_admin_user),
+                            model_id: int = Body(..., embed=True, description='LLM 模型 ID'),
+                            display_name: Optional[str] = Body(None, embed=True, description='对话中的显示名称')):
+    """将指定模型添加到 Workspace 对话的可用模型列表"""
+    ret = await LLMService.enable_model_chat(model_id, display_name)
+    return resp_200(data=ret)
+
+
+@router.post('/chat/disable', summary='从 Workspace 对话移除模型')
+async def disable_model_chat(request: Request,
+                             login_user: UserPayload = Depends(UserPayload.get_admin_user),
+                             model_id: int = Body(..., embed=True, description='LLM 模型 ID')):
+    """将指定模型从 Workspace 对话的可用模型列表中移除"""
+    ret = await LLMService.disable_model_chat(model_id)
+    return resp_200(data=ret)
+
+
+@router.get('/chat/status', summary='查询模型对话启用状态')
+async def get_model_chat_status(request: Request,
+                                login_user: UserPayload = Depends(UserPayload.get_login_user),
+                                model_id: int = Query(..., description='LLM 模型 ID')):
+    """查询指定模型是否已启用到 Workspace 对话"""
+    ret = await LLMService.get_model_chat_status(model_id)
+    return resp_200(data=ret)
+
+
+@router.get('/chat/enabled-ids', summary='获取所有已启用对话的模型ID')
+async def get_chat_enabled_ids(request: Request,
+                               login_user: UserPayload = Depends(UserPayload.get_login_user)):
+    """返回所有已启用到 Workspace 对话的 model_id 列表"""
+    ret = await LLMService.get_chat_enabled_ids()
     return resp_200(data=ret)

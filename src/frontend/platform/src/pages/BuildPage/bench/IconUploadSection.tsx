@@ -52,7 +52,7 @@ export const IconUploadSection = ({
 
     return <div>
         <div className="flex items-center gap-4">
-            <Label className="bisheng-label">{label}</Label>
+            <Label className="eagent-label">{label}</Label>
             {/* <Switch checked={enabled} onCheckedChange={onToggle} /> */}
         </div>
         <Avator

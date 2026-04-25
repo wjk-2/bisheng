@@ -1,19 +1,25 @@
+# [S-30] 网络隔离建议（暂未实施，内网部署风险可控）
+# 后续优化可创建三个网络实现服务隔离：
+#   eagent-frontend: frontend + backend（前端只能访问后端 API）
+#   eagent-backend: backend + backend_worker + mysql + redis + es + milvus + minio（业务层）
+#   eagent-data: mysql + redis + es + milvus + minio（数据层）
+# 注意：实施前需充分测试服务间通信，修改风险较高
 services:
   mysql:
-    container_name: bisheng-mysql
+    container_name: eagent-mysql
     image: mysql:8.0
     
     ports:
-      - "3306:3306"
+      - "127.0.0.1:3306:3306"
     environment:
-      MYSQL_ROOT_PASSWORD: "1234"  # 数据库密码，如果修改需要同步修改bisheng/congfig/config.yaml配置database_url的mysql连接密码
-      MYSQL_DATABASE: bisheng
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:-Admin@9000}"  # 通过环境变量设置，默认Admin@9000。修改需同步config.yaml的database_url
+      MYSQL_DATABASE: eagent
       TZ: Asia/Shanghai
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/mysql/conf/my.cnf:/etc/mysql/my.cnf
       - ${DOCKER_VOLUME_DIRECTORY:-.}/mysql/data:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "exit | mysql -u root -p$$MYSQL_ROOT_PASSWORD"]
+      test: ["CMD-SHELL", "mysqladmin ping -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
       start_period: 30s
       interval: 20s
       timeout: 10s
@@ -21,46 +27,54 @@ services:
     restart: on-failure
 
   redis:
-    container_name: bisheng-redis
+    container_name: eagent-redis
     image: redis:7.0.4
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     environment:
       TZ: Asia/Shanghai
+      REDIS_PASSWORD: "${REDIS_PASSWORD:-Admin@9000}"
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/data/redis:/data
       - ${DOCKER_VOLUME_DIRECTORY:-.}/redis/redis.conf:/etc/redis.conf
-    command: redis-server /etc/redis.conf
+    command: redis-server /etc/redis.conf --requirepass "${REDIS_PASSWORD:-Admin@9000}"
     healthcheck:
-      test: ["CMD-SHELL", 'redis-cli ping|grep -e "PONG\|NOAUTH"']
+      test: ["CMD-SHELL", 'redis-cli -a "$$REDIS_PASSWORD" ping 2>/dev/null|grep -e "PONG"']
       interval: 10s
       timeout: 5s
       retries: 3
     restart: on-failure
 
   backend:
-    container_name: bisheng-backend
-    image: dataelement/bisheng-backend:v2.3.0
+    container_name: eagent-backend
+    image: eagent/backend:v2.3.0
     ports:
       - "7860:7860"
     environment:
       TZ: Asia/Shanghai
+      # [S-41] 启用 Milvus 认证后需修改 user/password 字段
       BS_MILVUS_CONNECTION_ARGS: '{"host":"milvus","port":"19530","user":"","password":"","secure":false}'
       BS_MILVUS_IS_PARTITION: 'true'
       BS_MILVUS_PARTITION_SUFFIX: '1'
+      # [S-42] 启用 ES 认证后需修改为 'http://elastic:password@elasticsearch:9200'
       BS_ELASTICSEARCH_URL: 'http://elasticsearch:9200'
       BS_ELASTICSEARCH_SSL_VERIFY: '{}'  # 可根据自己部署的密码进行配置 '{"basic_auth": ("elastic", "elastic")}'
       BS_MINIO_SCHEMA: 'false'
       BS_MINIO_CERT_CHECK: 'false'
       BS_MINIO_ENDPOINT: 'minio:9000'
       BS_MINIO_SHAREPOINT: 'minio:9000'
-      BS_MINIO_ACCESS_KEY: 'minioadmin'
-      BS_MINIO_SECRET_KEY: 'minioadmin'
+      BS_MINIO_ACCESS_KEY: '${MINIO_ACCESS_KEY:-Admin@9000}'
+      BS_MINIO_SECRET_KEY: '${MINIO_SECRET_KEY:-Admin@9000}'
+      EAGENT_JWT_SECRET: '${EAGENT_JWT_SECRET:-}'
+      EAGENT_FERNET_KEY: '${EAGENT_FERNET_KEY:-}'
     volumes:
-      - ${DOCKER_VOLUME_DIRECTORY:-.}/bisheng/config/config.yaml:/app/bisheng/config.yaml
-      - ${DOCKER_VOLUME_DIRECTORY:-.}/bisheng/entrypoint.sh:/app/entrypoint.sh
-      - ${DOCKER_VOLUME_DIRECTORY:-.}/data/bisheng:/app/data
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/eagent/config/config.yaml:/app/bisheng/config.yaml
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/eagent/entrypoint.sh:/app/entrypoint.sh
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/data/eagent:/app/data
     security_opt:
+      # [S-26] 已知安全风险：seccomp:unconfined 关闭了系统调用过滤
+      # 原因：Bisheng 后端使用 multiprocessing/sandbox 执行，需要未受限的系统调用
+      # 后续优化：可定制 seccomp profile 仅放行必要的系统调用
       - seccomp:unconfined
     command: sh entrypoint.sh api  # 启动api服务
     restart: on-failure
@@ -77,26 +91,33 @@ services:
         condition: service_healthy
   
   backend_worker:
-    container_name: bisheng-backend-worker
-    image: dataelement/bisheng-backend:v2.3.0
+    container_name: eagent-backend-worker
+    image: eagent/backend:v2.3.0
     environment:
       TZ: Asia/Shanghai
+      # [S-41] 启用 Milvus 认证后需修改 user/password 字段
       BS_MILVUS_CONNECTION_ARGS: '{"host":"milvus","port":"19530","user":"","password":"","secure":false}'
       BS_MILVUS_IS_PARTITION: 'true'
       BS_MILVUS_PARTITION_SUFFIX: '1'
+      # [S-42] 启用 ES 认证后需修改为 'http://elastic:password@elasticsearch:9200'
       BS_ELASTICSEARCH_URL: 'http://elasticsearch:9200'
       BS_ELASTICSEARCH_SSL_VERIFY: '{}'  # 可根据自己部署的密码进行配置 '{"basic_auth": ("elastic", "elastic")}'
       BS_MINIO_SCHEMA: 'false'
       BS_MINIO_CERT_CHECK: 'false'
       BS_MINIO_ENDPOINT: 'minio:9000'
       BS_MINIO_SHAREPOINT: 'minio:9000'
-      BS_MINIO_ACCESS_KEY: 'minioadmin'
-      BS_MINIO_SECRET_KEY: 'minioadmin'
+      BS_MINIO_ACCESS_KEY: '${MINIO_ACCESS_KEY:-Admin@9000}'
+      BS_MINIO_SECRET_KEY: '${MINIO_SECRET_KEY:-Admin@9000}'
+      EAGENT_JWT_SECRET: '${EAGENT_JWT_SECRET:-}'
+      EAGENT_FERNET_KEY: '${EAGENT_FERNET_KEY:-}'
     volumes:
-      - ${DOCKER_VOLUME_DIRECTORY:-.}/bisheng/config/config.yaml:/app/bisheng/config.yaml
-      - ${DOCKER_VOLUME_DIRECTORY:-.}/bisheng/entrypoint.sh:/app/entrypoint.sh
-      - ${DOCKER_VOLUME_DIRECTORY:-.}/data/bisheng:/app/data
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/eagent/config/config.yaml:/app/bisheng/config.yaml
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/eagent/entrypoint.sh:/app/entrypoint.sh
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/data/eagent:/app/data
     security_opt:
+      # [S-26] 已知安全风险：seccomp:unconfined 关闭了系统调用过滤
+      # 原因：Celery worker 使用 multiprocessing 进行异步任务处理，需要未受限的系统调用
+      # 后续优化：可定制 seccomp profile 仅放行必要的系统调用
       - seccomp:unconfined
     command: sh entrypoint.sh worker  # 启动celery的异步worker服务，用来处理一些耗时的任务
     restart: on-failure
@@ -108,8 +129,8 @@ services:
 
 
   frontend:
-    container_name: bisheng-frontend
-    image: dataelement/bisheng-frontend:v2.3.0
+    container_name: eagent-frontend
+    image: eagent/frontend:v2.3.0
     ports:
       - "3001:3001"
     environment:
@@ -122,20 +143,26 @@ services:
       - backend
 
   elasticsearch:
-    container_name: bisheng-es
+    container_name: eagent-es
     image: docker.io/bitnamilegacy/elasticsearch:8.12.0
-    user: root
+    user: "1001:1001"  # bitnami ES 镜像默认用户为 1001，不使用 root 运行
     ports:
-      - "9200:9200"
-      - "9300:9300"
+      - "127.0.0.1:9200:9200"
+      - "127.0.0.1:9300:9300"
     environment:
       TZ: Asia/Shanghai
+      # [S-42] Elasticsearch 认证（暂未启用，避免影响现有部署）
+      # 启用方法：取消下方注释，并同步修改 backend/backend_worker 的 BS_ELASTICSEARCH_URL
+      # 改为 'http://elastic:your_password@elasticsearch:9200'
+      # 同时修改 BS_ELASTICSEARCH_SSL_VERIFY 为 '{"basic_auth": ["elastic", "your_password"]}'
+      # ELASTICSEARCH_ENABLE_SECURITY: "true"
+      # ELASTICSEARCH_PASSWORD: "${ES_PASSWORD:-EAgentES2024!}"
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/data/es:/bitnami/elasticsearch/data
     restart: on-failure
 
   etcd:
-    container_name: bisheng-milvus-etcd
+    container_name: eagent-milvus-etcd
     image: quay.io/coreos/etcd:v3.5.5
     environment:
       ETCD_AUTO_COMPACTION_MODE: revision
@@ -154,14 +181,14 @@ services:
       retries: 3
 
   minio:
-    container_name: bisheng-milvus-minio
+    container_name: eagent-milvus-minio
     image: minio/minio:RELEASE.2023-03-20T20-16-18Z
     environment:
-      MINIO_ACCESS_KEY: minioadmin
-      MINIO_SECRET_KEY: minioadmin
+      MINIO_ACCESS_KEY: "${MINIO_ACCESS_KEY:-Admin@9000}"
+      MINIO_SECRET_KEY: "${MINIO_SECRET_KEY:-Admin@9000}"
     ports:
-      - "9100:9000"
-      - "9101:9001"
+      - "127.0.0.1:9100:9000"
+      - "127.0.0.1:9101:9001"
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ${DOCKER_VOLUME_DIRECTORY:-.}/data/milvus-minio:/minio_data
@@ -174,14 +201,22 @@ services:
       retries: 3
 
   milvus:
-    container_name: bisheng-milvus-standalone
+    container_name: eagent-milvus-standalone
     image: milvusdb/milvus:v2.5.10
     command: ["milvus", "run", "standalone"]
     security_opt:
-    - seccomp:unconfined
+      # Milvus 官方要求：向量检索引擎需要未受限的系统调用
+      - seccomp:unconfined
     environment:
       ETCD_ENDPOINTS: etcd:2379
       MINIO_ADDRESS: minio:9000
+      # MinIO 认证（必须配置，否则 Milvus 无法连接 MinIO）
+      MINIO_ACCESS_KEY_ID: ${MINIO_ACCESS_KEY:-Admin@9000}
+      MINIO_SECRET_ACCESS_KEY: ${MINIO_SECRET_KEY:-Admin@9000}
+      # [S-41] Milvus 认证（暂未启用，避免影响现有部署）
+      # 启用方法：取消下行注释，并同步修改 backend/backend_worker 的 BS_MILVUS_CONNECTION_ARGS
+      # 添加 "user":"root","password":"Milvus" 到连接参数中
+      # COMMON_SECURITY_AUTHORIZATIONENABLED: "true"
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ${DOCKER_VOLUME_DIRECTORY:-.}/data/milvus:/var/lib/milvus
@@ -193,8 +228,8 @@ services:
       timeout: 20s
       retries: 3
     ports:
-      - "19530:19530"
-      - "9091:9091"
+      - "127.0.0.1:19530:19530"
+      - "127.0.0.1:9091:9091"
     depends_on:
       - etcd
       - minio

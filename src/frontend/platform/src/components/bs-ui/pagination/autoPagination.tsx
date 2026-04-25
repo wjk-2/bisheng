@@ -66,7 +66,7 @@ const AutoPagination = ({
         if (page !== 1) {
             items.push(
                 <PaginationItem key="start">
-                    <PaginationLink href="javascript:;" onClick={() => handlePageChange(1)}>
+                    <PaginationLink onClick={() => handlePageChange(1)}>
                         <ChevronsLeft />
                     </PaginationLink>
                 </PaginationItem>
@@ -75,7 +75,7 @@ const AutoPagination = ({
 
         items.push(
             <PaginationItem key="previous">
-                <PaginationPrevious href="javascript:;"
+                <PaginationPrevious
                     className={page === startPage && 'text-gray-400'}
                     onClick={() => handlePageChange(page - 1)} />
             </PaginationItem>
@@ -84,7 +84,7 @@ const AutoPagination = ({
         for (let i = startPage; i <= endPage; i++) {
             items.push(
                 <PaginationItem key={i}>
-                    <PaginationLink href="javascript:;"
+                    <PaginationLink
                         className={page === i ? 'font-bold' : 'text-gray-500'}
                         onClick={() => handlePageChange(i)} isActive={i === page}>
                         {i}
@@ -95,7 +95,7 @@ const AutoPagination = ({
 
         items.push(
             <PaginationItem key="next">
-                <PaginationNext href="javascript:;"
+                <PaginationNext
                     className={page === endPage && 'text-gray-400'}
                     onClick={() => handlePageChange(page + 1)} />
             </PaginationItem>
@@ -104,7 +104,7 @@ const AutoPagination = ({
         if (page !== totalPages) {
             items.push(
                 <PaginationItem key="end">
-                    <PaginationLink href="javascript:;" onClick={() => handlePageChange(totalPages)} >
+                    <PaginationLink onClick={() => handlePageChange(totalPages)} >
                         <ChevronsRight />
                     </PaginationLink>
                 </PaginationItem>

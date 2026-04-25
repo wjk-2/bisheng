@@ -49,7 +49,6 @@ function DashGroupItemComponent({ group, instanceProjectId }: DashGroupItemProps
   const { isLoading } = updateGroup;
 
   const handleSaveRename = useCallback(() => {
-    console.log(group._id ?? '', { name: nameInputValue });
     updateGroup.mutate({ id: group._id ?? '', payload: { name: nameInputValue } });
   }, [group._id, nameInputValue, updateGroup]);
 

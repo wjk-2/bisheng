@@ -71,7 +71,6 @@ export default function InputFiles({ v, showVoice, accepts, disabled = false, si
         // Create an array of promises to handle multiple file uploads concurrently
         const uploadPromises = validFiles.map(({ file, id }) => {
             return uploadChatFile(v, file, (progress) => {
-                console.log('progress :>> ', progress);
                 // Update progress for each file individually
                 setFiles((prevFiles) => {
                     const updatedFiles = prevFiles.map(f => {
@@ -100,7 +99,6 @@ export default function InputFiles({ v, showVoice, accepts, disabled = false, si
                     onChange(uploadedFileIds); // Pass the file IDs to onChange
                 }
             }).catch((e) => {
-                console.log('e :>> ', e);
                 showToast({ message: t('com_inputfiles_upload_failed', { 0: file.name }), status: 'error' })
                 handleFileRemove(file.name);
                 remainingUploadsRef.current -= 1; // Decrease the remaining uploads count

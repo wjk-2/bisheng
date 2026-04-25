@@ -31,7 +31,6 @@ export default function ProgressItem({ analysis = false, knowledgeId = '', item,
                 setProgress(progress)
             },
             onFinish: (res) => {
-                console.log('上传结果 :>> ', item.fileName, res);
                 setProgress(100)
                 onResulte(item.id, {
                     id: item.id,
@@ -43,7 +42,6 @@ export default function ProgressItem({ analysis = false, knowledgeId = '', item,
                 setRetrying(false)
             },
             onFail: (err) => {
-                console.log('上传失败 :>> ', item.fileName);
                 setProgress(100)
                 onResulte(item.id, {
                     id: item.id,
@@ -62,7 +60,6 @@ export default function ProgressItem({ analysis = false, knowledgeId = '', item,
 
     useEffect(() => {
         if (item.progress === ProgressStatus.Uploading) {
-            console.log('开始上传 :>> ', item.fileName, item.id);
             uploadApi(item)
         }
     }, [item.progress])
@@ -73,7 +70,6 @@ export default function ProgressItem({ analysis = false, knowledgeId = '', item,
 
     const handleCancel = () => {
         if (abortControllerRef.current) {
-            console.log('取消上传 :>> ', item.id);
             abortControllerRef.current.abort();
         }
         onDelete(item.id)

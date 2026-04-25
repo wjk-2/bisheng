@@ -15,7 +15,6 @@ function usePauseGlobalAudio(index = 0) {
     if (globalAudioURL != null && globalAudioURL !== '') {
       const globalAudio = document.getElementById(globalAudioId);
       if (globalAudio) {
-        console.log('Pausing global audio', globalAudioURL);
         (globalAudio as HTMLAudioElement).pause();
         setGlobalIsPlaying(false);
       }

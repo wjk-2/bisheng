@@ -154,7 +154,6 @@ const useUpload = (open, maxSize, fileKey, uploadFunc) => {
                 onUploadProgress: (progressEvent) => {
                     const { loaded, total } = progressEvent;
                     const progress = Math.round((loaded * 100) / total);
-                    console.log(`Upload progress: ${file.name} ${progress}%`);
                     callback(progress)
                     // You can update your UI with the progress information here
                 },
@@ -165,7 +164,6 @@ const useUpload = (open, maxSize, fileKey, uploadFunc) => {
 
             data && callback(100);
 
-            console.log('Upload complete:', data);
             return data
             // Handle the response data as needed
         } catch (error) {

@@ -2,8 +2,8 @@ FROM node:20-alpine as frontend_build
 ARG BACKEND
 WORKDIR /app
 COPY . /app
-RUN cd /app/platform && npm install --registry=https://registry.npmmirror.com && npm run build
-RUN cd /app/client && npm install --registry=https://registry.npmmirror.com && npm run build
+RUN cd /app/platform && npm install --force --registry=https://registry.npmmirror.com && NODE_OPTIONS=--max-old-space-size=4096 npm run build
+RUN cd /app/client && npm install --force --registry=https://registry.npmmirror.com && NODE_OPTIONS=--max-old-space-size=4096 npm run build
 
 FROM nginx
 COPY --from=frontend_build /app/platform/build/ /usr/share/nginx/html/platform

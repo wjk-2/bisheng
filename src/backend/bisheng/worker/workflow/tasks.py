@@ -1,3 +1,4 @@
+import threading
 import time
 
 from loguru import logger
@@ -15,17 +16,34 @@ from bisheng.worker.workflow.redis_callback import RedisCallback
 from bisheng.workflow.common.workflow import WorkflowStatus
 from bisheng.workflow.graph.workflow import Workflow
 
-# Stores global workflow objects
+# Stores global workflow objects with creation timestamp
+# Protected by _workflow_lock for thread safety (Celery uses -P threads with 100 workers)
 _global_workflow: dict[str, Workflow] = {}
+_global_workflow_ts: dict[str, float] = {}
+_workflow_lock = threading.Lock()
+_WORKFLOW_TTL = 3600  # 1 hour max lifetime for idle workflow objects
+
+
+def _cleanup_expired_workflows():
+    """Remove workflow objects that have been idle longer than TTL.
+    Must be called with _workflow_lock held."""
+    now = time.time()
+    expired = [uid for uid, ts in _global_workflow_ts.items() if now - ts > _WORKFLOW_TTL]
+    for uid in expired:
+        _global_workflow.pop(uid, None)
+        _global_workflow_ts.pop(uid, None)
+        logger.info(f'expired workflow object cleaned: {uid}')
 
 
 def _clear_workflow_obj(unique_id: str):
     """ Clear Global Workflow Objects """
-    if unique_id in _global_workflow:
-        del _global_workflow[unique_id]
-        logger.debug(f'clear workflow object for unique_id: {unique_id}')
-    else:
-        logger.warning(f'workflow object not found for unique_id: {unique_id}')
+    with _workflow_lock:
+        if unique_id in _global_workflow:
+            del _global_workflow[unique_id]
+            _global_workflow_ts.pop(unique_id, None)
+            logger.debug(f'clear workflow object for unique_id: {unique_id}')
+        else:
+            logger.warning(f'workflow object not found for unique_id: {unique_id}')
 
 
 def _judge_workflow_status(redis_callback: RedisCallback, workflow: Workflow):
@@ -37,7 +55,10 @@ def _judge_workflow_status(redis_callback: RedisCallback, workflow: Workflow):
         return
     if workflow.status() == WorkflowStatus.INPUT.value:
         # If it is an input state, place the object in memory
-        _global_workflow[redis_callback.unique_id] = workflow
+        with _workflow_lock:
+            _cleanup_expired_workflows()
+            _global_workflow[redis_callback.unique_id] = workflow
+            _global_workflow_ts[redis_callback.unique_id] = time.time()
         # redis_callback.save_workflow_object(workflow)
         redis_callback.set_workflow_status(status, reason)
         return
@@ -79,7 +100,7 @@ def _execute_workflow(unique_id: str, workflow_id: str, chat_id: str, user_id: i
         _clear_workflow_obj(redis_callback.unique_id)
 
 
-@bisheng_celery.task
+@bisheng_celery.task(time_limit=3600, soft_time_limit=3300, acks_late=True)
 def execute_workflow(unique_id: str, workflow_id: str, chat_id: str, user_id: int, source: str = "platform"):
     """ Implementationworkflow """
     trace_id_var.set(unique_id)
@@ -108,7 +129,8 @@ def _continue_workflow(unique_id: str, workflow_id: str, chat_id: str, user_id: 
     """ Resumeworkflow """
     redis_callback = RedisCallback(unique_id, workflow_id, chat_id, user_id, source=source)
     try:
-        workflow = _global_workflow.get(redis_callback.unique_id, None)
+        with _workflow_lock:
+            workflow = _global_workflow.get(redis_callback.unique_id, None)
         if not workflow:
             raise Exception('workflow object not found maybe data is expired')
         if workflow.status() not in [WorkflowStatus.INPUT.value, WorkflowStatus.INPUT_OVER.value]:
@@ -129,7 +151,7 @@ def _continue_workflow(unique_id: str, workflow_id: str, chat_id: str, user_id: 
         _clear_workflow_obj(redis_callback.unique_id)
 
 
-@bisheng_celery.task
+@bisheng_celery.task(time_limit=3600, soft_time_limit=3300, acks_late=True)
 def continue_workflow(unique_id: str, workflow_id: str, chat_id: str, user_id: int, source: str = "platform"):
     """ Resumeworkflow """
     trace_id_var.set(unique_id)
@@ -154,17 +176,18 @@ def continue_workflow(unique_id: str, workflow_id: str, chat_id: str, user_id: i
                                          ))
 
 
-@bisheng_celery.task
+@bisheng_celery.task(time_limit=3600, soft_time_limit=3300, acks_late=True)
 def stop_workflow(unique_id: str, workflow_id: str, chat_id: str, user_id: int):
     """ Stopworkflow """
     trace_id_var.set(unique_id)
 
     redis_callback = RedisCallback(unique_id, workflow_id, chat_id, user_id)
-    if unique_id not in _global_workflow:
+    with _workflow_lock:
+        workflow = _global_workflow.get(unique_id, None)
+    if not workflow:
         redis_callback.set_workflow_status(WorkflowStatus.FAILED.value, 'workflow stop by user')
         logger.warning("stop_workflow called but workflow not found in global cache")
         return
-    workflow = _global_workflow[unique_id]
     workflow.stop()
 
     while workflow.status() == WorkflowStatus.RUNNING.value:

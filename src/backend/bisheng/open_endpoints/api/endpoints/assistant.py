@@ -240,7 +240,7 @@ def _check_model_supports_streaming(agent: AssistantAgent) -> bool:
     try:
         # Othersagentright of privacyLLMDoes it support streaming?
         if hasattr(agent, 'llm') and agent.llm:
-            # OthersBishengLLMright of privacystreamingProperty
+            # OthersEagentLLMright of privacystreamingProperty
             if hasattr(agent.llm, 'streaming'):
                 return agent.llm.streaming
             # Check Bottom Layerllmright of privacystreamProperty

@@ -292,7 +292,7 @@ function Form({ nodeId, nodeData, initialData, onSubmit, onCancel, existingOptio
     // text form
     const InputForm = <div className="space-y-4">
         <div>
-            <Label className="flex items-center bisheng-label">
+            <Label className="flex items-center eagent-label">
                 {t("displayName")}
                 <QuestionTooltip content={t("displayNameTooltip")} />
             </Label>
@@ -319,7 +319,7 @@ function Form({ nodeId, nodeData, initialData, onSubmit, onCancel, existingOptio
             {errors.displayName && <p className="text-red-500 text-sm">{errors.displayName}</p>}
         </div>
         <div>
-            <Label className="flex items-center bisheng-label">
+            <Label className="flex items-center eagent-label">
                 {t("variableName")}
                 <QuestionTooltip content={t("variableNameTooltip")} />
             </Label>
@@ -333,7 +333,7 @@ function Form({ nodeId, nodeData, initialData, onSubmit, onCancel, existingOptio
             {errors.variableName && <p className="text-red-500 text-sm">{errors.variableName}</p>}
         </div>
         <div className="flex items-center space-x-2">
-            <Label className="bisheng-label">{t('isRequired')}</Label>
+            <Label className="eagent-label">{t('isRequired')}</Label>
             <Switch
                 checked={formData.isRequired}
                 onCheckedChange={(checked) => setFormData({ ...formData, isRequired: checked })}
@@ -343,7 +343,7 @@ function Form({ nodeId, nodeData, initialData, onSubmit, onCancel, existingOptio
     // select from 
     const SelectForm = <div className="space-y-4">
         <div>
-            <Label className="flex items-center bisheng-label">
+            <Label className="flex items-center eagent-label">
                 {t("displayName")}
                 <QuestionTooltip content={t("displayNameTooltip")} />
             </Label>
@@ -357,7 +357,7 @@ function Form({ nodeId, nodeData, initialData, onSubmit, onCancel, existingOptio
             {errors.displayName && <p className="text-red-500 text-sm">{errors.displayName}</p>}
         </div>
         <div>
-            <Label className="flex items-center bisheng-label">
+            <Label className="flex items-center eagent-label">
                 {t("variableName")}
                 <QuestionTooltip content={t("variableNameTooltip")} />
             </Label>
@@ -371,19 +371,19 @@ function Form({ nodeId, nodeData, initialData, onSubmit, onCancel, existingOptio
             {errors.variableName && <p className="text-red-500 text-sm">{errors.variableName}</p>}
         </div>
         <div>
-            <Label className="bisheng-label">{t("options")}</Label>
+            <Label className="eagent-label">{t("options")}</Label>
             <DragOptions edit scroll options={formData.options} onChange={updateOptions} />
             {errors.options && <p className="text-red-500 text-sm">{errors.options}</p>}
         </div>
         <div className="flex items-center space-x-2">
-            <Label className="bisheng-label">{t('allowMultipleSelect')}</Label>
+            <Label className="eagent-label">{t('allowMultipleSelect')}</Label>
             <Switch
                 checked={formData.allowMultiple}
                 onCheckedChange={(checked) => setFormData({ ...formData, allowMultiple: checked })}
             />
         </div>
         <div className="flex items-center space-x-2">
-            <Label className="bisheng-label">{t('isRequired')}</Label>
+            <Label className="eagent-label">{t('isRequired')}</Label>
             <Switch
                 checked={formData.isRequired}
                 onCheckedChange={(checked) => setFormData({ ...formData, isRequired: checked })}
@@ -393,7 +393,7 @@ function Form({ nodeId, nodeData, initialData, onSubmit, onCancel, existingOptio
     // file form 
     const FileForm = <div className="space-y-4">
         <div>
-            <Label className="flex items-center bisheng-label">
+            <Label className="flex items-center eagent-label">
                 {t("displayName")}
                 <QuestionTooltip content={t("displayNameTooltip")} />
             </Label>
@@ -408,7 +408,7 @@ function Form({ nodeId, nodeData, initialData, onSubmit, onCancel, existingOptio
         </div>
 
         <div className="flex items-center space-x-2">
-            <Label className="bisheng-label">{t('isRequired')}</Label>
+            <Label className="eagent-label">{t('isRequired')}</Label>
             <Switch
                 checked={formData.isRequired}
                 onCheckedChange={(checked) => setFormData({ ...formData, isRequired: checked })}
@@ -416,7 +416,7 @@ function Form({ nodeId, nodeData, initialData, onSubmit, onCancel, existingOptio
         </div>
 
         <div className="flex items-center space-x-2">
-            <Label className="bisheng-label">{t('allowUploadMultipleFiles')}</Label>
+            <Label className="eagent-label">{t('allowUploadMultipleFiles')}</Label>
             <Switch
                 checked={formData.isMultiple}
                 onCheckedChange={(checked) => setFormData({ ...formData, isMultiple: checked })}
@@ -427,7 +427,7 @@ function Form({ nodeId, nodeData, initialData, onSubmit, onCancel, existingOptio
             value: formData.fileType,
         }} onChange={(fileType) => setFormData({ ...formData, fileType })} />
         <div>
-            <Label className="flex items-center bisheng-label">
+            <Label className="flex items-center eagent-label">
                 {t('tempKnowledgeBaseName')}
                 <QuestionTooltip content={t('tempKnowledgeBaseNameTip')} />
             </Label>
@@ -442,7 +442,7 @@ function Form({ nodeId, nodeData, initialData, onSubmit, onCancel, existingOptio
         </div>
 
         <div>
-            <Label className="flex items-center bisheng-label">
+            <Label className="flex items-center eagent-label">
                 {t('fileContentVarName')}
                 <QuestionTooltip content={t('fileContentVarTip')} />
             </Label>
@@ -469,7 +469,7 @@ function Form({ nodeId, nodeData, initialData, onSubmit, onCancel, existingOptio
             onChange={(fileContentSize) => setFormData({ ...formData, fileContentSize })}
         />
         <div>
-            <Label className="flex items-center bisheng-label">
+            <Label className="flex items-center eagent-label">
                 {t('filePathVarName')}
                 <QuestionTooltip content={t('filePathVarTip')} />
             </Label>
@@ -483,7 +483,7 @@ function Form({ nodeId, nodeData, initialData, onSubmit, onCancel, existingOptio
             {errors.filepath && <p className="text-red-500 text-sm">{errors.filepath}</p>}
         </div>
         {formData.fileType !== 'file' && <div>
-            <Label className="flex items-center bisheng-label">
+            <Label className="flex items-center eagent-label">
                 {t('uploadImageFile')}
                 <QuestionTooltip content={t('uploadImageFileTip')} />
             </Label>
@@ -501,7 +501,7 @@ function Form({ nodeId, nodeData, initialData, onSubmit, onCancel, existingOptio
     return (
         <form onSubmit={handleFormSubmit} className="space-y-4">
             <div>
-                <Label className="bisheng-label">{t("formType")}</Label>
+                <Label className="eagent-label">{t("formType")}</Label>
                 <div className="flex gap-4 justify-between mx-6 mt-2">
                     <Button
                         className={`flex flex-col h-18 w-28 ${formData.formType === FormType.Text ? "border-primary/40 bg-[#DFE9FD] text-primary" : ""}`}

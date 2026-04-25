@@ -14,9 +14,9 @@ if TYPE_CHECKING:
 
 CACHE: Dict[str, Any] = {}
 
-CACHE_DIR = user_cache_dir('bisheng', 'bisheng')
+CACHE_DIR = user_cache_dir('eagent', 'eagent')
 
-PREFIX = 'bisheng_cache'
+PREFIX = 'eagent_cache'
 
 
 def create_cache_folder(func):

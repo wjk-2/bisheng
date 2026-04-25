@@ -47,11 +47,13 @@ router = APIRouter(prefix='/knowledge', tags=['Knowledge'])
 
 
 @router.post('/upload')
-async def upload_file(*, file: UploadFile = File(...)):
+async def upload_file(*,
+                      file: UploadFile = File(...),
+                      login_user: UserPayload = Depends(UserPayload.get_login_user)):
     file_name = file.filename
     # Cache Local
     uuid_file_name = await KnowledgeService.save_upload_file_original_name(file_name)
-    file_path = await save_uploaded_file(file, 'bisheng', uuid_file_name)
+    file_path = await save_uploaded_file(file, 'eagent', uuid_file_name)
     if not isinstance(file_path, str):
         file_path = str(file_path)
     return resp_200(UploadFileResponse(file_path=file_path))
@@ -66,7 +68,7 @@ async def upload_knowledge_file(*, request: Request, login_user: UserPayload = D
     file_name = file.filename
     # Cache Local
     uuid_file_name = await KnowledgeService.save_upload_file_original_name(file_name)
-    file_path = await save_uploaded_file(file, 'bisheng', uuid_file_name)
+    file_path = await save_uploaded_file(file, 'eagent', uuid_file_name)
     if not isinstance(file_path, str):
         file_path = str(file_path)
 
@@ -343,7 +345,7 @@ async def get_QA_list(*,
                       status: Optional[int] = None,
                       login_user: UserPayload = Depends(UserPayload.get_login_user)):
     """ Get knowledge base file information. """
-    db_knowledge = KnowledgeService.judge_qa_knowledge_write(login_user, qa_knowledge_id)
+    db_knowledge = KnowledgeService.judge_qa_knowledge_access(login_user, qa_knowledge_id, AccessType.KNOWLEDGE)
 
     qa_list, total_count = await knowledge_imp.list_qa_by_knowledge_id(qa_knowledge_id, page_size,
                                                                        page_num, question, answer,
@@ -435,7 +437,7 @@ async def delete_knowledge_chunk(request: Request,
 async def get_file_share_url(request: Request,
                              login_user: UserPayload = Depends(UserPayload.get_login_user),
                              file_id: int = Query(description='File UniqueID')):
-    original_url, preview_url = KnowledgeService.get_file_share_url(file_id)
+    original_url, preview_url = KnowledgeService.get_file_share_url(login_user, file_id)
     return resp_200(data={
         'original_url': original_url,
         'preview_url': preview_url
@@ -498,8 +500,11 @@ def qa_status_switch(*,
 
 @router.get('/qa/detail', status_code=200)
 def qa_detail(*, id: int, login_user: UserPayload = Depends(UserPayload.get_login_user)):
-    """ Add knowledge base information. """
+    """ Get QA knowledge detail, requires KNOWLEDGE read access. """
     qa_knowledge = QAKnoweldgeDao.get_qa_knowledge_by_primary_id(id)
+    if not qa_knowledge:
+        raise NotFoundError()
+    KnowledgeService.judge_qa_knowledge_access(login_user, qa_knowledge.knowledge_id, AccessType.KNOWLEDGE)
     qa_knowledge.answers = json.loads(qa_knowledge.answers)[0]
     return resp_200(data=qa_knowledge)
 
@@ -554,12 +559,14 @@ def qa_delete(*,
 @router.post('/qa/auto_question')
 def qa_auto_question(
         *,
+        knowledge_id: int = Body(..., embed=True),
         number: int = Body(default=3, embed=True),
         ori_question: str = Body(default='', embed=True),
         answer: str = Body(default='', embed=True),
         login_user: UserPayload = Depends(UserPayload.get_login_user)
 ):
-    """Automatically generate questions from large models"""
+    """Automatically generate questions from large models, requires KNOWLEDGE read access."""
+    KnowledgeService.judge_qa_knowledge_access(login_user, knowledge_id, AccessType.KNOWLEDGE)
     questions = knowledge_imp.recommend_question(login_user.user_id, ori_question, number=number, answer=answer)
     return resp_200(data={'questions': questions})
 
@@ -574,7 +581,7 @@ async def get_export_url():
     file_name = f"qa_export_template.xlsx"
     bio.seek(0)
     file = UploadFile(filename=file_name, file=bio)
-    file_path = await save_uploaded_file(file, 'bisheng', file_name)
+    file_path = await save_uploaded_file(file, 'eagent', file_name)
     return resp_200({"url": file_path})
 
 
@@ -587,8 +594,7 @@ async def get_export_url(*,
                          status: Optional[int] = None,
                          max_lines: Optional[int] = 10000,
                          login_user: UserPayload = Depends(UserPayload.get_login_user)):
-    # Query the current knowledge base, whether there are write permissions
-    db_knowledge = KnowledgeService.judge_qa_knowledge_write(login_user, qa_knowledge_id)
+    db_knowledge = KnowledgeService.judge_qa_knowledge_access(login_user, qa_knowledge_id, AccessType.KNOWLEDGE_WRITE)
 
     if keyword:
         question = keyword
@@ -631,7 +637,7 @@ async def get_export_url(*,
         file_index = file_index + 1
         bio.seek(0)
         file_io = UploadFile(filename=file_name, file=bio)
-        file_path = await save_uploaded_file(file_io, 'bisheng', file_name)
+        file_path = await save_uploaded_file(file_io, 'eagent', file_name)
         file_list.append(file_path)
         total_num += len(qa_list)
         if len(qa_list) < page_size or total_num >= total_count:
@@ -655,6 +661,7 @@ def post_import_file(*,
                      size: Optional[int] = Body(default=0, embed=True),
                      offset: Optional[int] = Body(default=0, embed=True),
                      login_user: UserPayload = Depends(UserPayload.get_login_user)):
+    KnowledgeService.judge_qa_knowledge_access(login_user, qa_knowledge_id, AccessType.KNOWLEDGE)
     df = pd.read_excel(file_url)
     columns = df.columns.to_list()
     if 'Question' not in columns or 'Answer' not in columns:
@@ -665,8 +672,8 @@ def post_import_file(*,
         d = QAKnowledgeUpsert(
             user_id=login_user.user_id,
             knowledge_id=qa_knowledge_id,
-            answers=[convert_excel_value(dd['Question'])],
-            questions=[convert_excel_value(dd['Answer'])],
+            answers=[convert_excel_value(dd['Answer'])],
+            questions=[convert_excel_value(dd['Question'])],
             source=4,
             create_time=datetime.now(),
             update_time=datetime.now())
@@ -679,7 +686,7 @@ def post_import_file(*,
             if offset >= len(insert_data):
                 insert_data = []
             else:
-                insert_data = insert_data[offset:size]
+                insert_data = insert_data[offset:offset + size]
     except Exception as e:
         raise HTTPException(status_code=500, detail=e)
     return resp_200({"result": insert_data})
@@ -691,8 +698,7 @@ def post_import_file(*,
                      file_list: list[str] = Body(..., embed=True),
                      background_tasks: BackgroundTasks,
                      login_user: UserPayload = Depends(UserPayload.get_login_user)):
-    # Query the current knowledge base, whether there are write permissions
-    db_knowledge = KnowledgeService.judge_qa_knowledge_write(login_user, qa_knowledge_id)
+    db_knowledge = KnowledgeService.judge_qa_knowledge_access(login_user, qa_knowledge_id, AccessType.KNOWLEDGE_WRITE)
 
     insert_result = []
     error_result = []

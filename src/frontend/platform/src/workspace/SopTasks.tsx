@@ -102,7 +102,6 @@ const Tool = ({ data, setCurrentDirectFile, onSearchKnowledge, onWebSearch }) =>
                 data: resData
             })
         } catch (error) {
-            console.log('knowledge parse error :>> ', error);
             toast({ description: output, variant: 'error' });
         }
     }
@@ -137,7 +136,6 @@ const Tool = ({ data, setCurrentDirectFile, onSearchKnowledge, onWebSearch }) =>
                 })
             }
         } catch (error) {
-            console.log('websearch parse error :>> ', error);
 
             onWebSearch({
                 query: params.query,
@@ -269,7 +267,6 @@ const Task = ({
 
     useEffect(() => {
         if (task.event_type === "user_input") {
-            console.log('ding :>> ', task.event_type, task);
         }
     }, [task.status])
 
@@ -398,7 +395,6 @@ const Task = ({
 
 export const TaskFlowContent = ({ linsight, showFeedBack = false }) => {
     const { status, sop, title, tasks, taskError, queueCount = 0 } = linsight
-    console.log('linsight :>> ', linsight);
     const summary = linsight.output_result.answer;
     const files = linsight.output_result.final_files || []
     const allFiles = linsight?.output_result?.all_from_session_files || []
@@ -457,7 +453,6 @@ export const TaskFlowContent = ({ linsight, showFeedBack = false }) => {
     };
 
     const handleExportOther = async (e, type: 'pdf' | 'docx', file) => {
-        console.log(file);
 
         e.stopPropagation();
         setExportState({ loading: true, success: false, error: false, title: type === 'docx' ? 'Docx' : type });
@@ -469,12 +464,6 @@ export const TaskFlowContent = ({ linsight, showFeedBack = false }) => {
         }
 
         try {
-            console.log('开始转换下载，参数:', {
-                file_url: file.file_url,
-                file_name: file.file_name,
-                to_type: type
-            });
-
             // 发起请求，指定响应类型为 blob
             const response = await axios.post(
                 '/api/v1/linsight/workbench/download-md-to-pdf-or-docx',
@@ -488,8 +477,6 @@ export const TaskFlowContent = ({ linsight, showFeedBack = false }) => {
                 { responseType: 'blob' }
             );
 
-            console.log('转换下载API返回1:', response);
-            console.log('返回数据类型:', typeof response.data);
 
             // 关键步骤：校验响应是否为 JSON 格式的错误（后端返回 200 但实际出错）
             const blob = response.data;
@@ -545,7 +532,6 @@ export const TaskFlowContent = ({ linsight, showFeedBack = false }) => {
 
             // 创建最终下载用的 Blob（指定正确 MIME 类型）
             const downloadBlob = new Blob([blob], { type: mimeType });
-            console.log('创建的下载Blob:', downloadBlob);
 
             // 生成下载链接并触发下载
             const url = window.URL.createObjectURL(downloadBlob);
@@ -563,7 +549,6 @@ export const TaskFlowContent = ({ linsight, showFeedBack = false }) => {
 
             // 更新状态为成功，3秒后自动隐藏提示
             setExportState(prev => ({ ...prev, loading: false, success: true }));
-            console.log(`${type.toUpperCase()}文件转换下载成功`);
             timerRef.current = setTimeout(() => {
                 setExportState(prev => ({ ...prev, success: false }));
             }, 3000);
@@ -866,7 +851,6 @@ export const TaskFlowContent = ({ linsight, showFeedBack = false }) => {
 const useFoucsInput = (tasks: any) => {
     const [inputQueue, setInputQueue] = useState<string[]>([]); // 待处理的输入任务队列
     const [currentFocusId, setCurrentFocusId] = useState(''); // 当前聚焦的任务ID
-    console.log('inputQueue :>> ', inputQueue);
     // 当任务变化时更新输入队列
     useEffect(() => {
         // 找出所有需要输入的新任务

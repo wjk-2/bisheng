@@ -10,7 +10,7 @@ from typing_extensions import Self
 from bisheng.core.ai import XinferenceRerank, CommonRerank, DashScopeRerank
 from bisheng.llm.domain.const import LLMServerType, LLMModelType
 from .llm import BishengBase
-from ..utils import wrapper_bisheng_model_limit_check, wrapper_bisheng_model_limit_check_async
+from ..utils import wrapper_eagent_model_limit_check, wrapper_eagent_model_limit_check_async
 
 
 def _get_xinference_params(params: dict, server_config: dict, model_config: dict) -> dict:
@@ -76,7 +76,7 @@ class BishengRerank(BishengBase, BaseDocumentCompressor):
             raise Exception(f'Support onlyRerankModel of type, not supported{model_info.model_type}Type of model')
         if not ignore_online and not model_info.online:
             raise Exception(f'{server_info.name}under{model_info.model_name}The model is offline, please contact the administrator to launch the corresponding model')
-        logger.debug(f'init_bisheng_rerank: server_id: {server_info.id}, model_id: {model_info.id}')
+        logger.debug(f'init_eagent_rerank: server_id: {server_info.id}, model_id: {model_info.id}')
 
         node_conf = _node_type.get(server_info.type)
         if not node_conf:
@@ -94,10 +94,10 @@ class BishengRerank(BishengBase, BaseDocumentCompressor):
         try:
             self.rerank = client_class(**params)
         except Exception as e:
-            logger.exception('init_bisheng_rerank error')
-            raise Exception(f'init bisheng rerank error，error msg：{e}')
+            logger.exception('init_eagent_rerank error')
+            raise Exception(f'init eagent rerank error，error msg：{e}')
 
-    @wrapper_bisheng_model_limit_check
+    @wrapper_eagent_model_limit_check
     def compress_documents(
             self,
             documents: Sequence[Document],
@@ -106,7 +106,7 @@ class BishengRerank(BishengBase, BaseDocumentCompressor):
     ) -> Sequence[Document]:
         return self.rerank.compress_documents(documents, query, callbacks=callbacks)
 
-    @wrapper_bisheng_model_limit_check_async
+    @wrapper_eagent_model_limit_check_async
     async def acompress_documents(
             self,
             documents: Sequence[Document],
