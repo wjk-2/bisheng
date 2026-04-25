@@ -44,6 +44,8 @@ class WebMenuResource(Enum):
     BACKEND = 'backend'  # Backend Access
 
     CREATE_DASHBOARD = 'create_dashboard'  # Create board permissions
+    EDUCATION_STUDENT = 'education_student'  # 学生：课程学习、作品集
+    EDUCATION_TEACHER = 'education_teacher'  # 教师：班级管理
 
 
 class AccessType(Enum):
