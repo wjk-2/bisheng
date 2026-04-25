@@ -1,6 +1,5 @@
 import {
     ApplicationIcon,
-    EducationIcon,
     EvaluatingIcon,
     KnowledgeIcon,
     LabelIcon,
@@ -99,7 +98,6 @@ export default function MainLayout() {
     const getInitialExpandedState = () => {
         const defaults: Record<string, boolean> = {
             workspace: true,
-            education: true,
             square: true,
             application: true,
             model: true,
@@ -144,23 +142,6 @@ export default function MainLayout() {
 
     const menuGroups = useMemo<MenuGroup[]>(() => {
         const groups: MenuGroup[] = [];
-
-        const teachingItems: MenuItem[] = [];
-
-        teachingItems.push({
-            key: 'education-home',
-            label: t('menu.educationTeaching'),
-            icon: <EducationIcon className="h-5 w-5" />,
-            to: '/education'
-        });
-
-        if (teachingItems.length) {
-            groups.push({
-                key: 'education',
-                title: t('menu.groupEducation'),
-                items: teachingItems
-            });
-        }
 
         const applicationItems: MenuItem[] = [];
         applicationItems.push({
