@@ -21,8 +21,8 @@ from bisheng.open_endpoints.api.router import (assistant_router_rpc, chat_router
                                                filelib_router_rpc)
 from bisheng.share_link.api.router import router as share_link_router
 from bisheng.linsight.api.router import router as linsight_router
-# from bisheng.telemetry_search.api.router import router as telemetry_search_router  # disabled: .pyc compiled for Python 3.10, incompatible with 3.11
 from bisheng.education.api.router import router as education_router
+# from bisheng.telemetry_search.api.router import router as telemetry_search_router  # disabled: .pyc compiled for Python 3.10, incompatible with 3.11
 from bisheng.api.v1.prompt import router as ws_prompt_router
 from bisheng.api.v1.conversation_tag import router as ws_conversation_tag_router
 
@@ -50,12 +50,12 @@ router.include_router(workflow_router)
 router.include_router(mark_router)
 router.include_router(workstation_router)
 router.include_router(linsight_router)
+router.include_router(education_router)
 router.include_router(tool_router)
 router.include_router(invite_code_router)
 router.include_router(session_router)
 router.include_router(share_link_router)
 # router.include_router(telemetry_search_router)  # disabled: telemetry_search module unavailable
-router.include_router(education_router)
 router.include_router(deployment_router)
 
 _EAGENT_API_KEY = os.getenv('EAGENT_API_KEY', '')

@@ -1,6 +1,5 @@
 import {
     ApplicationIcon,
-    EducationIcon,
     EvaluatingIcon,
     KnowledgeIcon,
     LabelIcon,
@@ -16,7 +15,7 @@ import { SelectHover, SelectHoverItem } from "@/components/bs-ui/select/hover";
 import { locationContext } from "@/contexts/locationContext";
 import { resolveWorkspaceUrl } from "@/util/workspace";
 import i18next from "i18next";
-import { Activity, Check, ChevronDown, ChevronLeft, ChevronRight, ExternalLink, Lock, MoonStar, Settings, Sun, Users } from "lucide-react";
+import { Activity, BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, ExternalLink, GraduationCap, Lock, MoonStar, Settings, Sun, Users } from "lucide-react";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { useTranslation } from "react-i18next";
@@ -99,7 +98,6 @@ export default function MainLayout() {
     const getInitialExpandedState = () => {
         const defaults: Record<string, boolean> = {
             workspace: true,
-            education: true,
             square: true,
             application: true,
             model: true,
@@ -143,24 +141,8 @@ export default function MainLayout() {
     };
 
     const menuGroups = useMemo<MenuGroup[]>(() => {
+        const webMenu = user.web_menu ?? [];
         const groups: MenuGroup[] = [];
-
-        const teachingItems: MenuItem[] = [];
-
-        teachingItems.push({
-            key: 'education-home',
-            label: t('menu.educationTeaching'),
-            icon: <EducationIcon className="h-5 w-5" />,
-            to: '/education'
-        });
-
-        if (teachingItems.length) {
-            groups.push({
-                key: 'education',
-                title: t('menu.groupEducation'),
-                items: teachingItems
-            });
-        }
 
         const applicationItems: MenuItem[] = [];
         applicationItems.push({
@@ -221,6 +203,37 @@ export default function MainLayout() {
             });
         }
 
+        const educationItems: MenuItem[] = [];
+        if (webMenu.includes('education_student')) {
+            educationItems.push({
+                key: 'education-courses',
+                label: t('menu.educationCourses'),
+                icon: <BookOpen className="h-5 w-5" />,
+                to: '/education/courses'
+            });
+            educationItems.push({
+                key: 'education-portfolio',
+                label: t('menu.educationPortfolio'),
+                icon: <GraduationCap className="h-5 w-5" />,
+                to: '/education/portfolio'
+            });
+        }
+        if (webMenu.includes('education_teacher')) {
+            educationItems.push({
+                key: 'education-classes',
+                label: t('menu.educationClasses'),
+                icon: <Users className="h-5 w-5" />,
+                to: '/education/classes'
+            });
+        }
+        if (educationItems.length) {
+            groups.push({
+                key: 'education',
+                title: t('menu.groupEducation'),
+                items: educationItems
+            });
+        }
+
         const settingItems: MenuItem[] = [];
         if (isAdmin) {
             // 工作台配置（从智能体构建移入）
@@ -273,7 +286,7 @@ export default function MainLayout() {
         }
 
         return groups;
-    }, [appConfig, isAdmin, t]);
+    }, [appConfig, isAdmin, user.web_menu, t]);
 
     return <div className="flex">
         <div className="bg-background-main w-full h-screen">

@@ -1,1 +1,0 @@
-# Education domain schemas

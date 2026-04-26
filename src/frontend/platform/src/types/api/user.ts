@@ -12,6 +12,7 @@ export type User = {
     role: string;
     groups: Array<{ id: number; name: string }>;
     roles: Array<{ id: number; name: string; group_id?: number }>;
+    web_menu?: string[];
 };
 
 export type ROLE = {

@@ -1,152 +1,121 @@
-"""
-课程服务 - 处理课程列表和详情逻辑
-"""
-from typing import List, Optional
-from loguru import logger
-from sqlalchemy import func
-from sqlmodel import select
-
-from bisheng.core.database import get_sync_db_session
+from datetime import datetime
+from typing import Optional, List
+from sqlmodel import Session, select
 from bisheng.education.domain.models.education import (
-    Course, Chapter, UserProgress,
-    CourseDao, ChapterDao, UserProgressDao
+    EduCourse, EduUnit, EduUnitProgress,
+    EduCourseDao, EduUnitDao, EduProgressDao,
 )
 from bisheng.education.domain.schemas.education_schema import (
-    CourseListResponse, CourseDetailResponse, ChapterInfo
+    CourseOut, CourseDetailOut, UnitOut, UnitDetailOut, UnitLearningOut,
+    MarkCompleteResp,
 )
 
 
 class CourseService:
-    """课程服务"""
 
     @staticmethod
-    def get_courses(
-        level: Optional[str] = None,
-        category: Optional[str] = None
-    ) -> List[CourseListResponse]:
-        """
-        获取课程列表，支持按难度和类别筛选
-
-        Args:
-            level: 课程难度 (beginner/intermediate/advanced)
-            category: 课程类别
-
-        Returns:
-            课程列表，包含章节数和学习人数
-        """
-        try:
-            with get_sync_db_session() as session:
-                # 构建查询：课程 + 章节数统计
-                query = session.query(
-                    Course,
-                    func.count(Chapter.id).label('chapters_count')
-                ).outerjoin(
-                    Chapter,
-                    Chapter.course_id == Course.id
-                )
-
-                # 筛选条件
-                if level:
-                    query = query.filter(Course.level == level)
-                if category:
-                    query = query.filter(Course.category == category)
-
-                query = query.group_by(Course.id)
-                rows = query.all()
-
-                course_list = []
-                for course, chapters_count in rows:
-                    # 获取学习人数
-                    learning_users = UserProgressDao.get_user_count_by_course(course.id)
-
-                    course_list.append(
-                        CourseListResponse(
-                            id=course.id,
-                            title=course.title,
-                            description=course.description or "",
-                            level=course.level,
-                            category=course.category or "",
-                            duration=course.duration or 0,
-                            thumbnail=course.thumbnail or "",
-                            total_chapters=int(chapters_count or 0),
-                            completed_chapters=0,  # 列表视图不需要用户维度数据
-                            learning_users=learning_users
-                        )
+    def list_courses(session: Session, student_id: int, course_type: Optional[str] = None) -> List[CourseOut]:
+        courses = EduCourseDao.list_courses(session, course_type)
+        result = []
+        for c in courses:
+            units = EduUnitDao.list_units_by_course(session, c.id)
+            total = len(units)
+            completed = 0
+            if total > 0:
+                unit_ids = {u.id for u in units}
+                progresses = session.exec(
+                    select(EduUnitProgress).where(
+                        EduUnitProgress.student_id == student_id,
+                        EduUnitProgress.unit_id.in_(unit_ids),
+                        EduUnitProgress.status == 1,
                     )
-
-                return course_list
-
-        except Exception as e:
-            logger.error(f"获取课程列表失败: {str(e)}")
-            raise
+                ).all()
+                # 去重：同一 unit 在多个班级都完成，只算一次
+                completed = len({p.unit_id for p in progresses})
+            result.append(CourseOut(
+                id=c.id,
+                title=c.title,
+                type=c.type,
+                description=c.description,
+                cover=c.cover,
+                total_units=total,
+                completed_units=completed,
+            ))
+        return result
 
     @staticmethod
-    def get_course_detail(
-        course_id: int,
-        user_id: Optional[int] = None
-    ) -> Optional[CourseDetailResponse]:
-        """
-        获取课程详情，包含章节列表和用户进度
+    def get_course_detail(session: Session, course_id: int, student_id: int, class_id: Optional[int] = None) -> CourseDetailOut:
+        course = EduCourseDao.get_course(session, course_id)
+        if not course:
+            raise ValueError(f"Course {course_id} not found")
 
-        Args:
-            course_id: 课程ID
-            user_id: 用户ID（可选，用于获取学习进度）
+        units = EduUnitDao.list_units_by_course(session, course_id)
+        units_out = []
+        for u in units:
+            is_completed = False
+            if class_id:
+                progress = EduProgressDao.get_progress(session, student_id, u.id, class_id)
+                is_completed = bool(progress and progress.status == 1)
+            units_out.append(UnitOut(
+                id=u.id,
+                course_id=u.course_id,
+                title=u.title,
+                order=u.order,
+                estimated_minutes=u.estimated_minutes,
+                right_panel_type=u.right_panel_type,
+                right_panel_config=u.right_panel_config,
+                is_completed=is_completed,
+            ))
 
-        Returns:
-            课程详情，包含章节信息和进度
-        """
-        try:
-            # 获取课程基础信息
-            course = CourseDao.get_course_by_id(course_id)
-            if not course:
-                return None
+        total_units = len(units_out)
+        completed_units = sum(1 for u in units_out if u.is_completed)
+        course_out = CourseOut(
+            id=course.id,
+            title=course.title,
+            type=course.type,
+            description=course.description,
+            cover=course.cover,
+            total_units=total_units,
+            completed_units=completed_units,
+        )
+        return CourseDetailOut(course=course_out, units=units_out)
 
-            # 获取章节列表
-            chapters = ChapterDao.get_chapters_by_course_id(course_id)
+    @staticmethod
+    def get_unit_learning(session: Session, unit_id: int, student_id: int, class_id: Optional[int] = None) -> UnitLearningOut:
+        unit = EduUnitDao.get_unit(session, unit_id)
+        if not unit:
+            raise ValueError(f"Unit {unit_id} not found")
 
-            # 获取用户进度（如果提供了 user_id）
-            user_progress_map = {}
-            completed_count = 0
-            if user_id:
-                user_progress_list = UserProgressDao.get_user_progress_by_course(user_id, course_id)
-                user_progress_map = {progress.chapter_id: progress for progress in user_progress_list}
-                completed_count = sum(1 for p in user_progress_list if p.completed)
+        siblings = EduUnitDao.list_units_by_course(session, unit.course_id)
+        ordered_ids = [u.id for u in siblings]
+        idx = ordered_ids.index(unit_id) if unit_id in ordered_ids else -1
+        prev_id = ordered_ids[idx - 1] if idx > 0 else None
+        next_id = ordered_ids[idx + 1] if idx < len(ordered_ids) - 1 else None
 
-            # 构建章节信息
-            chapter_infos = []
-            for chapter in chapters:
-                progress_record = user_progress_map.get(chapter.id)
-                chapter_infos.append(
-                    ChapterInfo(
-                        id=chapter.id,
-                        title=chapter.title,
-                        description=chapter.description or "",
-                        video_url=chapter.video_url or "",
-                        duration=chapter.duration or 0,
-                        order_index=chapter.order_index,
-                        progress=progress_record.progress if progress_record else 0.0,
-                        completed=progress_record.completed if progress_record else False,
-                        last_position=progress_record.last_position if progress_record else 0
-                    )
-                )
+        is_completed = False
+        if class_id:
+            progress = EduProgressDao.get_progress(session, student_id, unit.id, class_id)
+            is_completed = bool(progress and progress.status == 1)
 
-            # 获取学习人数
-            learning_users = UserProgressDao.get_user_count_by_course(course_id)
+        unit_detail = UnitDetailOut(
+            id=unit.id,
+            course_id=unit.course_id,
+            title=unit.title,
+            order=unit.order,
+            estimated_minutes=unit.estimated_minutes,
+            right_panel_type=unit.right_panel_type,
+            right_panel_config=unit.right_panel_config,
+            content=unit.content,
+            is_completed=is_completed,
+        )
+        return UnitLearningOut(unit=unit_detail, prev_unit_id=prev_id, next_unit_id=next_id)
 
-            return CourseDetailResponse(
-                id=course.id,
-                title=course.title,
-                description=course.description or "",
-                level=course.level,
-                category=course.category or "",
-                duration=course.duration or 0,
-                thumbnail=course.thumbnail or "",
-                chapters=chapter_infos,
-                total_chapters=len(chapters),
-                completed_chapters=completed_count,
-                learning_users=learning_users
-            )
-
-        except Exception as e:
-            logger.error(f"获取课程详情失败 (course_id={course_id}): {str(e)}")
-            raise
+    @staticmethod
+    def mark_unit_complete(session: Session, student_id: int, unit_id: int, class_id: int) -> MarkCompleteResp:
+        progress = EduProgressDao.upsert_progress(session, student_id, unit_id, class_id, status=1)
+        return MarkCompleteResp(
+            unit_id=unit_id,
+            class_id=class_id,
+            status=progress.status,
+            complete_time=progress.complete_time,
+        )

@@ -1,0 +1,25 @@
+Education Module Video URL Backup — 2026-04-25
+===============================================
+
+背景说明
+--------
+本文件是 Task 0（清理旧 education 代码）中 Step 2 的备份记录。
+
+检查结论
+--------
+工作目录：C:/Users/Administrator/projects/eagent-v3/education-redesign/
+分支：feature/education-redesign（基于 analysis-v2.3.0 干净官方版本）
+
+检查路径：src/backend/bisheng/education/
+结果：目录不存在。官方版本代码中从未包含 education 模块后端代码。
+
+由于后端 education 目录本身不存在，不存在 education.py 模型文件，
+也不存在 video_url 字段定义，因此无需导出数据库中的视频 URL。
+
+实际数据库操作
+--------------
+数据库中如有 education 相关数据（video_url 等），需在实际部署环境中
+通过 SQL 单独备份，不在本 Task 范围内。
+
+操作人：Task 0 自动记录
+时间：2026-04-25
