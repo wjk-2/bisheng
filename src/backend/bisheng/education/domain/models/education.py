@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Optional, List
 from sqlmodel import Field, SQLModel, Session, select
+from sqlalchemy import Column, JSON
 from bisheng.common.models.base import SQLModelSerializable
 
 
@@ -26,7 +27,7 @@ class EduUnit(SQLModelSerializable, table=True):
     order: int = Field(default=0)
     content: Optional[str] = None
     right_panel_type: str = Field(default='dialog', max_length=30)
-    right_panel_config: Optional[dict] = Field(default=None, sa_type='JSON')
+    right_panel_config: Optional[dict] = Field(default=None, sa_column=Column(JSON))
     estimated_minutes: int = Field(default=60)
     status: int = Field(default=0)
     create_time: Optional[datetime] = Field(default=None)
