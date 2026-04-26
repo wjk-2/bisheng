@@ -120,7 +120,7 @@ const Nav = ({
       <div
         data-testid="nav"
         className={
-          'nav active max-w-[200px] flex-shrink-0 overflow-x-hidden bg-[rgba(255,255,255,0.8)] dark:bg-gray-900 border-r border-[#E5EAF4] dark:border-gray-800'
+          'nav active max-w-[200px] flex-shrink-0 overflow-x-hidden bg-background/80 border-r border-border'
         }
         style={{
           width: navVisible ? navWidth : '0px',
@@ -173,10 +173,10 @@ const Nav = ({
                     )}
                   </div>
                   {/* 收起侧边栏 */}
-                  <div className="border-t border-[#E5EAF4] dark:border-gray-800 pt-2 mt-2">
+                  <div className="border-t border-border pt-2 mt-2">
                     <button
                       onClick={toggleNavVisible}
-                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[#9498AC] dark:text-gray-400 hover:text-[#140E35] dark:hover:text-gray-200 hover:bg-[#F7F9FF] dark:hover:bg-gray-800 transition-all duration-200 text-xs"
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-200 text-xs"
                     >
                       <ChevronLeft className="w-4 h-4" />
                       <span>{localize('com_nav_close_sidebar')}</span>

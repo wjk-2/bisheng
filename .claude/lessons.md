@@ -13,19 +13,6 @@
 - Platform 拦截器在 `status_code === 200` 时直接 `return response.data.data`
 - 所以 Platform 中任何 `getWorkstationConfigApi()` 等 API 函数，`.then()` 回调的参数就是业务数据本身
 
-## 2026-04-06 Platform Logo 动态化改造要点
-
-**改动文件**：
-- `src/frontend/platform/src/contexts/locationContext.tsx` — `getWorkstationConfigApi()` 响应存入 `appConfig`
-- `src/frontend/platform/src/layout/MainLayout.tsx` — Logo 从硬编码改为动态绑定
-
-**关键设计决策**：
-- 两端（Client + Platform）共用同一个后端配置 API `/api/v1/workstation/config`
-- `sidebarSlogan` 和 `sidebarIcon` 由管理员在系统管理中统一维护
-- 字号统一为 `text-sm`（14px），与 Client 一致
-- 图片 URL 需拼 `__APP_ENV__.BASE_URL` 前缀
-- 图标显示条件对齐 Client：只检查 `image` 是否存在，不检查 `enabled`
-
 ## 2026-04-06 benchMenu 字段已废弃
 
 **问题**：`locationContext.tsx` 中原来有 `benchMenu` 的处理逻辑（从 workstation config 读取）。
@@ -96,6 +83,19 @@
 **教训**：Tailwind utility class 无法表达多层渐变叠加（`background` 属性多值）。解决方法：用 `onMouseEnter/Leave` state 切换 `style={{ background: ... }}` inline style，不要试图用 Tailwind class 实现。
 
 **检查点**：凡是需要 `background: <gradient1>, <gradient2>` 两层叠加的场景，直接用 inline style。
+
+## 2026-04-26 Platform 页面背景架构规则
+
+**规则**：Platform 业务页面顶层容器不得设置任何背景色。背景由 `MainLayout.tsx:426` 的 `[background:var(--studio-page-bg)]` 统一承载。
+
+**Why**：新增页面时开发者习惯性写 `bg-background-login` 或 `bg-white` 作为容器背景，导致 MainLayout 的品牌渐变背景被完全遮盖，产品视觉出现白色割裂。本次共清理 17 处反模式。
+
+**How to apply**：
+- 新增页面：顶层容器只写 `h-full px-2 py-4`，不加任何 `bg-*`
+- 反模式识别：`return <div className="... bg-background-login ...">` 或 `bg-white`、`bg-gray-*`、`bg-background` 出现在顶层 div 上
+- 第二层等效顶层也要检查：第一层若是无背景的薄包裹层（如裸 `<div>` 或只有 `h-full`），第二层的背景色同样会覆盖 MainLayout
+- 合理例外：弹窗/Dialog、表格 footer（`eagent-table-footer`）、侧边面板、卡片内部元素的背景色保留
+- Client 端例外：`Root.tsx` 的 `<Outlet/>` 无背景，Client 页面需自行管理背景（如 `apps/index.tsx`）
 
 ## 2026-04-06 nginx 缓存策略与部署
 

@@ -691,13 +691,13 @@ export default function CreateDeployment({ onBack, onSuccess }: CreateDeployment
     const showPrev = page > 1;
 
     return (
-        <div className="h-full overflow-y-auto bg-background-login">
+        <div className="h-full overflow-y-auto">
             <div className="max-w-7xl mx-auto p-6">
                 <div className="flex items-center gap-4 mb-6">
                     <Button variant="ghost" size="icon" onClick={onBack}>
                         <ArrowLeft className="h-4 w-4" />
                     </Button>
-                    <h1 className="text-2xl font-bold">{t("model.createDeployment")}</h1>
+                    <h1 className="text-2xl font-medium text-[#140E35]">{t("model.createDeployment")}</h1>
                 </div>
 
                 <div className="grid grid-cols-1 xl:grid-cols-[320px_minmax(0,1fr)] gap-6">

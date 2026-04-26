@@ -87,7 +87,7 @@ export default function index() {
                     </TableBody>
                 </Table>
             </div>
-            <div className="eagent-table-footer px-6 bg-background-login">
+            <div className="eagent-table-footer px-6">
                 <p className="desc">{t('dataset.collection')}</p>
                 <div>
                     <AutoPagination

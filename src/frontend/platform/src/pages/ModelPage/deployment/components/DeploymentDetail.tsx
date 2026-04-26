@@ -134,7 +134,7 @@ export default function DeploymentDetail({ deploymentId, onBack }: DeploymentDet
     }
 
     return (
-        <div className="h-full overflow-y-auto bg-background-login">
+        <div className="h-full overflow-y-auto">
             <div className="max-w-7xl mx-auto p-6">
                 {/* 页面头部 */}
                 <div className="flex items-center justify-between mb-6">
@@ -143,7 +143,7 @@ export default function DeploymentDetail({ deploymentId, onBack }: DeploymentDet
                             <ArrowLeft className="h-4 w-4" />
                         </Button>
                         <div>
-                            <h1 className="text-2xl font-bold">{deployment.name}</h1>
+                            <h1 className="text-2xl font-medium text-[#140E35]">{deployment.name}</h1>
                             <p className="text-muted-foreground">{deployment.description}</p>
                         </div>
                     </div>

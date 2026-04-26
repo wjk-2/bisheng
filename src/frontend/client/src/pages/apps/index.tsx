@@ -87,10 +87,10 @@ export default function AgentSquare() {
             {/* 固定头部 */}
             <div className="flex-shrink-0 px-8 pt-6 pb-0">
                 {/* 标题 */}
-                <h1 className="text-[32px] font-medium text-[#140E35] leading-[46px]">
+                <h1 className="text-[32px] font-medium text-foreground leading-[46px]">
                     {bsConfig?.applicationCenterWelcomeMessage || localize('com_app_center_welcome')}
                 </h1>
-                <p className="text-sm text-[#565772] mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                     {bsConfig?.applicationCenterDescription || localize('com_app_center_description')}
                 </p>
 
@@ -99,19 +99,19 @@ export default function AgentSquare() {
                     <CategoryTabs active={category} onChange={setCategory} />
 
                     <div className="relative w-72 min-w-48 flex-shrink-0">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#AEB4C9] w-4 h-4" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/60 w-4 h-4" />
                         <Input
                             type="text"
                             placeholder={localize('com_agent_search_placeholder')}
                             value={searchQuery}
                             onChange={(e) => handleSearchInput(e.target.value)}
-                            className="pl-10 pr-10 h-8 rounded-md border-[#D9DEE9] bg-transparent text-sm"
+                            className="pl-10 pr-10 h-8 rounded-md border-border bg-transparent text-sm"
                             style={{ borderWidth: '0.8px' }}
                         />
                         {searchQuery && (
                             <button
                                 onClick={handleClearSearch}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#AEB4C9] hover:text-[#565772]"
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-muted-foreground"
                             >
                                 <X className="w-4 h-4" />
                             </button>

@@ -19,7 +19,7 @@ const NewChatButtonIcon = ({ conversation }: { conversation: TConversation | nul
 
   if (searchQuery) {
     return (
-      <div className="shadow-stroke relative flex h-7 w-7 items-center justify-center rounded-full bg-white text-black dark:bg-white">
+      <div className="shadow-stroke relative flex h-7 w-7 items-center justify-center rounded-full bg-card text-card-foreground">
         <Search className="h-5 w-5" />
       </div>
     );
@@ -44,7 +44,7 @@ const NewChatButtonIcon = ({ conversation }: { conversation: TConversation | nul
           context="nav"
         />
       ) : (
-        <div className="shadow-stroke relative flex h-full items-center justify-center rounded-full bg-white text-black">
+        <div className="shadow-stroke relative flex h-full items-center justify-center rounded-full bg-card text-card-foreground">
           {endpoint && Icon != null && (
             <Icon
               size={41}
@@ -96,38 +96,38 @@ export default function NewChat({
   };
 
   return (
-    <div className="sticky left-0 right-0 top-0 z-50 bg-white dark:bg-gray-900">
+    <div className="sticky left-0 right-0 top-0 z-50 bg-card">
       <div className="pb-0.5 last:pb-0" style={{ transform: 'none' }}>
         <div className='flex flex-col w-full'>
           {/* 智能体广场 */}
           <div
-            className="flex items-center gap-1.5 h-10 rounded-xl px-3 cursor-pointer hover:bg-gray-100 transition-colors"
+            className="flex items-center gap-1.5 h-10 rounded-xl px-3 cursor-pointer hover:bg-muted transition-colors"
             onClick={() => {
               navigate('/apps');
             }}
           >
             <AppsIcon />
-            <span className="text-sm font-medium whitespace-nowrap ml-0.5 text-gray-600 dark:text-gray-300">{localize('com_nav_app_center')}</span>
+            <span className="text-sm font-medium whitespace-nowrap ml-0.5 text-muted-foreground">{localize('com_nav_app_center')}</span>
           </div>
           {/* 教学及开发平台 */}
           <a
             href="/build"
-            className="flex items-center gap-1.5 h-10 rounded-xl px-3 cursor-pointer hover:bg-gray-100 transition-colors no-underline text-inherit"
+            className="flex items-center gap-1.5 h-10 rounded-xl px-3 cursor-pointer hover:bg-muted transition-colors no-underline text-inherit"
           >
             <GraduationCap className="icon-md flex-shrink-0" />
-            <span className="text-sm font-medium whitespace-nowrap ml-0.5 text-gray-600 dark:text-gray-300">{localize('com_nav_dev_center')}</span>
+            <span className="text-sm font-medium whitespace-nowrap ml-0.5 text-muted-foreground">{localize('com_nav_dev_center')}</span>
           </a>
           {/* 个人知识库 */}
           <div
-            className="flex items-center gap-1.5 h-10 rounded-xl px-3 cursor-pointer hover:bg-gray-100 transition-colors"
+            className="flex items-center gap-1.5 h-10 rounded-xl px-3 cursor-pointer hover:bg-muted transition-colors"
             onClick={() => setShowKnowledge(true)}
           >
             <FileText className="icon-md flex-shrink-0" />
-            <span className="text-sm font-medium whitespace-nowrap ml-0.5 text-gray-600 dark:text-gray-300">{localize('com_nav_personal_knowledge')}</span>
+            <span className="text-sm font-medium whitespace-nowrap ml-0.5 text-muted-foreground">{localize('com_nav_personal_knowledge')}</span>
           </div>
           {/* 开始新对话 */}
           <div
-            className="flex items-center gap-1.5 h-10 rounded-xl px-3 cursor-pointer hover:bg-gray-100 transition-colors"
+            className="flex items-center gap-1.5 h-10 rounded-xl px-3 cursor-pointer hover:bg-muted transition-colors"
             aria-label={localize('com_ui_new_chat')}
             onClick={() => {
               document.getElementById("create-convo-btn")?.click();
@@ -138,7 +138,7 @@ export default function NewChat({
             }}
           >
             <img className='size-[18px] grayscale' src={__APP_ENV__.BASE_URL + '/assets/chat2.png'} alt="" />
-            <span className="text-sm font-medium whitespace-nowrap ml-0.5 text-gray-600 dark:text-gray-300">{localize('com_nav_start_new_chat')}</span>
+            <span className="text-sm font-medium whitespace-nowrap ml-0.5 text-muted-foreground">{localize('com_nav_start_new_chat')}</span>
           </div>
         </div>
       </div>

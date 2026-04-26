@@ -62,11 +62,11 @@ export const Finetune = () => {
         setTaskId(id)
     }, 600, false)
     return (
-        <div className="relative bg-background-login h-full px-2 py-4">
+        <div className="relative h-full px-2 py-4">
             <div className="h-full overflow-y-auto">
                 {/* 页面头部 */}
                 <div className="flex justify-between items-center mb-6 px-4">
-                    <h1 className="text-2xl font-bold">{t('model.modelFineTune')}</h1>
+                    <h1 className="text-2xl font-medium text-[#140E35]">{t('model.modelFineTune')}</h1>
                 </div>
                 <div className={createOpen ? 'hidden' : 'block'}>
                     <FinetuneHead onSearch={search} onFilter={filterData} rtClick={() => setRTOpen(true)} onCreate={() => setCreateOpen(true)} isAdmin={isAdmin}></FinetuneHead>
@@ -135,7 +135,7 @@ export const Finetune = () => {
                 </div>
             </div>
             {/* footer 在最外层 */}
-            <div className="eagent-table-footer bg-background-login">
+            <div className="eagent-table-footer">
                 <p className="desc">{t('finetune.finetuneCaption')}</p>
             </div>
         {/* RT配置 */}

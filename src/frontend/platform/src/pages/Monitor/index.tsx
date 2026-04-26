@@ -198,7 +198,7 @@ export default function MonitorPage() {
     };
 
     return (
-        <div className="h-full overflow-y-auto bg-background-login">
+        <div className="h-full overflow-y-auto">
             <div className="max-w-7xl mx-auto p-6 space-y-6">
                 <div className="flex items-center justify-between">
                     <h1 className="text-2xl font-semibold text-[#140E35]">{t("monitorPageTitle", { defaultValue: "资源监控" })}</h1>

@@ -51,11 +51,11 @@ export default function AppChatDetail() {
 
     const logo = useAppAvatar(cid, type, assistantState)
 
-    return <div>
+    return <div className="h-full bg-white dark:bg-[#171717]">
         {loading && <div className="absolute w-full h-full top-0 left-0 flex justify-center items-center z-10 bg-[rgba(255,255,255,0.6)] dark:bg-blur-shared">
             <LoadingIcon />
         </div>}
-        <div className="bg-background-login px-4">
+        <div className="px-4">
             <div className="flex justify-between items-center py-4">
                 <div className="flex items-center">
                     <ShadTooltip content={t('back')} side="top">

@@ -1017,7 +1017,12 @@
   }
 
   .eagent-table-footer {
-    @apply flex justify-between items-center absolute bottom-0 right-0 h-16 w-full bg-[#fff] dark:bg-[#1b1b1b] [&>.desc]:whitespace-nowrap [&>.desc]:text-sm [&>.desc]:text-muted-foreground [&>.desc]:break-keep
+    @apply flex justify-between items-center absolute bottom-0 right-0 h-16 w-full [&>.desc]:whitespace-nowrap [&>.desc]:text-sm [&>.desc]:text-muted-foreground [&>.desc]:break-keep;
+    background-color: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(4px);
+  }
+  .dark .eagent-table-footer {
+    background-color: rgba(27, 27, 27, 0.9);
   }
   .eagent-bg {
     @apply bg-[#f4f5f8] dark:bg-[#111]

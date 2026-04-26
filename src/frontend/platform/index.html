@@ -16,27 +16,54 @@
     </style>
     <script>
       (function() {
-        var isDark = window.localStorage.getItem('isDark');
-        if (document.body) document.body.style.backgroundColor = isDark === 'false' ? '#ffffff' : '#020617';
+        var theme = window.localStorage.getItem('theme');
+        if (document.body) document.body.style.backgroundColor = theme === 'dark' ? '#020617' : '#ffffff';
       })();
     </script>
     <script>
-        fetch('<%- baseUrl %>/api/v1/web/config').then(function (res) {
-            return res.json()
-        }).then(function (res) {
-            console.log('res :>> ', res.data);
-            var styleStr = res.data ? res.data.value : ''
-            var style = styleStr ? JSON.parse(styleStr) : {
-                comp: {},
-                bg: ''
+        (function() {
+          var mode = localStorage.getItem('theme') || 'light';
+          if (mode !== 'dark') mode = 'light';
+
+          function injectThemeVars(comp) {
+            var rules = '';
+            var keys = Object.keys(comp);
+            for (var i = 0; i < keys.length; i++) {
+              var key = keys[i];
+              var hsl = comp[key];
+              rules += key + ':' + hsl.h + ' ' + (hsl.s * 100) + '% ' + (hsl.l * 100) + '%;';
             }
-            window.ThemeStyle = style
-            Object.keys(style.comp).forEach(key => {
-                var hsl = style.comp[key]
-                var hslStr = `${hsl.h} ${hsl.s * 100}% ${hsl.l * 100}%`
-                document.documentElement.style.setProperty(key, hslStr);
-            });
-        })
+            var style = document.getElementById('theme-vars');
+            if (!style) {
+              style = document.createElement('style');
+              style.id = 'theme-vars';
+              document.head.appendChild(style);
+            }
+            style.innerHTML = ':root{' + rules + '}';
+          }
+
+          window.__injectThemeVars = injectThemeVars;
+
+          fetch('<%- baseUrl %>/api/v1/web/config').then(function(res) {
+            return res.json();
+          }).then(function(res) {
+            var raw = res.data ? res.data.value : '';
+            var parsed = {};
+            try { if (raw) parsed = JSON.parse(raw); } catch(e) {}
+            var themeVal;
+            if (parsed.light) {
+              themeVal = { light: parsed.light || {}, dark: parsed.dark || {}, bg: parsed.bg || '' };
+            } else if (parsed.comp) {
+              themeVal = { light: parsed.comp, dark: {}, bg: parsed.bg || '' };
+            } else {
+              themeVal = { light: {}, dark: {}, bg: '' };
+            }
+            window.ThemeStyle = themeVal;
+            injectThemeVars(themeVal[mode] || {});
+          }).catch(function() {
+            window.ThemeStyle = { light: {}, dark: {}, bg: '' };
+          });
+        })();
     </script>
 </head>
 

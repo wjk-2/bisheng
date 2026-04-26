@@ -129,11 +129,11 @@ export default function index() {
         setStatus(status)
     }
 
-    return <div>
+    return <div className="h-full bg-white dark:bg-[#171717]">
         {loading && <div className="absolute w-full h-full top-0 left-0 flex justify-center items-center z-10 bg-[rgba(255,255,255,0.6)] dark:bg-blur-shared">
             <span className="loading loading-infinity loading-lg"></span>
         </div>}
-        <div className="bg-background-login px-4">
+        <div className="px-4">
             <div className="flex justify-between items-center py-4">
                 <div className="flex items-center">
                     <ShadTooltip content={t('back')} side="top">

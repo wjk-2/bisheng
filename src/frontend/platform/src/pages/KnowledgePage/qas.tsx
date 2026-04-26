@@ -449,8 +449,8 @@ export default function QasPage() {
     };
 
     return (
-        <div className="relative px-2 pt-4 size-full">
-            <div className="h-full bg-background-login">
+        <div className="relative px-2 pt-4 size-full bg-white dark:bg-[#171717]">
+            <div className="h-full">
                 <div className="flex justify-between">
                     <div className="flex justify-between items-center mb-4">
                         <div className="flex items-center">

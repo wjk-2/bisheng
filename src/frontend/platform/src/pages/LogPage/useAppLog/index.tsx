@@ -381,7 +381,7 @@ export default function AppUseLog() {
                 </TableBody>
             </Table>
         </div>
-        <div className="eagent-table-footer px-6 bg-background-login">
+        <div className="eagent-table-footer px-6">
             <p className="desc"></p>
             <div>
                 <AutoPagination

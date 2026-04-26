@@ -118,7 +118,7 @@ export default function UserGroups() {
                 </TableFooter>
             </Table>
         </div>
-        <div className="eagent-table-footer bg-background-login">
+        <div className="eagent-table-footer">
             <p className="desc">{t('system.userGroupList')}.</p>
         </div>
     </div>

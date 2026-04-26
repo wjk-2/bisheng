@@ -23,11 +23,11 @@ export default function taskApps() {
         }).then(res => ({ ...res, pageSize: param, data: res.list }))
     )
 
-    return <div className="h-full">
+    return <div className="h-full bg-white dark:bg-[#171717]">
         {loading && <div className="absolute w-full h-full top-0 left-0 flex justify-center items-center z-10 bg-[rgba(255,255,255,0.6)] dark:bg-blur-shared">
             <span className="loading loading-infinity loading-lg"></span>
         </div>}
-        <div className="bg-background-login px-4 overflow-y-auto h-full pb-20">
+        <div className="px-4 overflow-y-auto h-full pb-20">
             <div className="flex justify-between items-center py-4">
                 <div className="flex items-center">
                     <ShadTooltip content={t('label.back')} side="top">
@@ -118,7 +118,7 @@ export default function taskApps() {
                     </TableFooter>
                 </Table>
             </div>
-            <div className="eagent-table-footer bg-background-login px-2">
+            <div className="eagent-table-footer px-2">
                 <AutoPagination
                     className="float-right justify-end w-full mr-6"
                     page={page}

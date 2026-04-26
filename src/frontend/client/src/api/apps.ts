@@ -391,3 +391,14 @@ export const getChatOnlineApi = async (
 
     return await request.get(`/api/v1/chat/online`, { params })
 }
+
+export const getWebConfigApi = async (): Promise<{ light?: Record<string, {h:number;s:number;l:number}>; dark?: Record<string, {h:number;s:number;l:number}>; bg?: string; comp?: Record<string, {h:number;s:number;l:number}> } | null> => {
+  try {
+    const res = await request.get<{ data: { value: string } | string }>('/api/v1/web/config');
+    const raw = (res.data as { value: string })?.value;
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+};

@@ -264,7 +264,7 @@ export default function Users(params) {
         </div>
         {/* 分页 */}
         {/* <Pagination count={10}></Pagination> */}
-        <div className="eagent-table-footer bg-background-login">
+        <div className="eagent-table-footer">
             <p className="desc">{t('system.userList')}</p>
             <AutoPagination
                 className="float-right justify-end w-full mr-6"

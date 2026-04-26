@@ -237,7 +237,7 @@ export default function Tasks() {
                     </TableFooter>
                 </Table>
             </div>
-            <div className="eagent-table-footer bg-background-login px-2">
+            <div className="eagent-table-footer px-2">
                 <AutoPagination
                     className="float-right justify-end w-full mr-6"
                     page={page}

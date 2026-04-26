@@ -16,7 +16,7 @@ export default function ChatView({ data, cid, v, readOnly, shareToken = '' }) {
         return <AppAvator className="size-6 min-w-6" url={data.logo} id={data.name} flowType={data.flow_type} />
     }, [data]);
 
-    return <div className="relative h-full flex flex-col">
+    return <div className="relative h-full flex flex-col bg-white dark:bg-[#171717]">
         {/* <div className="absolute flex top-2 gap-2 items-center z-10 bg-[rgba(255,255,255,0.8)] px-6 py-1 dark:bg-[#1B1B1B]">
             {Logo}
             <span className="text-sm">{data.name}</span>

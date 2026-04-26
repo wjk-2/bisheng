@@ -30,14 +30,14 @@ export function CategoryTabs({ active, onChange }: CategoryTabsProps) {
                             onClick={() => onChange(category.value as CategoryValue)}
                             className={`px-2 py-1 text-xs rounded transition-colors cursor-pointer ${
                                 isActive
-                                    ? 'bg-[#4658FF] text-white'
-                                    : 'bg-transparent text-[#565772] hover:text-[#140E35] hover:bg-[#F7F9FF]'
+                                    ? 'bg-primary text-white'
+                                    : 'bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted'
                             }`}
                         >
                             {category.label}
                         </button>
                         {isAll && (
-                            <span className="absolute right-[-8px] top-1/2 -translate-y-1/2 w-px h-4 bg-[#E5EAF4]" />
+                            <span className="absolute right-[-8px] top-1/2 -translate-y-1/2 w-px h-4 bg-border" />
                         )}
                     </div>
                 )

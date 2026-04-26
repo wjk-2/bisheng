@@ -228,7 +228,7 @@ export default function EvaluationPage() {
           <TabsContent value="password"></TabsContent>
         </Tabs>
       </div>
-      <div className="eagent-table-footer px-6 bg-background-login">
+      <div className="eagent-table-footer px-6">
         <p className="desc">{t("evaluation.evaluationCollection")}</p>
         <div>
           <AutoPagination

@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/bs-ui/card';
 
 export default function EducationPage() {
   return (
-    <div className="education-page h-full overflow-y-auto bg-background">
+    <div className="education-page h-full overflow-y-auto">
       <div className="flex flex-col items-center justify-center min-h-[70vh] p-6">
         <Card className="max-w-md w-full text-center border-0 shadow-lg">
           <CardContent className="pt-10 pb-8 px-6">

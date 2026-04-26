@@ -180,7 +180,7 @@ export default function SystemLog() {
         </div>
         {/* Pagination */}
         {/* <Pagination count={10}></Pagination> */}
-        <div className="eagent-table-footer bg-background-login">
+        <div className="eagent-table-footer">
             <p className="desc pl-4">{t('log.auditManagement')}</p>
             <AutoPagination
                 className="float-right justify-end w-full mr-6"

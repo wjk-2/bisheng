@@ -61,7 +61,7 @@ export default function MainLayout() {
     const navBaseClass = "navlink group inline-flex items-center rounded-lg w-full h-9 transition-all duration-200 hover:translate-x-0.5"
     const navPaddingClass = collapsed ? "justify-center px-2" : "gap-2.5 px-3"
     const navTextClass = collapsed ? "hidden" : "text-sm font-medium whitespace-nowrap overflow-hidden text-ellipsis"
-    const navHoverClass = "hover:bg-[#F7F9FF] dark:hover:bg-gray-800 text-[#565772] dark:text-gray-300 hover:text-[#140E35] dark:hover:text-gray-100"
+    const navHoverClass = "hover:bg-muted text-muted-foreground hover:text-foreground"
     const toggleSidebar = () => setCollapsed(prev => !prev)
     const toggleLabel = collapsed ? t('menu.expandSidebar') : t('menu.collapseSidebar')
 
@@ -277,9 +277,9 @@ export default function MainLayout() {
 
     return <div className="flex">
         <div className="bg-background-main w-full h-screen">
-            <div className="flex justify-between items-center h-14 bg-white dark:bg-gray-900 border-b border-[#E5EAF4] dark:border-gray-800 px-6 relative z-[21]">
+            <div className="flex justify-between items-center h-14 bg-card border-b border-border px-6 relative z-[21]">
                 <div className="flex items-center">
-                    <a className="inline-flex items-center gap-2 min-w-0 text-sm font-semibold text-gray-900 dark:text-gray-100 no-underline" href='/workspace'>
+                    <a className="inline-flex items-center gap-2 min-w-0 text-sm font-semibold text-foreground no-underline" href='/workspace'>
                         {appConfig.sidebarIcon?.image && (
                             <img className="w-8 h-8 flex-shrink-0 object-contain" src={__APP_ENV__.BASE_URL + appConfig.sidebarIcon.image} alt="logo" />
                         )}
@@ -293,27 +293,27 @@ export default function MainLayout() {
                     <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger
-                                className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                                className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center hover:bg-accent transition-colors cursor-pointer"
                                 onClick={() => setDark(!dark)}
                             >
                                 {dark ? (
-                                    <Sun className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                                    <Sun className="w-4 h-4 text-muted-foreground" />
                                 ) : (
-                                    <MoonStar className="w-4 h-4 text-gray-600" />
+                                    <MoonStar className="w-4 h-4 text-muted-foreground" />
                                 )}
                             </TooltipTrigger>
                             <TooltipContent><p>{t('menu.themeSwitch')}</p></TooltipContent>
                         </Tooltip>
                     </TooltipProvider>
-                    <Separator className="mx-[4px] dark:bg-[#111111]" orientation="vertical" />
+                    <Separator className="mx-[4px]" orientation="vertical" />
                     <div className="flex items-center gap-2 ml-2">
-                        <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-                            <span className="text-sm font-medium text-blue-600 dark:text-blue-400">{user.user_name?.charAt(0)?.toUpperCase() || 'U'}</span>
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                            <span className="text-sm font-medium text-primary">{user.user_name?.charAt(0)?.toUpperCase() || 'U'}</span>
                         </div>
                         <SelectHover
                             triagger={
-                                <span className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer flex items-center gap-1 max-w-32 truncate">
-                                    {user.user_name} <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
+                                <span className="text-sm text-foreground cursor-pointer flex items-center gap-1 max-w-32 truncate">
+                                    {user.user_name} <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
                                 </span>
                             }>
                             <SelectHoverItem onClick={JumpResetPage}><Lock className="w-4 h-4 mr-1" /><span>{t('menu.changePwd')}</span></SelectHoverItem>
@@ -323,7 +323,7 @@ export default function MainLayout() {
                 </div>
             </div>
             <div className="flex" style={{ height: "calc(100vh - 56px)" }}>
-                <div className={`relative z-10 bg-[rgba(255,255,255,0.8)] dark:bg-gray-900 h-full ${sidebarWidthClass} border-r border-[#E5EAF4] dark:border-gray-800 flex flex-col transition-all duration-300`}>
+                <div className={`relative z-10 bg-background/80 h-full ${sidebarWidthClass} border-r border-border flex flex-col transition-all duration-300`}>
                     <nav className="flex-1 overflow-y-auto py-4">
                         {/* 进入工作台 - 独立入口 */}
                         <div className="mb-3 px-1">
@@ -337,11 +337,11 @@ export default function MainLayout() {
                                 {!collapsed && (
                                     <>
                                         <span className={navTextClass} title={t('menu.workspace')}>{t('menu.workspace')}</span>
-                                        <ExternalLink className="w-3 h-3 text-gray-400 shrink-0 ml-auto" />
+                                        <ExternalLink className="w-3 h-3 text-muted-foreground shrink-0 ml-auto" />
                                     </>
                                 )}
                             </a>
-                            <div className="mt-3 border-b border-[#E5EAF4] dark:border-gray-800"></div>
+                            <div className="mt-3 border-b border-border"></div>
                         </div>
                         {menuGroups.map(group => {
                             const isExpanded = collapsed ? true : expandedGroups[group.key] ?? true;
@@ -353,11 +353,11 @@ export default function MainLayout() {
                                             className="flex items-center justify-between w-full px-2 mb-2 group/title"
                                             onClick={() => handleToggleGroup(group.key)}
                                         >
-                                            <span className="text-[11px] font-medium text-[#9498AC] dark:text-gray-500 uppercase tracking-wider">{group.title}</span>
-                                            <ChevronDown className={`w-3 h-3 text-gray-400 dark:text-gray-500 transition-transform duration-200 ${isExpanded ? '' : '-rotate-90'}`} />
+                                            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{group.title}</span>
+                                            <ChevronDown className={`w-3 h-3 text-muted-foreground transition-transform duration-200 ${isExpanded ? '' : '-rotate-90'}`} />
                                         </button>
                                     ) : (
-                                        <div className="w-8 h-px bg-gradient-to-r from-gray-300 dark:from-gray-600 to-transparent mx-auto mb-3"></div>
+                                        <div className="w-8 h-px bg-gradient-to-r from-border to-transparent mx-auto mb-3"></div>
                                     )}
                                     {isExpanded && (
                                         <div className="space-y-1">
@@ -392,7 +392,7 @@ export default function MainLayout() {
                                                         end
                                                         className={({ isActive }) =>
                                                             `${navBaseClass} ${navPaddingClass} ${isActive
-                                                                ? 'bg-[#F1F5FF] dark:bg-blue-900/30 text-[#4658FF] dark:text-blue-400 font-semibold rounded-lg'
+                                                                ? 'bg-primary/10 text-primary font-semibold rounded-lg'
                                                                 : navHoverClass}`
                                                         }
                                                     >
@@ -406,11 +406,11 @@ export default function MainLayout() {
                             );
                         })}
                     </nav>
-                    <div className="p-3 border-t border-[#E5EAF4] dark:border-gray-800">
+                    <div className="p-3 border-t border-border">
                         <button
                             onClick={toggleSidebar}
                             aria-label={toggleLabel}
-                            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-[#9498AC] dark:text-gray-400 hover:text-[#140E35] dark:hover:text-gray-200 hover:bg-[#F7F9FF] dark:hover:bg-gray-800 transition-all duration-200"
+                            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-200"
                         >
                             {collapsed ? (
                                 <ChevronRight className="w-4 h-4 transition-transform" />
@@ -423,7 +423,7 @@ export default function MainLayout() {
                         </button>
                     </div>
                 </div>
-                <div className="flex-1 bg-[#F7F9FF] dark:bg-gray-950 min-w-0 overflow-y-auto">
+                <div className="flex-1 bg-background-main min-w-0 overflow-y-auto">
                     <ErrorBoundary
                         onReset={() => window.location.href = window.location.href}
                         FallbackComponent={CrashErrorComponent}

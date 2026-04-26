@@ -21,7 +21,7 @@ export default function FilesPage() {
             setFileTitle(true)
         }
     };
-    return <div className="size-full px-2 relative bg-background-login">
+    return <div className="size-full px-2 relative bg-white dark:bg-[#171717]">
         {/* tab */}
         <Tabs value={value} onValueChange={(v) => {
             setValue(v);

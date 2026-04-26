@@ -215,7 +215,7 @@ export default function Management() {
         }}
     />
 
-    return <div className="relative bg-background-login h-full px-2 py-4">
+    return <div className="relative h-full px-2 py-4">
         {loading && (
             <div className="absolute left-0 top-0 z-10 flex h-full w-full items-center justify-center bg-[rgba(255,255,255,0.6)] dark:bg-blur-shared">
                 <LoadingIcon />
@@ -251,7 +251,7 @@ export default function Management() {
                 </div>
             </div>
         </div>
-        <div className="eagent-table-footer bg-background-login px-6">
+        <div className="eagent-table-footer px-6">
             <p className="desc">{t('model.modelCollectionCaption')}.</p>
         </div>
 

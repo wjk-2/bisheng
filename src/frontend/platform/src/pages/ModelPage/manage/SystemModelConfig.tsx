@@ -87,7 +87,7 @@ export default function SystemModelConfig({ data: externalData, onBack }: any = 
 
     const handleBack = onBack || (() => {})
 
-    return <div className="relative bg-background-login h-full px-2 py-4">
+    return <div className="relative h-full px-2 py-4">
         {loading && (
             <div className="absolute left-0 top-0 z-10 flex h-full w-full items-center justify-center bg-[rgba(255,255,255,0.6)] dark:bg-blur-shared">
                 <LoadingIcon />
@@ -97,7 +97,7 @@ export default function SystemModelConfig({ data: externalData, onBack }: any = 
             {/* 页面头部 */}
             {isStandalone && (
                 <div className="flex justify-between items-center mb-6 px-4">
-                    <h1 className="text-2xl font-bold">{t('model.systemModelSettings')}</h1>
+                    <h1 className="text-2xl font-medium text-[#140E35]">{t('model.systemModelSettings')}</h1>
                     <Button variant="outline" onClick={loadData}>
                         <RefreshCw className="w-4 h-4 mr-2" />
                         {t('model.refresh')}

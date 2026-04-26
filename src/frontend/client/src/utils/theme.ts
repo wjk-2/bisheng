@@ -23,7 +23,7 @@ export const applyFontSize = (val: string) => {
 
 export const getInitialTheme = () => {
   if (typeof window !== 'undefined' && window.localStorage) {
-    const storedPrefs = window.localStorage.getItem('color-theme') || 'light';
+    const storedPrefs = window.localStorage.getItem('theme') || 'light';
     if (typeof storedPrefs === 'string') {
       return storedPrefs;
     }

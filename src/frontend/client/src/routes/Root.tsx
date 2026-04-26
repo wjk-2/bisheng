@@ -82,9 +82,9 @@ export default function Root() {
             <AgentsMapContext.Provider value={agentsMap}>
               {/* 页面头部黑色banner */}
               <Banner onHeightChange={setBannerHeight} />
-              <div className="flex flex-col" style={{ height: `calc(100dvh - ${bannerHeight}px)` }}>
+              <div className="flex flex-col bg-studio-moduleBg" style={{ height: `calc(100dvh - ${bannerHeight}px)` }}>
                 {/* 全宽 Header */}
-                <header className="flex-shrink-0 flex justify-between items-center h-14 bg-white dark:bg-gray-900 border-b border-[#E5EAF4] dark:border-gray-800 px-6 relative z-[21]">
+                <header className="flex-shrink-0 flex justify-between items-center h-14 bg-card border-b border-border px-6 relative z-[21]">
                   {/* 左：Logo + Slogan */}
                   <div className="flex items-center gap-2 min-w-0">
                     {bsConfig?.sidebarIcon?.image && (
@@ -94,34 +94,34 @@ export default function Root() {
                         alt="logo"
                       />
                     )}
-                    <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                    <span className="text-sm font-semibold text-foreground truncate">
                       {bsConfig?.sidebarSlogan || 'E-Agent'}
                     </span>
                   </div>
                   {/* 右：主题切换 + 用户菜单 */}
                   <div className="flex items-center gap-3">
                     <button
-                      className="w-8 h-8 flex-shrink-0 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                      className="w-8 h-8 flex-shrink-0 rounded-lg bg-muted flex items-center justify-center hover:bg-accent transition-colors cursor-pointer"
                       onClick={toggleTheme}
                     >
                       {darkMode ? (
-                        <Sun className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                        <Sun className="w-4 h-4 text-muted-foreground" />
                       ) : (
-                        <Moon className="w-4 h-4 text-gray-600" />
+                        <Moon className="w-4 h-4 text-muted-foreground" />
                       )}
                     </button>
-                    <div className="w-px h-5 bg-gray-200 dark:bg-gray-700" />
+                    <div className="w-px h-5 bg-border" />
                     <DropdownPopup
                       menuId="root-user-menu"
                       trigger={
-                        <Menu.MenuButton className="flex items-center gap-2 cursor-pointer rounded-lg px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                        <Menu.MenuButton className="flex items-center gap-2 cursor-pointer rounded-lg px-2 py-1 hover:bg-muted transition-colors">
                           <div className="w-8 h-8 min-w-8 text-white bg-primary rounded-full flex justify-center items-center text-xs flex-shrink-0">
                             {displayName.substring(0, 2).toUpperCase() || 'U'}
                           </div>
-                          <span className="text-sm text-gray-700 dark:text-gray-300 max-w-32 truncate">
+                          <span className="text-sm text-foreground max-w-32 truncate">
                             {displayName}
                           </span>
-                          <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                          <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                         </Menu.MenuButton>
                       }
                       items={userMenuItems}

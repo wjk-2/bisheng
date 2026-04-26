@@ -157,7 +157,7 @@ export default function Panne({ flow, preFlow }: { flow: WorkFlow, preFlow: stri
                             maxZoom={8}
                             disableKeyboardA11y={true}
                             // fitView
-                            className={window.ThemeStyle.bg === 'logo' && "flow-bg-logo"}
+                            className={window.ThemeStyle?.bg === 'logo' && "flow-bg-logo"}
                             onDragOver={onDragOver}
                             onDrop={onDrop}
                             onSelectionChange={onSelectionChange}
@@ -178,7 +178,7 @@ export default function Panne({ flow, preFlow }: { flow: WorkFlow, preFlow: stri
                             // onReconnectStart={onEdgeUpdateStart}
                             // onReconnectEnd={onEdgeUpdateEnd}
                             style={{
-                                backgroundImage: window.ThemeStyle.bg === 'gradient'
+                                backgroundImage: window.ThemeStyle?.bg === 'gradient'
                                     && 'radial-gradient(circle at center bottom, hsl(var(--primary) / 30%) 2%, hsl(var(--primary) / 20%) 25%, hsl(var(--primary) / 5%) 60%, rgba(0, 0, 0, 0) 100%)',
                                 backgroundRepeat: 'no-repeat',
                                 backgroundSize: 'cover',

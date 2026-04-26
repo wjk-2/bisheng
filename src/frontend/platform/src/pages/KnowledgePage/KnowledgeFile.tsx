@@ -622,7 +622,7 @@ export default function KnowledgeFile() {
                     </TableBody>
                 </Table>
             </div>
-            <div className="eagent-table-footer px-6 bg-background-login">
+            <div className="eagent-table-footer px-6">
                 <p className="desc">{t('lib.libraryCollection', { ns: 'bs' })}</p>
                 <div>
                     <AutoPagination

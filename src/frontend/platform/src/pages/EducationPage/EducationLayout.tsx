@@ -5,7 +5,7 @@ import { Outlet } from 'react-router-dom';
 
 export default function EducationLayout() {
   return (
-    <div className="min-h-full bg-background">
+    <div className="min-h-full">
       <div className="border-b border-border bg-card">
         <div className="max-w-7xl mx-auto px-6 py-4">
           {/* 标题区域 */}
