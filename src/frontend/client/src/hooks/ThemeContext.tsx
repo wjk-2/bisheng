@@ -26,19 +26,20 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const [theme, setTheme] = useState(getInitialTheme);
   const setFontSize = useSetRecoilState(store.fontSize);
 
-  const applyThemeVars = (comp: Record<string, { h: number; s: number; l: number }>) => {
+  const applyThemeVars = (comp: Record<string, { h: number; s: number; l: number }>, mode: 'light' | 'dark') => {
     let rules = '';
     for (const key of Object.keys(comp)) {
       const hsl = comp[key];
       rules += key + ':' + hsl.h + ' ' + (hsl.s * 100) + '% ' + (hsl.l * 100) + '%;';
     }
+    const selector = mode === 'dark' ? '.dark' : ':root';
     let style = document.getElementById('theme-vars') as HTMLStyleElement | null;
     if (!style) {
       style = document.createElement('style') as HTMLStyleElement;
       style.id = 'theme-vars';
       document.head.appendChild(style);
     }
-    style.innerHTML = ':root{' + rules + '}';
+    style.innerHTML = selector + '{' + rules + '}';
   };
 
   const rawSetTheme = (rawTheme: string) => {
@@ -52,7 +53,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
       const newMode = rawTheme === 'dark' ? 'dark' : 'light';
       const comp = ts[newMode] ?? {};
       if (Object.keys(comp).length > 0) {
-        applyThemeVars(comp);
+        applyThemeVars(comp, newMode);
       } else {
         // 没有对应模式的自定义数据，清空 theme-vars 让 CSS .dark {} 规则生效
         const style = document.getElementById('theme-vars');
@@ -74,7 +75,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
         comp = parsed.comp;
       }
       if (Object.keys(comp).length > 0) {
-        applyThemeVars(comp);
+        applyThemeVars(comp, currentMode);
       }
       (window as any).ThemeStyle = parsed.light
         ? { light: parsed.light, dark: parsed.dark ?? {}, bg: parsed.bg ?? '' }

@@ -25,7 +25,7 @@
           var mode = localStorage.getItem('theme') || 'light';
           if (mode !== 'dark') mode = 'light';
 
-          function injectThemeVars(comp) {
+          function injectThemeVars(comp, mode) {
             var rules = '';
             var keys = Object.keys(comp);
             for (var i = 0; i < keys.length; i++) {
@@ -33,13 +33,14 @@
               var hsl = comp[key];
               rules += key + ':' + hsl.h + ' ' + (hsl.s * 100) + '% ' + (hsl.l * 100) + '%;';
             }
+            var selector = mode === 'dark' ? '.dark' : ':root';
             var style = document.getElementById('theme-vars');
             if (!style) {
               style = document.createElement('style');
               style.id = 'theme-vars';
               document.head.appendChild(style);
             }
-            style.innerHTML = ':root{' + rules + '}';
+            style.innerHTML = selector + '{' + rules + '}';
           }
 
           window.__injectThemeVars = injectThemeVars;
@@ -59,7 +60,7 @@
               themeVal = { light: {}, dark: {}, bg: '' };
             }
             window.ThemeStyle = themeVal;
-            injectThemeVars(themeVal[mode] || {});
+            injectThemeVars(themeVal[mode] || {}, mode);
           }).catch(function() {
             window.ThemeStyle = { light: {}, dark: {}, bg: '' };
           });

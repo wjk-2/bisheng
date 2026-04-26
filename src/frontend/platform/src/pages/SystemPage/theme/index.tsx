@@ -89,19 +89,20 @@ function parseWebConfig(raw: string): ThemeValue {
     }
 }
 
-function applyThemeComp(comp: CompTheme) {
+function applyThemeComp(comp: CompTheme, mode: 'light' | 'dark') {
     let rules = '';
     for (const key of Object.keys(comp)) {
         const hsl = comp[key];
         rules += key + ':' + hsl.h + ' ' + (hsl.s * 100) + '% ' + (hsl.l * 100) + '%;';
     }
+    const selector = mode === 'dark' ? '.dark' : ':root';
     let style = document.getElementById('theme-vars') as HTMLStyleElement | null;
     if (!style) {
         style = document.createElement('style') as HTMLStyleElement;
         style.id = 'theme-vars';
         document.head.appendChild(style);
     }
-    style.innerHTML = ':root{' + rules + '}';
+    style.innerHTML = selector + '{' + rules + '}';
 }
 
 // Theme key mappings for internationalization
@@ -150,7 +151,7 @@ export default function Theme() {
     }, []);
     const applyTheme = (newTheme: CompTheme) => {
         const mode = localStorage.getItem('theme') === 'dark' ? 'dark' : 'light';
-        applyThemeComp(newTheme);
+        applyThemeComp(newTheme, mode);
         setTheme(newTheme);
         window.ThemeStyle = { ...window.ThemeStyle, [mode]: newTheme };
         saveThemeApi(JSON.stringify({ light: window.ThemeStyle.light, dark: window.ThemeStyle.dark, bg: window.ThemeStyle.bg }));
@@ -160,7 +161,7 @@ export default function Theme() {
         const newTheme = { ...theme, [name]: hsl };
         const mode = localStorage.getItem('theme') === 'dark' ? 'dark' : 'light';
         setTheme(newTheme);
-        applyThemeComp(newTheme);
+        applyThemeComp(newTheme, mode);
         window.ThemeStyle = { ...window.ThemeStyle, [mode]: newTheme };
         debouncedSaveTheme(JSON.stringify({ light: window.ThemeStyle.light, dark: window.ThemeStyle.dark, bg: window.ThemeStyle.bg }));
     };
@@ -170,7 +171,7 @@ export default function Theme() {
         <div className="w-96 py-4 pr-8 border-r ">
             <p className="flex justify-between items-center mb-4">
                 <span className="text-lg">{t('theme.colorConfig')}</span>
-                <Button className="right" variant="link" onClick={e => applyTheme({ ...defaultLightTheme })}><RefreshCw className="mr-1 size-4" />{t('theme.restoreDefault')}</Button>
+                <Button className="right" variant="link" onClick={e => applyTheme({ ...(localStorage.getItem('theme') === 'dark' ? defaultDarkTheme : defaultLightTheme) })}><RefreshCw className="mr-1 size-4" />{t('theme.restoreDefault')}</Button>
             </p>
             <div className="grid grid-cols-2 gap-2 gap-x-8 my-8">
                 {

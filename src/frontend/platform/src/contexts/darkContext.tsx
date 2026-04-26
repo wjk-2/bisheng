@@ -35,7 +35,7 @@ export function DarkProvider({ children }) {
     if (window.ThemeStyle && window.__injectThemeVars) {
       const comp = window.ThemeStyle[dark ? 'dark' : 'light'] || {};
       if (Object.keys(comp).length > 0) {
-        window.__injectThemeVars(comp);
+        window.__injectThemeVars(comp, dark ? 'dark' : 'light');
       } else {
         // 没有对应模式的自定义数据，清空 theme-vars 让 CSS 默认规则生效
         const style = document.getElementById('theme-vars');
