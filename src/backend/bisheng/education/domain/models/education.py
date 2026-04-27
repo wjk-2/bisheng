@@ -151,3 +151,80 @@ class EduProgressDao:
             session.add(progress)
             session.commit()
             return progress
+
+
+class EduClassDao:
+    @staticmethod
+    def create_class(session: Session, name: str, semester: str, teacher_id: int) -> EduClass:
+        obj = EduClass(name=name, semester=semester, teacher_id=teacher_id,
+                       create_time=datetime.now(), update_time=datetime.now())
+        session.add(obj)
+        session.commit()
+        session.refresh(obj)
+        return obj
+
+    @staticmethod
+    def list_by_teacher(session: Session, teacher_id: int) -> List[EduClass]:
+        stmt = select(EduClass).where(EduClass.teacher_id == teacher_id, EduClass.status == 0)
+        return session.exec(stmt).all()
+
+    @staticmethod
+    def get_class(session: Session, class_id: int) -> Optional[EduClass]:
+        return session.get(EduClass, class_id)
+
+    @staticmethod
+    def list_all(session: Session) -> List[EduClass]:
+        stmt = select(EduClass).where(EduClass.status == 0)
+        return session.exec(stmt).all()
+
+
+class EduClassMemberDao:
+    @staticmethod
+    def add_member(session: Session, class_id: int, student_id: int) -> EduClassMember:
+        existing = session.exec(
+            select(EduClassMember).where(
+                EduClassMember.class_id == class_id,
+                EduClassMember.student_id == student_id,
+            )
+        ).first()
+        if existing:
+            existing.status = 0
+            session.add(existing)
+            session.commit()
+            return existing
+        obj = EduClassMember(class_id=class_id, student_id=student_id,
+                             join_time=datetime.now())
+        session.add(obj)
+        session.commit()
+        session.refresh(obj)
+        return obj
+
+    @staticmethod
+    def remove_member(session: Session, class_id: int, student_id: int) -> None:
+        member = session.exec(
+            select(EduClassMember).where(
+                EduClassMember.class_id == class_id,
+                EduClassMember.student_id == student_id,
+                EduClassMember.status == 0,
+            )
+        ).first()
+        if member:
+            member.status = 1
+            session.add(member)
+            session.commit()
+
+    @staticmethod
+    def list_members(session: Session, class_id: int) -> List[EduClassMember]:
+        stmt = select(EduClassMember).where(
+            EduClassMember.class_id == class_id,
+            EduClassMember.status == 0,
+        )
+        return session.exec(stmt).all()
+
+    @staticmethod
+    def list_classes_for_student(session: Session, student_id: int) -> List[EduClassMember]:
+        stmt = select(EduClassMember).where(
+            EduClassMember.student_id == student_id,
+            EduClassMember.status == 0,
+        )
+        return session.exec(stmt).all()
