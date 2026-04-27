@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { educationApi, UnitLearningOut } from './api/educationApi';
 import DialogPanel from './panels/DialogPanel';
@@ -38,12 +38,11 @@ function RightPanel({ type, config, unitId, classId, onMarkComplete }: {
 export default function UnitLearningPage() {
   const { courseId, unitId } = useParams<{ courseId: string; unitId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const classId = searchParams.get('class_id') ? Number(searchParams.get('class_id')) : undefined;
   const [data, setData] = useState<UnitLearningOut | null>(null);
   const [loading, setLoading] = useState(true);
   const [marking, setMarking] = useState(false);
-
-  // classId 暂时为 undefined（Milestone 1），后续从 store/URL 取
-  const classId = undefined;
 
   useEffect(() => {
     if (!unitId) return;
@@ -75,16 +74,16 @@ export default function UnitLearningPage() {
       {/* Top Bar */}
       <div className="flex items-center justify-between px-6 py-3 bg-white border-b border-[#E5EAF4] flex-shrink-0">
         <div className="text-xs text-[#9498AC] flex items-center gap-1">
-          <Link to="/education/courses" className="hover:text-[#4658FF]">课程学习</Link>
+          <Link to={`/education/courses${classId ? `?class_id=${classId}` : ''}`} className="hover:text-[#4658FF]">课程学习</Link>
           <span>/</span>
-          <Link to={`/education/courses/${courseId}`} className="hover:text-[#4658FF]">课程详情</Link>
+          <Link to={`/education/courses/${courseId}${classId ? `?class_id=${classId}` : ''}`} className="hover:text-[#4658FF]">课程详情</Link>
           <span>/</span>
           <span className="text-[#140E35]">{unit.title}</span>
         </div>
         <div className="flex items-center gap-2">
           {prev_unit_id && (
             <button
-              onClick={() => navigate(`/education/courses/${courseId}/${prev_unit_id}`)}
+              onClick={() => navigate(`/education/courses/${courseId}/${prev_unit_id}${classId ? `?class_id=${classId}` : ''}`)}
               className="text-xs text-[#9498AC] hover:text-[#4658FF] px-2 py-1"
             >
               ← 上一单元
@@ -92,7 +91,7 @@ export default function UnitLearningPage() {
           )}
           {next_unit_id && (
             <button
-              onClick={() => navigate(`/education/courses/${courseId}/${next_unit_id}`)}
+              onClick={() => navigate(`/education/courses/${courseId}/${next_unit_id}${classId ? `?class_id=${classId}` : ''}`)}
               className="text-xs text-[#9498AC] hover:text-[#4658FF] px-2 py-1"
             >
               下一单元 →
@@ -116,20 +115,28 @@ export default function UnitLearningPage() {
 
           {/* Mark Complete Button */}
           <div className="mt-10 pt-6 border-t border-[#E5EAF4]">
-            {unit.is_completed ? (
-              <div className="flex items-center gap-2 text-sm text-[#4658FF]">
-                <span>✅</span>
-                <span>已完成</span>
-              </div>
-            ) : (
+            <div className="flex items-center gap-3">
+              {unit.is_completed ? (
+                <div className="flex items-center gap-2 text-sm text-[#4658FF]">
+                  <span>✅</span>
+                  <span>已完成</span>
+                </div>
+              ) : (
+                <button
+                  onClick={handleMarkComplete}
+                  disabled={marking || !classId}
+                  className="px-6 py-2 bg-[#4658FF] text-white text-sm rounded-lg disabled:opacity-50 hover:bg-[#3748EF]"
+                >
+                  {marking ? '标记中...' : '标记本单元已完成'}
+                </button>
+              )}
               <button
-                onClick={handleMarkComplete}
-                disabled={marking || !classId}
-                className="px-6 py-2 bg-[#4658FF] text-white text-sm rounded-lg disabled:opacity-50 hover:bg-[#3748EF]"
+                onClick={() => navigate(`/education/portfolio?unit_id=${unit.id}${classId ? `&class_id=${classId}` : ''}`)}
+                className="px-4 py-2 border border-[#4658FF] text-[#4658FF] text-sm rounded-lg hover:bg-[#F1F5FF]"
               >
-                {marking ? '标记中...' : '标记本单元已完成'}
+                提交作品
               </button>
-            )}
+            </div>
             {!classId && (
               <p className="text-xs text-[#9498AC] mt-2">加入班级后可记录进度</p>
             )}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { educationApi, CourseOut } from './api/educationApi';
 
 const TABS = [
@@ -10,6 +10,8 @@ const TABS = [
 ];
 
 export default function CoursesPage() {
+  const [searchParams] = useSearchParams();
+  const classId = searchParams.get('class_id') ? Number(searchParams.get('class_id')) : undefined;
   const [activeTab, setActiveTab] = useState('');
   const [courses, setCourses] = useState<CourseOut[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,7 +58,7 @@ export default function CoursesPage() {
           {courses.map(course => (
             <Link
               key={course.id}
-              to={`/education/courses/${course.id}`}
+              to={`/education/courses/${course.id}${classId ? `?class_id=${classId}` : ''}`}
               className="group bg-white rounded-xl border border-[#E5EAF4] overflow-hidden hover:shadow-md transition-shadow"
             >
               {/* Cover */}

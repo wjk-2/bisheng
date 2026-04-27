@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { educationApi, CourseDetailOut } from './api/educationApi';
 
 const TYPE_LABEL: Record<string, string> = {
@@ -10,16 +10,18 @@ const TYPE_LABEL: Record<string, string> = {
 
 export default function CourseDetailPage() {
   const { courseId } = useParams<{ courseId: string }>();
+  const [searchParams] = useSearchParams();
+  const classId = searchParams.get('class_id') ? Number(searchParams.get('class_id')) : undefined;
   const [data, setData] = useState<CourseDetailOut | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!courseId) return;
-    educationApi.getCourseDetail(Number(courseId))
+    educationApi.getCourseDetail(Number(courseId), classId)
       .then(setData)
       .catch(() => setData(null))
       .finally(() => setLoading(false));
-  }, [courseId]);
+  }, [courseId, classId]);
 
   if (loading) return <div className="p-8 text-[#9498AC]">加载中...</div>;
   if (!data) return <div className="p-8 text-[#9498AC]">课程不存在</div>;
@@ -31,7 +33,7 @@ export default function CourseDetailPage() {
     <div className="min-h-full bg-[#F7F9FF] p-6">
       {/* Breadcrumb */}
       <div className="text-xs text-[#9498AC] mb-4 flex items-center gap-1">
-        <Link to="/education/courses" className="hover:text-[#4658FF]">课程学习</Link>
+        <Link to={`/education/courses${classId ? `?class_id=${classId}` : ''}`} className="hover:text-[#4658FF]">课程学习</Link>
         <span>/</span>
         <span className="text-[#140E35]">{course.title}</span>
       </div>
@@ -72,7 +74,7 @@ export default function CourseDetailPage() {
           {units.map((unit, idx) => (
             <Link
               key={unit.id}
-              to={`/education/courses/${courseId}/${unit.id}`}
+              to={`/education/courses/${courseId}/${unit.id}${classId ? `?class_id=${classId}` : ''}`}
               className="flex items-center gap-4 px-6 py-4 hover:bg-[#F7F9FF] transition-colors group"
             >
               <div className="w-7 h-7 rounded-full border-2 border-[#E5EAF4] flex items-center justify-center text-xs text-[#9498AC] flex-shrink-0 group-hover:border-[#4658FF]">
