@@ -6,8 +6,10 @@ from bisheng.core.database import get_sync_db_session
 from bisheng.common.dependencies.user_deps import UserPayload
 from bisheng.api.v1.schemas import resp_200
 from bisheng.education.domain.services.course_service import CourseService
+from bisheng.education.domain.services.class_service import ClassService
 from bisheng.education.domain.schemas.education_schema import (
     MarkCompleteReq, CourseListResp,
+    CreateClassReq, AddMemberReq,
 )
 
 router = APIRouter(prefix='/education', tags=['Education'])
@@ -60,3 +62,73 @@ def mark_unit_complete(
     with get_sync_db_session() as session:
         result = CourseService.mark_unit_complete(session, login_user.user_id, unit_id, req.class_id)
         return resp_200(data=result.model_dump())
+
+
+# ===== 班级管理（教师端） =====
+
+@router.post('/classes')
+def create_class(
+    req: CreateClassReq,
+    login_user: UserPayload = Depends(UserPayload.get_login_user),
+):
+    with get_sync_db_session() as session:
+        result = ClassService.create_class(session, login_user.user_id, req.name, req.semester)
+        return resp_200(data=result.model_dump())
+
+
+@router.get('/classes')
+def list_classes(
+    login_user: UserPayload = Depends(UserPayload.get_login_user),
+):
+    with get_sync_db_session() as session:
+        result = ClassService.list_classes(session, login_user.user_id)
+        return resp_200(data={'classes': [c.model_dump() for c in result]})
+
+
+@router.get('/classes/{class_id}')
+def get_class_detail(
+    class_id: int,
+    login_user: UserPayload = Depends(UserPayload.get_login_user),
+):
+    with get_sync_db_session() as session:
+        try:
+            result = ClassService.get_class_detail(session, class_id)
+            return resp_200(data=result.model_dump())
+        except ValueError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.post('/classes/{class_id}/members')
+def add_class_member(
+    class_id: int,
+    req: AddMemberReq,
+    login_user: UserPayload = Depends(UserPayload.get_login_user),
+):
+    with get_sync_db_session() as session:
+        try:
+            ClassService.add_member(session, class_id, req.student_id)
+            return resp_200(data={})
+        except ValueError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.delete('/classes/{class_id}/members/{student_id}')
+def remove_class_member(
+    class_id: int,
+    student_id: int,
+    login_user: UserPayload = Depends(UserPayload.get_login_user),
+):
+    with get_sync_db_session() as session:
+        ClassService.remove_member(session, class_id, student_id)
+        return resp_200(data={})
+
+
+# ===== 学生端 — 查看自己的班级 =====
+
+@router.get('/my-classes')
+def list_my_classes(
+    login_user: UserPayload = Depends(UserPayload.get_login_user),
+):
+    with get_sync_db_session() as session:
+        result = ClassService.list_student_classes(session, login_user.user_id)
+        return resp_200(data={'classes': [c.model_dump() for c in result]})
