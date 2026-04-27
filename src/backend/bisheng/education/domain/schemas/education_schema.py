@@ -96,3 +96,22 @@ class AddMemberReq(BaseModel):
 
 class RemoveMemberReq(BaseModel):
     student_id: int
+
+
+# ===== Portfolio =====
+
+class PortfolioOut(BaseModel):
+    id: int
+    unit_id: int
+    class_id: Optional[int] = None
+    asset_type: str
+    title: str
+    text_content: Optional[str] = None
+    submit_time: Optional[datetime] = None
+
+
+class SubmitPortfolioReq(BaseModel):
+    unit_id: int
+    class_id: Optional[int] = None
+    title: str
+    text_content: str

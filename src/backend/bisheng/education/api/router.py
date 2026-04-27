@@ -10,7 +10,9 @@ from bisheng.education.domain.services.class_service import ClassService
 from bisheng.education.domain.schemas.education_schema import (
     MarkCompleteReq, CourseListResp,
     CreateClassReq, AddMemberReq,
+    SubmitPortfolioReq,
 )
+from bisheng.education.domain.services.portfolio_service import PortfolioService
 
 router = APIRouter(prefix='/education', tags=['Education'])
 
@@ -132,3 +134,25 @@ def list_my_classes(
     with get_sync_db_session() as session:
         result = ClassService.list_student_classes(session, login_user.user_id)
         return resp_200(data={'classes': [c.model_dump() for c in result]})
+
+
+# ===== 作品集 =====
+
+@router.post('/portfolio')
+def submit_portfolio(
+    req: SubmitPortfolioReq,
+    login_user: UserPayload = Depends(UserPayload.get_login_user),
+):
+    with get_sync_db_session() as session:
+        result = PortfolioService.submit(session, login_user.user_id, req)
+        return resp_200(data=result.model_dump())
+
+
+@router.get('/portfolio/units/{unit_id}')
+def list_portfolio_by_unit(
+    unit_id: int,
+    login_user: UserPayload = Depends(UserPayload.get_login_user),
+):
+    with get_sync_db_session() as session:
+        result = PortfolioService.list_by_unit(session, login_user.user_id, unit_id)
+        return resp_200(data={'items': [r.model_dump() for r in result]})

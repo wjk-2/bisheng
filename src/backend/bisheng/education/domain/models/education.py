@@ -251,3 +251,30 @@ class EduClassMemberDao:
             EduClassMember.status == 0,
         )
         return session.exec(stmt).all()
+
+
+class EduPortfolioDao:
+    @staticmethod
+    def create(session: Session, student_id: int, unit_id: int, class_id: Optional[int],
+               title: str, text_content: str) -> EduPortfolio:
+        obj = EduPortfolio(
+            student_id=student_id,
+            unit_id=unit_id,
+            class_id=class_id,
+            asset_type='text',
+            text_content=text_content,
+            title=title,
+            submit_time=datetime.now(),
+        )
+        session.add(obj)
+        session.commit()
+        session.refresh(obj)
+        return obj
+
+    @staticmethod
+    def list_by_student_unit(session: Session, student_id: int, unit_id: int) -> List[EduPortfolio]:
+        stmt = select(EduPortfolio).where(
+            EduPortfolio.student_id == student_id,
+            EduPortfolio.unit_id == unit_id,
+        ).order_by(EduPortfolio.submit_time.desc())
+        return session.exec(stmt).all()
