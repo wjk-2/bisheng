@@ -144,8 +144,11 @@ def submit_portfolio(
     login_user: UserPayload = Depends(UserPayload.get_login_user),
 ):
     with get_sync_db_session() as session:
-        result = PortfolioService.submit(session, login_user.user_id, req)
-        return resp_200(data=result.model_dump())
+        try:
+            result = PortfolioService.submit(session, login_user.user_id, req)
+            return resp_200(data=result.model_dump())
+        except ValueError as e:
+            raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.get('/portfolio/units/{unit_id}')

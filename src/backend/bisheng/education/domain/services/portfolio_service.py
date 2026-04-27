@@ -1,5 +1,5 @@
 from sqlmodel import Session
-from bisheng.education.domain.models.education import EduPortfolioDao
+from bisheng.education.domain.models.education import EduPortfolioDao, EduUnitDao
 from bisheng.education.domain.schemas.education_schema import PortfolioOut, SubmitPortfolioReq
 
 
@@ -7,6 +7,8 @@ class PortfolioService:
 
     @staticmethod
     def submit(session: Session, student_id: int, req: SubmitPortfolioReq) -> PortfolioOut:
+        if not EduUnitDao.get_unit(session, req.unit_id):
+            raise ValueError(f"Unit {req.unit_id} not found")
         obj = EduPortfolioDao.create(
             session,
             student_id=student_id,
