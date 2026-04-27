@@ -2,6 +2,8 @@ from enum import Enum
 
 # Default Normal User Role'sID
 DefaultRole = 2
+# Teacher RoleID
+TeacherRole = 3
 # Super Admin RoleID
 AdminRole = 1
 

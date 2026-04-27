@@ -69,7 +69,7 @@ def mark_unit_complete(
 @router.post('/classes')
 def create_class(
     req: CreateClassReq,
-    login_user: UserPayload = Depends(UserPayload.get_login_user),
+    login_user: UserPayload = Depends(UserPayload.get_teacher_user),
 ):
     with get_sync_db_session() as session:
         result = ClassService.create_class(session, login_user.user_id, req.name, req.semester)
@@ -78,7 +78,7 @@ def create_class(
 
 @router.get('/classes')
 def list_classes(
-    login_user: UserPayload = Depends(UserPayload.get_login_user),
+    login_user: UserPayload = Depends(UserPayload.get_teacher_user),
 ):
     with get_sync_db_session() as session:
         result = ClassService.list_classes(session, login_user.user_id)
