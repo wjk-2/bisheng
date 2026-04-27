@@ -146,6 +146,7 @@ function ClassDetail({ classId }: { classId: number }) {
   // 添加学生状态
   const [addInput, setAddInput] = useState('');
   const [adding, setAdding] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const load = () => {
     setLoading(true);
@@ -163,13 +164,17 @@ function ClassDetail({ classId }: { classId: number }) {
     educationApi.addMember(classId, sid)
       .then(() => {
         setAddInput('');
+        setError(null);
         load();
       })
+      .catch(() => setError('添加失败，请确认学生 ID 是否正确'))
       .finally(() => setAdding(false));
   };
 
   const handleRemove = (studentId: number) => {
-    educationApi.removeMember(classId, studentId).then(load);
+    educationApi.removeMember(classId, studentId)
+      .then(() => { setError(null); load(); })
+      .catch(() => setError('移除失败，请稍后重试'));
   };
 
   if (loading) {
@@ -241,6 +246,9 @@ function ClassDetail({ classId }: { classId: number }) {
           {adding ? '添加中...' : '添加'}
         </button>
       </div>
+      {error && (
+        <p className="text-xs text-red-500 mt-2">{error}</p>
+      )}
 
       {/* 成员列表 */}
       <div className="bg-white rounded-xl border border-[#E5EAF4] overflow-hidden">
