@@ -356,7 +356,7 @@ class LoginUser(BaseModel):
     async def get_teacher_user(cls, auth_jwt: AuthJwt = Depends()) -> Self:
         login_user = await cls.get_login_user(auth_jwt)
         if not login_user.is_admin() and not login_user.is_teacher():
-            raise HTTPException(status_code=403, detail='仅教师或管理员可操作')
+            raise UnAuthorizedError.http_exception()
         return login_user
 
     @classmethod
