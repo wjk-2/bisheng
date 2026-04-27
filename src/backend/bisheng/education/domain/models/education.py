@@ -208,7 +208,7 @@ class EduClassMemberDao:
         return obj
 
     @staticmethod
-    def remove_member(session: Session, class_id: int, student_id: int) -> None:
+    def remove_member(session: Session, class_id: int, student_id: int) -> bool:
         member = session.exec(
             select(EduClassMember).where(
                 EduClassMember.class_id == class_id,
@@ -216,10 +216,12 @@ class EduClassMemberDao:
                 EduClassMember.status == 0,
             )
         ).first()
-        if member:
-            member.status = 1
-            session.add(member)
-            session.commit()
+        if not member:
+            return False
+        member.status = 1
+        session.add(member)
+        session.commit()
+        return True
 
     @staticmethod
     def list_members(session: Session, class_id: int) -> List[EduClassMember]:

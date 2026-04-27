@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional, List
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 # ===== Course =====
@@ -86,16 +86,12 @@ class ClassDetailOut(BaseModel):
 
 
 class CreateClassReq(BaseModel):
-    name: str
-    semester: str
+    name: str = Field(min_length=1, max_length=100)
+    semester: str = Field(min_length=1, max_length=20)
 
 
 class AddMemberReq(BaseModel):
-    student_id: int
-
-
-class RemoveMemberReq(BaseModel):
-    student_id: int
+    student_id: int = Field(gt=0)
 
 
 # ===== Portfolio =====
@@ -111,7 +107,7 @@ class PortfolioOut(BaseModel):
 
 
 class SubmitPortfolioReq(BaseModel):
-    unit_id: int
-    class_id: Optional[int] = None
-    title: str
-    text_content: str
+    unit_id: int = Field(gt=0)
+    class_id: Optional[int] = Field(default=None, gt=0)
+    title: str = Field(min_length=1, max_length=255)
+    text_content: str = Field(min_length=1)
