@@ -9,6 +9,11 @@ class PortfolioService:
     def submit(session: Session, student_id: int, req: SubmitPortfolioReq) -> PortfolioOut:
         if not EduUnitDao.get_unit(session, req.unit_id):
             raise ValueError(f"Unit {req.unit_id} not found")
+        if req.class_id is not None:
+            from bisheng.education.domain.models.education import EduClassMemberDao
+            memberships = EduClassMemberDao.list_classes_for_student(session, student_id)
+            if not any(m.class_id == req.class_id for m in memberships):
+                raise ValueError(f"Student {student_id} is not a member of class {req.class_id}")
         obj = EduPortfolioDao.create(
             session,
             student_id=student_id,

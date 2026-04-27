@@ -20,19 +20,24 @@ class ClassService:
     @staticmethod
     def list_classes(session: Session, teacher_id: int) -> list[ClassOut]:
         classes = EduClassDao.list_active_by_teacher(session, teacher_id)
-        result = []
-        for c in classes:
-            members = EduClassMemberDao.list_members(session, c.id)
-            result.append(ClassOut(id=c.id, name=c.name, semester=c.semester,
-                                   teacher_id=c.teacher_id, status=c.status,
-                                   member_count=len(members), create_time=c.create_time))
-        return result
+        if not classes:
+            return []
+        class_ids = [c.id for c in classes]
+        member_counts = EduClassMemberDao.count_members_by_class_ids(session, class_ids)
+        return [
+            ClassOut(id=c.id, name=c.name, semester=c.semester,
+                     teacher_id=c.teacher_id, status=c.status,
+                     member_count=member_counts.get(c.id, 0), create_time=c.create_time)
+            for c in classes
+        ]
 
     @staticmethod
-    def get_class_detail(session: Session, class_id: int) -> ClassDetailOut:
+    def get_class_detail(session: Session, class_id: int, teacher_id: int) -> ClassDetailOut:
         cls = EduClassDao.get_class(session, class_id)
         if not cls:
             raise ValueError(f"Class {class_id} not found")
+        if cls.teacher_id != teacher_id:
+            raise ValueError("Not your class")
         members = EduClassMemberDao.list_members(session, class_id)
         member_ids = [m.student_id for m in members]
         # UserDao.get_user_by_ids 内部自建 session，与当前 session 不在同一事务
@@ -51,14 +56,21 @@ class ClassService:
         return ClassDetailOut(class_info=cls_out, members=member_outs)
 
     @staticmethod
-    def add_member(session: Session, class_id: int, student_id: int) -> None:
+    def add_member(session: Session, class_id: int, student_id: int, teacher_id: int) -> None:
         cls = EduClassDao.get_class(session, class_id)
         if not cls:
             raise ValueError(f"Class {class_id} not found")
+        if cls.teacher_id != teacher_id:
+            raise ValueError("Not your class")
         EduClassMemberDao.add_member(session, class_id, student_id)
 
     @staticmethod
-    def remove_member(session: Session, class_id: int, student_id: int) -> None:
+    def remove_member(session: Session, class_id: int, student_id: int, teacher_id: int) -> None:
+        cls = EduClassDao.get_class(session, class_id)
+        if not cls:
+            raise ValueError(f"Class {class_id} not found")
+        if cls.teacher_id != teacher_id:
+            raise ValueError("Not your class")
         EduClassMemberDao.remove_member(session, class_id, student_id)
 
     @staticmethod

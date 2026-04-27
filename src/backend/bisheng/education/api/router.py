@@ -90,11 +90,11 @@ def list_classes(
 @router.get('/classes/{class_id}')
 def get_class_detail(
     class_id: int,
-    login_user: UserPayload = Depends(UserPayload.get_login_user),
+    login_user: UserPayload = Depends(UserPayload.get_teacher_user),
 ):
     with get_sync_db_session() as session:
         try:
-            result = ClassService.get_class_detail(session, class_id)
+            result = ClassService.get_class_detail(session, class_id, login_user.user_id)
             return resp_200(data=result.model_dump())
         except ValueError as e:
             raise HTTPException(status_code=404, detail=str(e))
@@ -108,7 +108,7 @@ def add_class_member(
 ):
     with get_sync_db_session() as session:
         try:
-            ClassService.add_member(session, class_id, req.student_id)
+            ClassService.add_member(session, class_id, req.student_id, login_user.user_id)
             return resp_200(data={})
         except ValueError as e:
             raise HTTPException(status_code=404, detail=str(e))
@@ -121,8 +121,11 @@ def remove_class_member(
     login_user: UserPayload = Depends(UserPayload.get_teacher_user),
 ):
     with get_sync_db_session() as session:
-        ClassService.remove_member(session, class_id, student_id)
-        return resp_200(data={})
+        try:
+            ClassService.remove_member(session, class_id, student_id, login_user.user_id)
+            return resp_200(data={})
+        except ValueError as e:
+            raise HTTPException(status_code=404, detail=str(e))
 
 
 # ===== 学生端 — 查看自己的班级 =====
