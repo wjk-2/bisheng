@@ -1,9 +1,11 @@
 from enum import Enum
 
-# Default Normal User Role'sID
-DefaultRole = 2
 # Super Admin RoleID
 AdminRole = 1
+# Default Normal User Role'sID
+DefaultRole = 2
+# Teacher RoleID
+TeacherRole = 3
 
 
 # Some of the basiccategoryType

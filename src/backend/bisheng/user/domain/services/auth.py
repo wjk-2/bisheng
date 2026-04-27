@@ -15,7 +15,7 @@ from typing_extensions import Self
 from bisheng.common.errcode.http_error import UnAuthorizedError
 from bisheng.common.exceptions.auth import JWTDecodeError
 from bisheng.common.services.config_service import settings
-from bisheng.database.constants import AdminRole
+from bisheng.database.constants import AdminRole, TeacherRole
 from bisheng.database.models.group import GroupDao
 from bisheng.database.models.role_access import AccessType, RoleAccessDao, WebMenuResource
 from bisheng.database.models.user_group import UserGroupDao
@@ -170,6 +170,9 @@ class LoginUser(BaseModel):
 
     def is_admin(self):
         return self._check_admin
+
+    def is_teacher(self):
+        return TeacherRole in self.user_role
 
     @staticmethod
     def wrapper_access_check(func):
@@ -346,6 +349,13 @@ class LoginUser(BaseModel):
     async def get_admin_user(cls, auth_jwt: AuthJwt = Depends()) -> Self:
         login_user = await cls.get_login_user(auth_jwt)
         if not login_user.is_admin():
+            raise UnAuthorizedError.http_exception()
+        return login_user
+
+    @classmethod
+    async def get_teacher_user(cls, auth_jwt: AuthJwt = Depends()) -> Self:
+        login_user = await cls.get_login_user(auth_jwt)
+        if not login_user.is_admin() and not login_user.is_teacher():
             raise UnAuthorizedError.http_exception()
         return login_user
 

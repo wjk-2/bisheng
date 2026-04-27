@@ -151,3 +151,132 @@ class EduProgressDao:
             session.add(progress)
             session.commit()
             return progress
+
+
+class EduClassDao:
+    @staticmethod
+    def create_class(session: Session, name: str, semester: str, teacher_id: int) -> EduClass:
+        obj = EduClass(name=name, semester=semester, teacher_id=teacher_id,
+                       create_time=datetime.now(), update_time=datetime.now())
+        session.add(obj)
+        session.commit()
+        session.refresh(obj)
+        return obj
+
+    @staticmethod
+    def list_active_by_teacher(session: Session, teacher_id: int) -> List[EduClass]:
+        stmt = select(EduClass).where(EduClass.teacher_id == teacher_id, EduClass.status == 0)
+        return session.exec(stmt).all()
+
+    @staticmethod
+    def get_class(session: Session, class_id: int) -> Optional[EduClass]:
+        return session.get(EduClass, class_id)
+
+    @staticmethod
+    def list_active_all(session: Session) -> List[EduClass]:
+        stmt = select(EduClass).where(EduClass.status == 0)
+        return session.exec(stmt).all()
+
+    @staticmethod
+    def list_by_ids(session: Session, class_ids: List[int]) -> List[EduClass]:
+        if not class_ids:
+            return []
+        stmt = select(EduClass).where(EduClass.id.in_(class_ids), EduClass.status == 0)
+        return session.exec(stmt).all()
+
+
+class EduClassMemberDao:
+    @staticmethod
+    def add_member(session: Session, class_id: int, student_id: int) -> EduClassMember:
+        existing = session.exec(
+            select(EduClassMember).where(
+                EduClassMember.class_id == class_id,
+                EduClassMember.student_id == student_id,
+            )
+        ).first()
+        if existing:
+            existing.status = 0
+            # join_time 保留首次加入时间，不随重新激活更新
+            session.add(existing)
+            session.commit()
+            return existing
+        obj = EduClassMember(class_id=class_id, student_id=student_id,
+                             join_time=datetime.now())
+        session.add(obj)
+        session.commit()
+        session.refresh(obj)
+        return obj
+
+    @staticmethod
+    def remove_member(session: Session, class_id: int, student_id: int) -> bool:
+        member = session.exec(
+            select(EduClassMember).where(
+                EduClassMember.class_id == class_id,
+                EduClassMember.student_id == student_id,
+                EduClassMember.status == 0,
+            )
+        ).first()
+        if not member:
+            return False
+        member.status = 1
+        session.add(member)
+        session.commit()
+        return True
+
+    @staticmethod
+    def list_members(session: Session, class_id: int) -> List[EduClassMember]:
+        stmt = select(EduClassMember).where(
+            EduClassMember.class_id == class_id,
+            EduClassMember.status == 0,
+        )
+        return session.exec(stmt).all()
+
+    @staticmethod
+    def count_members_by_class_ids(session: Session, class_ids: List[int]) -> dict[int, int]:
+        """返回 {class_id: member_count} 字典，仅统计 status==0 的成员"""
+        if not class_ids:
+            return {}
+        stmt = select(EduClassMember).where(
+            EduClassMember.class_id.in_(class_ids),
+            EduClassMember.status == 0,
+        )
+        members = session.exec(stmt).all()
+        counts: dict[int, int] = {}
+        for m in members:
+            counts[m.class_id] = counts.get(m.class_id, 0) + 1
+        return counts
+
+    @staticmethod
+    def list_classes_for_student(session: Session, student_id: int) -> List[EduClassMember]:
+        stmt = select(EduClassMember).where(
+            EduClassMember.student_id == student_id,
+            EduClassMember.status == 0,
+        )
+        return session.exec(stmt).all()
+
+
+class EduPortfolioDao:
+    @staticmethod
+    def create(session: Session, student_id: int, unit_id: int, class_id: Optional[int],
+               title: str, text_content: str) -> EduPortfolio:
+        obj = EduPortfolio(
+            student_id=student_id,
+            unit_id=unit_id,
+            class_id=class_id,
+            asset_type='text',
+            text_content=text_content,
+            title=title,
+            submit_time=datetime.now(),
+        )
+        session.add(obj)
+        session.commit()
+        session.refresh(obj)
+        return obj
+
+    @staticmethod
+    def list_by_student_unit(session: Session, student_id: int, unit_id: int) -> List[EduPortfolio]:
+        stmt = select(EduPortfolio).where(
+            EduPortfolio.student_id == student_id,
+            EduPortfolio.unit_id == unit_id,
+        ).order_by(EduPortfolio.submit_time.desc())
+        return session.exec(stmt).all()
