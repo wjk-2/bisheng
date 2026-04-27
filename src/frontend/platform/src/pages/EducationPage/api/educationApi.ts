@@ -43,7 +43,7 @@ export const educationApi = {
   listCourses: (courseType?: string): Promise<CourseOut[]> =>
     axios.get(`${BASE}/courses`, {
       params: courseType ? { course_type: courseType } : {},
-    }).then((data: any) => data.courses ?? data),
+    }).then((data: { courses: CourseOut[] }) => data.courses),
 
   getCourseDetail: (courseId: number, classId?: number): Promise<CourseDetailOut> =>
     axios.get(`${BASE}/courses/${courseId}`, {

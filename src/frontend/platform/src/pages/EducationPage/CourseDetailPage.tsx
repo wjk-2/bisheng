@@ -17,6 +17,7 @@ export default function CourseDetailPage() {
     if (!courseId) return;
     educationApi.getCourseDetail(Number(courseId))
       .then(setData)
+      .catch(() => setData(null))
       .finally(() => setLoading(false));
   }, [courseId]);
 

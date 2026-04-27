@@ -50,11 +50,12 @@ export default function UnitLearningPage() {
     setLoading(true);
     educationApi.getUnitLearning(Number(unitId), classId)
       .then(setData)
+      .catch(() => setData(null))
       .finally(() => setLoading(false));
-  }, [unitId]);
+  }, [unitId, classId]);
 
   const handleMarkComplete = async () => {
-    if (!data || !classId) return;
+    if (!data || !classId || !unitId) return;
     setMarking(true);
     try {
       await educationApi.markUnitComplete(Number(unitId), classId);

@@ -7,7 +7,7 @@ from bisheng.common.dependencies.user_deps import UserPayload
 from bisheng.api.v1.schemas import resp_200
 from bisheng.education.domain.services.course_service import CourseService
 from bisheng.education.domain.schemas.education_schema import (
-    MarkCompleteReq,
+    MarkCompleteReq, CourseListResp,
 )
 
 router = APIRouter(prefix='/education', tags=['Education'])
@@ -20,7 +20,7 @@ def list_courses(
 ):
     with get_sync_db_session() as session:
         courses = CourseService.list_courses(session, login_user.user_id, course_type)
-        return resp_200(data={'courses': [c.model_dump() for c in courses]})
+        return resp_200(data=CourseListResp(courses=courses).model_dump())
 
 
 @router.get('/courses/{course_id}')

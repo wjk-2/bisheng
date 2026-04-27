@@ -88,9 +88,9 @@ class CourseService:
 
         siblings = EduUnitDao.list_units_by_course(session, unit.course_id)
         ordered_ids = [u.id for u in siblings]
-        idx = ordered_ids.index(unit_id) if unit_id in ordered_ids else -1
-        prev_id = ordered_ids[idx - 1] if idx > 0 else None
-        next_id = ordered_ids[idx + 1] if idx < len(ordered_ids) - 1 else None
+        idx = ordered_ids.index(unit_id) if unit_id in ordered_ids else None
+        prev_id = ordered_ids[idx - 1] if (idx is not None and idx > 0) else None
+        next_id = ordered_ids[idx + 1] if (idx is not None and idx < len(ordered_ids) - 1) else None
 
         is_completed = False
         if class_id:
