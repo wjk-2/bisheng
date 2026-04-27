@@ -60,3 +60,39 @@ class UnitLearningOut(BaseModel):
     unit: UnitDetailOut
     prev_unit_id: Optional[int] = None
     next_unit_id: Optional[int] = None
+
+
+# ===== Class =====
+
+class ClassOut(BaseModel):
+    id: int
+    name: str
+    semester: str
+    teacher_id: int
+    status: int
+    member_count: int = 0
+    create_time: Optional[datetime] = None
+
+
+class ClassMemberOut(BaseModel):
+    student_id: int
+    username: str
+    join_time: Optional[datetime] = None
+
+
+class ClassDetailOut(BaseModel):
+    cls: ClassOut
+    members: List[ClassMemberOut]
+
+
+class CreateClassReq(BaseModel):
+    name: str
+    semester: str
+
+
+class AddMemberReq(BaseModel):
+    student_id: int
+
+
+class RemoveMemberReq(BaseModel):
+    student_id: int
