@@ -81,7 +81,7 @@ class ClassMemberOut(BaseModel):
 
 
 class ClassDetailOut(BaseModel):
-    cls: ClassOut
+    class_info: ClassOut
     members: List[ClassMemberOut]
 
 
