@@ -35,6 +35,7 @@ class ClassService:
             raise ValueError(f"Class {class_id} not found")
         members = EduClassMemberDao.list_members(session, class_id)
         member_ids = [m.student_id for m in members]
+        # UserDao.get_user_by_ids 内部自建 session，与当前 session 不在同一事务
         users = UserDao.get_user_by_ids(member_ids) if member_ids else []
         user_map = {u.user_id: u.user_name for u in users}
         member_outs = [
@@ -63,12 +64,14 @@ class ClassService:
     @staticmethod
     def list_student_classes(session: Session, student_id: int) -> list[ClassOut]:
         memberships = EduClassMemberDao.list_classes_for_student(session, student_id)
-        result = []
-        for m in memberships:
-            cls = EduClassDao.get_class(session, m.class_id)
-            if cls and cls.status == 0:
-                members = EduClassMemberDao.list_members(session, cls.id)
-                result.append(ClassOut(id=cls.id, name=cls.name, semester=cls.semester,
-                                       teacher_id=cls.teacher_id, status=cls.status,
-                                       member_count=len(members), create_time=cls.create_time))
-        return result
+        if not memberships:
+            return []
+        class_ids = [m.class_id for m in memberships]
+        classes = EduClassDao.list_by_ids(session, class_ids)
+        member_counts = EduClassMemberDao.count_members_by_class_ids(session, class_ids)
+        return [
+            ClassOut(id=c.id, name=c.name, semester=c.semester,
+                     teacher_id=c.teacher_id, status=c.status,
+                     member_count=member_counts.get(c.id, 0), create_time=c.create_time)
+            for c in classes
+        ]

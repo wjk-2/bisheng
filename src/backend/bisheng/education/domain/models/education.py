@@ -177,6 +177,13 @@ class EduClassDao:
         stmt = select(EduClass).where(EduClass.status == 0)
         return session.exec(stmt).all()
 
+    @staticmethod
+    def list_by_ids(session: Session, class_ids: List[int]) -> List[EduClass]:
+        if not class_ids:
+            return []
+        stmt = select(EduClass).where(EduClass.id.in_(class_ids), EduClass.status == 0)
+        return session.exec(stmt).all()
+
 
 class EduClassMemberDao:
     @staticmethod
@@ -221,6 +228,21 @@ class EduClassMemberDao:
             EduClassMember.status == 0,
         )
         return session.exec(stmt).all()
+
+    @staticmethod
+    def count_members_by_class_ids(session: Session, class_ids: List[int]) -> dict[int, int]:
+        """返回 {class_id: member_count} 字典，仅统计 status==0 的成员"""
+        if not class_ids:
+            return {}
+        stmt = select(EduClassMember).where(
+            EduClassMember.class_id.in_(class_ids),
+            EduClassMember.status == 0,
+        )
+        members = session.exec(stmt).all()
+        counts: dict[int, int] = {}
+        for m in members:
+            counts[m.class_id] = counts.get(m.class_id, 0) + 1
+        return counts
 
     @staticmethod
     def list_classes_for_student(session: Session, student_id: int) -> List[EduClassMember]:
