@@ -102,7 +102,7 @@ def get_class_detail(
 def add_class_member(
     class_id: int,
     req: AddMemberReq,
-    login_user: UserPayload = Depends(UserPayload.get_login_user),
+    login_user: UserPayload = Depends(UserPayload.get_teacher_user),
 ):
     with get_sync_db_session() as session:
         try:
@@ -116,7 +116,7 @@ def add_class_member(
 def remove_class_member(
     class_id: int,
     student_id: int,
-    login_user: UserPayload = Depends(UserPayload.get_login_user),
+    login_user: UserPayload = Depends(UserPayload.get_teacher_user),
 ):
     with get_sync_db_session() as session:
         ClassService.remove_member(session, class_id, student_id)
