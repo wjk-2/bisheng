@@ -164,7 +164,7 @@ class EduClassDao:
         return obj
 
     @staticmethod
-    def list_by_teacher(session: Session, teacher_id: int) -> List[EduClass]:
+    def list_active_by_teacher(session: Session, teacher_id: int) -> List[EduClass]:
         stmt = select(EduClass).where(EduClass.teacher_id == teacher_id, EduClass.status == 0)
         return session.exec(stmt).all()
 
@@ -173,7 +173,7 @@ class EduClassDao:
         return session.get(EduClass, class_id)
 
     @staticmethod
-    def list_all(session: Session) -> List[EduClass]:
+    def list_active_all(session: Session) -> List[EduClass]:
         stmt = select(EduClass).where(EduClass.status == 0)
         return session.exec(stmt).all()
 
@@ -189,6 +189,7 @@ class EduClassMemberDao:
         ).first()
         if existing:
             existing.status = 0
+            # join_time 保留首次加入时间，不随重新激活更新
             session.add(existing)
             session.commit()
             return existing
