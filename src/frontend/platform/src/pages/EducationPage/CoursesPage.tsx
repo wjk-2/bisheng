@@ -8,21 +8,27 @@ export default function CoursesPage() {
   const [courses, setCourses] = useState<CourseOut[]>([]);
   const [loadingPaths, setLoadingPaths] = useState(true);
   const [loadingCourses, setLoadingCourses] = useState(false);
+  const [pathsError, setPathsError] = useState(false);
+  const [coursesError, setCoursesError] = useState(false);
 
   useEffect(() => {
+    setPathsError(false);
     educationApi.listPaths()
       .then(data => {
         setPaths(data);
         if (data.length > 0) setActivePathId(data[0].id);
       })
+      .catch(() => setPathsError(true))
       .finally(() => setLoadingPaths(false));
   }, []);
 
   useEffect(() => {
     if (activePathId === null) return;
+    setCoursesError(false);
     setLoadingCourses(true);
     educationApi.listCourses({ pathId: activePathId })
       .then(setCourses)
+      .catch(() => setCoursesError(true))
       .finally(() => setLoadingCourses(false));
   }, [activePathId]);
 
@@ -51,21 +57,27 @@ export default function CoursesPage() {
 
       {/* Path Tabs */}
       {!loadingPaths && (
-        <div className="flex gap-2 mb-6 border-b border-[#E5EAF4]">
-          {paths.map(path => (
-            <button
-              key={path.id}
-              onClick={() => setActivePathId(path.id)}
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                activePathId === path.id
-                  ? 'border-[#4658FF] text-[#4658FF]'
-                  : 'border-transparent text-[#9498AC] hover:text-[#140E35]'
-              }`}
-            >
-              {getTabLabel(path)}
-            </button>
-          ))}
-        </div>
+        pathsError ? (
+          <div className="mb-6 text-sm text-red-500">学习路径加载失败，请刷新页面重试</div>
+        ) : paths.length === 0 ? (
+          <div className="mb-6 text-sm text-[#9498AC]">暂无学习路径，请联系管理员配置</div>
+        ) : (
+          <div className="flex gap-2 mb-6 border-b border-[#E5EAF4]">
+            {paths.map(path => (
+              <button
+                key={path.id}
+                onClick={() => setActivePathId(path.id)}
+                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                  activePathId === path.id
+                    ? 'border-[#4658FF] text-[#4658FF]'
+                    : 'border-transparent text-[#9498AC] hover:text-[#140E35]'
+                }`}
+              >
+                {getTabLabel(path)}
+              </button>
+            ))}
+          </div>
+        )
       )}
 
       {/* Course Grid */}
@@ -75,6 +87,8 @@ export default function CoursesPage() {
             <div key={i} className="h-52 bg-white rounded-xl border border-[#E5EAF4] animate-pulse" />
           ))}
         </div>
+      ) : coursesError ? (
+        <div className="text-center text-red-500 py-16 text-sm">课程加载失败，请刷新页面重试</div>
       ) : courses.length === 0 ? (
         <div className="text-center text-[#9498AC] py-16">暂无课程</div>
       ) : (
