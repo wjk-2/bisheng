@@ -4,6 +4,7 @@ from sqlmodel import Session, select
 from bisheng.education.domain.models.education import (
     EduCourse, EduUnit, EduUnitProgress,
     EduCourseDao, EduUnitDao, EduProgressDao,
+    EduPathDao,
 )
 from bisheng.education.domain.schemas.education_schema import (
     CourseOut, CourseDetailOut, UnitOut, UnitDetailOut, UnitLearningOut,
@@ -14,8 +15,12 @@ from bisheng.education.domain.schemas.education_schema import (
 class CourseService:
 
     @staticmethod
-    def list_courses(session: Session, student_id: int, course_type: Optional[str] = None) -> List[CourseOut]:
-        courses = EduCourseDao.list_courses(session, course_type)
+    def list_courses(session: Session, student_id: int, course_type: Optional[str] = None,
+                     path_id: Optional[int] = None) -> List[CourseOut]:
+        if path_id:
+            courses = EduCourseDao.list_courses_by_path(session, path_id)
+        else:
+            courses = EduCourseDao.list_courses(session, course_type)
         result = []
         for c in courses:
             units = EduUnitDao.list_units_by_course(session, c.id)
@@ -32,12 +37,17 @@ class CourseService:
                 ).all()
                 # 去重：同一 unit 在多个班级都完成，只算一次
                 completed = len({p.unit_id for p in progresses})
+            estimated_minutes = sum(u.estimated_minutes for u in units)
             result.append(CourseOut(
                 id=c.id,
+                path_id=c.path_id,
                 title=c.title,
                 type=c.type,
+                stage=c.stage,
+                stage_order=c.stage_order,
                 description=c.description,
                 cover=c.cover,
+                estimated_minutes=estimated_minutes,
                 total_units=total,
                 completed_units=completed,
             ))
@@ -56,7 +66,7 @@ class CourseService:
             if class_id:
                 progress = EduProgressDao.get_progress(session, student_id, u.id, class_id)
                 is_completed = bool(progress and progress.status == 1)
-            units_out.append(UnitOut(
+            units_out.append(UnitDetailOut(
                 id=u.id,
                 course_id=u.course_id,
                 title=u.title,
@@ -64,17 +74,23 @@ class CourseService:
                 estimated_minutes=u.estimated_minutes,
                 right_panel_type=u.right_panel_type,
                 right_panel_config=u.right_panel_config,
+                content=u.content,
                 is_completed=is_completed,
             ))
 
         total_units = len(units_out)
         completed_units = sum(1 for u in units_out if u.is_completed)
+        estimated_minutes = sum(u.estimated_minutes for u in units_out)
         course_out = CourseOut(
             id=course.id,
+            path_id=course.path_id,
             title=course.title,
             type=course.type,
+            stage=course.stage,
+            stage_order=course.stage_order,
             description=course.description,
             cover=course.cover,
+            estimated_minutes=estimated_minutes,
             total_units=total_units,
             completed_units=completed_units,
         )

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { educationApi } from '../api/educationApi';
 
 interface Props {
   unitId: number;
@@ -10,15 +11,23 @@ export default function TextSubmitPanel({ unitId, classId, onSubmitted }: Props)
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState('');
 
   const submit = async () => {
     if (!content.trim() || loading) return;
     setLoading(true);
+    setError('');
     try {
-      // Milestone 2 实现 portfolio 提交 API，此处用 mock
-      await new Promise(r => setTimeout(r, 500));
+      await educationApi.submitPortfolio({
+        unit_id: unitId,
+        class_id: classId,
+        title: '作品提交',
+        text_content: content,
+      });
       setSubmitted(true);
       onSubmitted?.(content);
+    } catch {
+      setError('提交失败，请稍后重试');
     } finally {
       setLoading(false);
     }
@@ -43,6 +52,7 @@ export default function TextSubmitPanel({ unitId, classId, onSubmitted }: Props)
         value={content}
         onChange={e => setContent(e.target.value)}
       />
+      {error && <div className="text-sm text-red-500">{error}</div>}
       <button
         onClick={submit}
         disabled={!content.trim() || loading}

@@ -5,12 +5,31 @@ from sqlalchemy import Column, JSON
 from bisheng.common.models.base import SQLModelSerializable
 
 
+class EduPath(SQLModelSerializable, table=True):
+    __tablename__ = 'edu_path'
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    title: str = Field(max_length=255)
+    type: str = Field(max_length=20)        # general / professional / project
+    industry: Optional[str] = Field(default=None, max_length=50)  # logistics / ecommerce / ...
+    description: Optional[str] = None
+    cover: Optional[str] = Field(default=None, max_length=500)
+    school_type: str = Field(default='vocational', max_length=20)  # vocational / undergraduate
+    order: int = Field(default=0)
+    status: int = Field(default=0)
+    create_time: Optional[datetime] = Field(default=None)
+    update_time: Optional[datetime] = Field(default=None)
+
+
 class EduCourse(SQLModelSerializable, table=True):
     __tablename__ = 'edu_course'
 
     id: Optional[int] = Field(default=None, primary_key=True)
     title: str = Field(max_length=255)
     type: str = Field(max_length=20)  # general / professional / project
+    path_id: Optional[int] = Field(default=None, foreign_key='edu_path.id')
+    stage: Optional[str] = Field(default=None, max_length=100)
+    stage_order: int = Field(default=0)
     description: Optional[str] = None
     cover: Optional[str] = Field(default=None, max_length=500)
     status: int = Field(default=0)  # 0=启用 1=禁用
@@ -84,12 +103,34 @@ class EduPortfolio(SQLModelSerializable, table=True):
 
 # DAO 层
 
+class EduPathDao:
+    @staticmethod
+    def list_paths(session: Session, school_type: Optional[str] = None) -> List[EduPath]:
+        stmt = select(EduPath).where(EduPath.status == 0).order_by(EduPath.order)
+        if school_type:
+            stmt = stmt.where(EduPath.school_type == school_type)
+        return session.exec(stmt).all()
+
+    @staticmethod
+    def get_path(session: Session, path_id: int) -> Optional[EduPath]:
+        return session.get(EduPath, path_id)
+
+
 class EduCourseDao:
     @staticmethod
     def list_courses(session: Session, course_type: Optional[str] = None) -> List[EduCourse]:
-        stmt = select(EduCourse).where(EduCourse.status == 0)
+        stmt = select(EduCourse).where(EduCourse.status == 0).order_by(EduCourse.id)
         if course_type:
             stmt = stmt.where(EduCourse.type == course_type)
+        return session.exec(stmt).all()
+
+    @staticmethod
+    def list_courses_by_path(session: Session, path_id: int) -> List[EduCourse]:
+        stmt = (
+            select(EduCourse)
+            .where(EduCourse.path_id == path_id, EduCourse.status == 0)
+            .order_by(EduCourse.stage_order, EduCourse.id)
+        )
         return session.exec(stmt).all()
 
     @staticmethod
