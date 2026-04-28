@@ -50,6 +50,7 @@ export default function CourseLearningPage() {
   const [activeUnitIndex, setActiveUnitIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [marking, setMarking] = useState(false);
+  const [markError, setMarkError] = useState('');
 
   useEffect(() => {
     if (!courseId) return;
@@ -65,6 +66,7 @@ export default function CourseLearningPage() {
     const unit = data.units[activeUnitIndex];
     if (!unit) return;
     setMarking(true);
+    setMarkError('');
     try {
       await educationApi.markUnitComplete(unit.id, classId);
       setData(prev => {
@@ -75,6 +77,8 @@ export default function CourseLearningPage() {
         const completed = units.filter(u => u.is_completed).length;
         return { ...prev, units, course: { ...prev.course, completed_units: completed } };
       });
+    } catch {
+      setMarkError('标记失败，请稍后重试');
     } finally {
       setMarking(false);
     }
@@ -179,6 +183,9 @@ export default function CourseLearningPage() {
                   </button>
                 )}
               </div>
+              {markError && (
+                <p className="text-xs text-red-500 mt-2">{markError}</p>
+              )}
               {!classId && (
                 <p className="text-xs text-[#9498AC] mt-2">加入班级后可记录进度</p>
               )}

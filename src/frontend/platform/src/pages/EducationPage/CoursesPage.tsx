@@ -112,7 +112,7 @@ export default function CoursesPage() {
                 )}
                 <h3 className="text-sm font-semibold text-[#140E35] mb-2 line-clamp-2">{course.title}</h3>
                 <div className="flex items-center justify-between text-xs text-[#9498AC]">
-                  <span>{Math.ceil(course.estimated_minutes / 60)} 学时</span>
+                  <span>{course.estimated_minutes > 0 ? `${Math.ceil(course.estimated_minutes / 60)} 学时` : '--'}</span>
                   <span>{course.completed_units}/{course.total_units} 已完成</span>
                 </div>
                 <div className="mt-2 h-1 bg-[#E5EAF4] rounded-full overflow-hidden">
