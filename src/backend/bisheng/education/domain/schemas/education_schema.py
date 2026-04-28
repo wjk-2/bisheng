@@ -3,14 +3,36 @@ from typing import Optional, List
 from pydantic import BaseModel, Field
 
 
+# ===== Path =====
+
+class PathOut(BaseModel):
+    id: int
+    title: str
+    type: str
+    industry: Optional[str] = None
+    description: Optional[str] = None
+    cover: Optional[str] = None
+    school_type: str
+    order: int
+    total_courses: int = 0
+
+
+class PathListResp(BaseModel):
+    paths: List[PathOut]
+
+
 # ===== Course =====
 
 class CourseOut(BaseModel):
     id: int
+    path_id: Optional[int] = None
     title: str
     type: str
+    stage: Optional[str] = None
+    stage_order: int = 0
     description: Optional[str] = None
     cover: Optional[str] = None
+    estimated_minutes: int = 0
     total_units: int = 0
     completed_units: int = 0
 
@@ -38,7 +60,7 @@ class UnitDetailOut(UnitOut):
 
 class CourseDetailOut(BaseModel):
     course: CourseOut
-    units: List[UnitOut]
+    units: List[UnitDetailOut]
 
 
 # ===== Progress =====
