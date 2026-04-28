@@ -7,8 +7,9 @@ from bisheng.common.dependencies.user_deps import UserPayload
 from bisheng.api.v1.schemas import resp_200
 from bisheng.education.domain.services.course_service import CourseService
 from bisheng.education.domain.services.class_service import ClassService
+from bisheng.education.domain.services.path_service import PathService
 from bisheng.education.domain.schemas.education_schema import (
-    MarkCompleteReq, CourseListResp,
+    MarkCompleteReq, CourseListResp, PathListResp,
     CreateClassReq, AddMemberReq,
     SubmitPortfolioReq,
 )
@@ -17,13 +18,23 @@ from bisheng.education.domain.services.portfolio_service import PortfolioService
 router = APIRouter(prefix='/education', tags=['Education'])
 
 
-@router.get('/courses')
-def list_courses(
-    course_type: Optional[str] = None,
+@router.get('/paths')
+def list_paths(
     login_user: UserPayload = Depends(UserPayload.get_login_user),
 ):
     with get_sync_db_session() as session:
-        courses = CourseService.list_courses(session, login_user.user_id, course_type)
+        paths = PathService.list_paths(session)
+        return resp_200(data=PathListResp(paths=paths).model_dump())
+
+
+@router.get('/courses')
+def list_courses(
+    course_type: Optional[str] = None,
+    path_id: Optional[int] = None,
+    login_user: UserPayload = Depends(UserPayload.get_login_user),
+):
+    with get_sync_db_session() as session:
+        courses = CourseService.list_courses(session, login_user.user_id, course_type, path_id)
         return resp_200(data=CourseListResp(courses=courses).model_dump())
 
 
