@@ -40,5 +40,7 @@ def upgrade():
 def downgrade():
     op.drop_column('edu_course', 'stage_order')
     op.drop_column('edu_course', 'stage')
+    op.execute('SET FOREIGN_KEY_CHECKS=0')
     op.drop_column('edu_course', 'path_id')
+    op.execute('SET FOREIGN_KEY_CHECKS=1')
     op.drop_table('edu_path')
