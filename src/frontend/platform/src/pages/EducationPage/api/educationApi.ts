@@ -3,12 +3,28 @@ import axios from '@/controllers/request';
 
 const BASE = '/api/v1/education';
 
-export interface CourseOut {
+export interface PathOut {
   id: number;
   title: string;
   type: string;
+  industry: string | null;
   description: string | null;
   cover: string | null;
+  school_type: string;
+  order: number;
+  total_courses: number;
+}
+
+export interface CourseOut {
+  id: number;
+  path_id: number | null;
+  title: string;
+  type: string;
+  stage: string | null;
+  stage_order: number;
+  description: string | null;
+  cover: string | null;
+  estimated_minutes: number;
   total_units: number;
   completed_units: number;
 }
@@ -24,13 +40,13 @@ export interface UnitOut {
   is_completed: boolean;
 }
 
-export interface CourseDetailOut {
-  course: CourseOut;
-  units: UnitOut[];
-}
-
 export interface UnitDetailOut extends UnitOut {
   content: string | null;
+}
+
+export interface CourseDetailOut {
+  course: CourseOut;
+  units: UnitDetailOut[];
 }
 
 export interface UnitLearningOut {
@@ -71,9 +87,15 @@ export interface PortfolioOut {
 }
 
 export const educationApi = {
-  listCourses: (courseType?: string): Promise<CourseOut[]> =>
+  listPaths: (): Promise<PathOut[]> =>
+    axios.get(`${BASE}/paths`).then((d: { paths: PathOut[] }) => d.paths),
+
+  listCourses: (params?: { courseType?: string; pathId?: number }): Promise<CourseOut[]> =>
     axios.get(`${BASE}/courses`, {
-      params: courseType ? { course_type: courseType } : {},
+      params: {
+        ...(params?.courseType ? { course_type: params.courseType } : {}),
+        ...(params?.pathId ? { path_id: params.pathId } : {}),
+      },
     }).then((data: { courses: CourseOut[] }) => data.courses),
 
   getCourseDetail: (courseId: number, classId?: number): Promise<CourseDetailOut> =>
