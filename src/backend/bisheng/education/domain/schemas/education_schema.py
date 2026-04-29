@@ -71,6 +71,7 @@ class UnitDetailOut(UnitOut):
 class CourseDetailOut(BaseModel):
     course: CourseOut
     units: List[UnitDetailOut]
+    path_title: str = ""
 
 
 # ===== Progress =====
