@@ -2,7 +2,7 @@ import React from 'react';
 
 interface EduAvatarProps {
   id: string;
-  type: string;
+  type: 'path_general' | 'path_professional' | 'path_project' | 'course';
   url?: string | null;
   size?: 'md' | 'lg';
 }
@@ -97,7 +97,7 @@ const PencilIcon = () => (
   </svg>
 );
 
-function getIcon(type: string): React.ReactNode {
+function getIcon(type: 'path_general' | 'path_professional' | 'path_project' | 'course'): React.ReactNode {
   switch (type) {
     case 'path_general':
       return <BookIcon />;
