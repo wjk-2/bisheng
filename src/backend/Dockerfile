@@ -14,6 +14,8 @@ FROM eagent/backend-base:v8
 
 WORKDIR /app
 
+RUN rm -rf /app/bisheng /app/bisheng_langchain
+
 # ✅ 显式指定目标路径，确保覆盖基础镜像中的目录
 # 注意：COPY ./ ./ 会创建 /app/backend/bisheng/ 而不是覆盖 /app/bisheng/
 COPY bisheng/ /app/bisheng/

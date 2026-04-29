@@ -16,6 +16,12 @@ depends_on = None
 
 def upgrade():
     # === 删除旧表（顺序：先子表后父表）===
+    op.drop_table('edu_portfolio', if_exists=True)
+    op.drop_table('edu_unit_progress', if_exists=True)
+    op.drop_table('edu_class_member', if_exists=True)
+    op.drop_table('edu_unit', if_exists=True)
+    op.drop_table('edu_class', if_exists=True)
+    op.drop_table('edu_course', if_exists=True)
     op.drop_table('education_guided_progress', if_exists=True)
     op.drop_table('education_user_progress', if_exists=True)
     op.drop_table('education_chapters', if_exists=True)
