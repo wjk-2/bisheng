@@ -94,7 +94,12 @@ class CourseService:
             total_units=total_units,
             completed_units=completed_units,
         )
-        return CourseDetailOut(course=course_out, units=units_out)
+        path_title = ""
+        if course.path_id:
+            path_obj = EduPathDao.get_path(session, course.path_id)
+            if path_obj:
+                path_title = path_obj.title
+        return CourseDetailOut(course=course_out, units=units_out, path_title=path_title)
 
     @staticmethod
     def get_unit_learning(session: Session, unit_id: int, student_id: int, class_id: Optional[int] = None) -> UnitLearningOut:
