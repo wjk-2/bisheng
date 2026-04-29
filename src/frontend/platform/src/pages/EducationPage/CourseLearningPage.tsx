@@ -42,7 +42,7 @@ function RightPanel({ type, config, unitId, classId, onMarkComplete }: {
 }
 
 export default function CourseLearningPage() {
-  const { courseId } = useParams<{ courseId: string }>();
+  const { pathId, courseId } = useParams<{ pathId: string; courseId: string }>();
   const [searchParams] = useSearchParams();
   const classId = searchParams.get('class_id') ? Number(searchParams.get('class_id')) : undefined;
 
@@ -97,6 +97,14 @@ export default function CourseLearningPage() {
       <div className="flex items-center justify-between px-6 py-3 bg-white border-b border-[#E5EAF4] flex-shrink-0">
         <div className="text-xs text-[#9498AC] flex items-center gap-1">
           <Link to="/education/courses" className="hover:text-[#4658FF]">课程学习</Link>
+          <span>/</span>
+          <Link
+            to={`/education/paths/${pathId}`}
+            className="hover:text-[#4658FF]"
+          >
+            学习路径
+          </Link>
+          {/* TODO: 后续通过 getPathDetail(pathId) 替换 "学习路径" 为真实 path.title */}
           <span>/</span>
           <span className="text-[#140E35]">{course.title}</span>
           {hasMultipleUnits && activeUnit && (

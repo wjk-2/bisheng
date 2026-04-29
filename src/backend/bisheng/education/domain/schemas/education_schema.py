@@ -41,6 +41,16 @@ class CourseListResp(BaseModel):
     courses: List[CourseOut]
 
 
+class PathStageGroup(BaseModel):
+    stage: str
+    courses: List[CourseOut]
+
+
+class PathDetailResp(BaseModel):
+    path: PathOut
+    stages: List[PathStageGroup]
+
+
 # ===== Unit =====
 
 class UnitOut(BaseModel):

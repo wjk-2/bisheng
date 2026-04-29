@@ -86,9 +86,22 @@ export interface PortfolioOut {
   submit_time: string | null;
 }
 
+export interface PathStageGroup {
+  stage: string;
+  courses: CourseOut[];
+}
+
+export interface PathDetailOut {
+  path: PathOut;
+  stages: PathStageGroup[];
+}
+
 export const educationApi = {
   listPaths: (): Promise<PathOut[]> =>
     axios.get(`${BASE}/paths`).then((d: { paths: PathOut[] }) => d.paths),
+
+  getPathDetail: (pathId: number): Promise<PathDetailOut> =>
+    axios.get(`${BASE}/paths/${pathId}`).then((d: any) => d),
 
   listCourses: (params?: { courseType?: string; pathId?: number }): Promise<CourseOut[]> =>
     axios.get(`${BASE}/courses`, {

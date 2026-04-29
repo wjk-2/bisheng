@@ -12,6 +12,7 @@ from bisheng.education.domain.schemas.education_schema import (
     MarkCompleteReq, CourseListResp, PathListResp,
     CreateClassReq, AddMemberReq,
     SubmitPortfolioReq,
+    PathDetailResp,
 )
 from bisheng.education.domain.services.portfolio_service import PortfolioService
 
@@ -25,6 +26,19 @@ def list_paths(
     with get_sync_db_session() as session:
         paths = PathService.list_paths(session)
         return resp_200(data=PathListResp(paths=paths).model_dump())
+
+
+@router.get('/paths/{path_id}')
+def get_path_detail(
+    path_id: int,
+    login_user: UserPayload = Depends(UserPayload.get_login_user),
+):
+    with get_sync_db_session() as session:
+        try:
+            result = PathService.get_path(session, path_id, login_user.user_id)
+            return resp_200(data=result.model_dump())
+        except ValueError as e:
+            raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.get('/courses')

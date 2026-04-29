@@ -45,6 +45,7 @@ const MonitorPage = lazy(() => import("@/pages/Monitor"));
 const Deployment = lazy(() => import("@/pages/ModelPage/deployment"));
 const SystemConfig = lazy(() => import("@/pages/ModelPage/manage/SystemModelConfig"));
 const CoursesPage = lazy(() => import("../pages/EducationPage/CoursesPage"));
+const PathDetailPage = lazy(() => import("../pages/EducationPage/PathDetailPage"));
 const CourseLearningPage = lazy(() => import("../pages/EducationPage/CourseLearningPage"));
 const PortfolioPage = lazy(() => import("../pages/EducationPage/PortfolioPage"));
 const ClassesPage = lazy(() => import("../pages/EducationPage/ClassesPage"));
@@ -101,7 +102,8 @@ const privateRouter = [
         path: "education",
         children: [
           { path: "courses", element: <CoursesPage /> },
-          { path: "courses/:courseId", element: <CourseLearningPage /> },
+          { path: "paths/:pathId", element: <PathDetailPage /> },
+          { path: "paths/:pathId/courses/:courseId", element: <CourseLearningPage /> },
           { path: "portfolio", element: <PortfolioPage /> },
           { path: "classes", element: <ClassesPage /> },
           { path: "classes/:classId", element: <ClassesPage /> },
