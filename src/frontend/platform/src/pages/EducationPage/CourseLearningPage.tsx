@@ -102,9 +102,8 @@ export default function CourseLearningPage() {
             to={`/education/paths/${pathId}`}
             className="hover:text-[#4658FF]"
           >
-            学习路径
+            {data.path_title || '学习路径'}
           </Link>
-          {/* TODO: 后续通过 getPathDetail(pathId) 替换 "学习路径" 为真实 path.title */}
           <span>/</span>
           <span className="text-[#140E35]">{course.title}</span>
           {hasMultipleUnits && activeUnit && (
@@ -116,6 +115,12 @@ export default function CourseLearningPage() {
         </div>
         {hasMultipleUnits && (
           <div className="flex items-center gap-2">
+            {/* 进度 */}
+            {data.course.total_units > 0 && (
+              <div className="text-xs text-[#9498AC]">
+                已完成 {data.course.completed_units}/{data.course.total_units} 章节
+              </div>
+            )}
             {activeUnitIndex > 0 && (
               <button
                 onClick={() => setActiveUnitIndex(i => i - 1)}
@@ -139,7 +144,7 @@ export default function CourseLearningPage() {
       {/* Dual Column */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left — Markdown Content */}
-        <div className="flex-1 overflow-y-auto p-8 bg-white border-r border-[#E5EAF4]">
+        <div className="w-[55%] overflow-y-auto p-8 bg-white border-r border-[#E5EAF4]">
           {/* Unit tabs（多章节时显示） */}
           {hasMultipleUnits && (
             <div className="flex gap-2 mb-6 border-b border-[#E5EAF4]">
@@ -169,7 +174,9 @@ export default function CourseLearningPage() {
               <ReactMarkdown>{activeUnit.content}</ReactMarkdown>
             </div>
           ) : (
-            <div className="text-[#9498AC]">本章节内容待更新</div>
+            <div className="py-12 text-center text-[#9498AC] text-sm">
+              本章节内容准备中，可先尝试右侧练习
+            </div>
           )}
 
           {/* Mark Complete */}
@@ -203,7 +210,7 @@ export default function CourseLearningPage() {
 
         {/* Right — Operation Panel */}
         {activeUnit && (
-          <div className="w-96 flex-shrink-0 flex flex-col bg-white">
+          <div className="w-[45%] flex-shrink-0 flex flex-col bg-white">
             <div className="px-4 py-3 border-b border-[#E5EAF4]">
               <span className="text-sm font-medium text-[#140E35]">
                 {PANEL_LABEL[activeUnit.right_panel_type] || '操作区'}
