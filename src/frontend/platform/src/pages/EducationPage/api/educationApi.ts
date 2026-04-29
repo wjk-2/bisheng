@@ -47,6 +47,7 @@ export interface UnitDetailOut extends UnitOut {
 export interface CourseDetailOut {
   course: CourseOut;
   units: UnitDetailOut[];
+  path_title: string;
 }
 
 export interface UnitLearningOut {
