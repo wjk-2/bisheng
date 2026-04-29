@@ -83,7 +83,7 @@ export default function CoursesPage() {
               <Link
                 key={path.id}
                 to={`/education/paths/${path.id}`}
-                className="rounded-xl border border-[#E5EAF4] overflow-hidden transition-all duration-200"
+                className="block rounded-xl border border-[#E5EAF4] overflow-hidden transition-all duration-200"
                 style={isHovered ? hoveredStyle : normalStyle}
                 onMouseEnter={() => setHoveredId(cardId)}
                 onMouseLeave={() => setHoveredId(null)}
