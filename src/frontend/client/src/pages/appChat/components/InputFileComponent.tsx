@@ -50,9 +50,9 @@ export default function InputFileComponent({
     const { showToast } = useToastContext();
 
     const checkFileSize = (file) => {
-        const maxSize = (eagentConfig?.uploaded_files_maximum_size || 50) * 1024 * 1024;
+        const maxSize = (eagentConfig?.uploaded_files_maximum_size || 200) * 1024 * 1024;
         if (file.size > maxSize) {
-            return t('com_inputfile_exceed_limit', { 0: file.name, 1: (eagentConfig?.uploaded_files_maximum_size || 50) })
+            return t('com_inputfile_exceed_limit', { 0: file.name, 1: (eagentConfig?.uploaded_files_maximum_size || 200) })
         }
         return ''
     }

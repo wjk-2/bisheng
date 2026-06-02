@@ -50,7 +50,7 @@ export default function InputFileComponent({
   const { appConfig } = useContext(locationContext)
   const { toast } = useToast()
   const checkFileSize = (file) => {
-    const maxSize = (appConfig.uploadFileMaxSize || 50) * 1024 * 1024;
+    const maxSize = (appConfig.uploadFileMaxSize || 200) * 1024 * 1024;
     if (file.size > maxSize) {
       return `文件：${file.name} 超过 ${appConfig.uploadFileMaxSize} MB，已移除`
     }

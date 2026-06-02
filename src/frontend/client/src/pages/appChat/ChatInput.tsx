@@ -9,7 +9,7 @@ import InputFiles from "./components/InputFiles";
 import { eagentConfState, currentRunningState } from "./store/atoms";
 import { useAreaText } from "./useAreaText";
 
-export default function ChatInput({ readOnly, v }) {
+export default function ChatInput({ readOnly, v, shareToken = '' }) {
     const [eagentConfig] = useRecoilState(eagentConfState)
     const { inputDisabled, error: inputMsg, showUpload, showStop, showReRun } = useRecoilValue(currentRunningState)
     const { accepts, inputRef, setChatFiles, handleInput, handleRestart, handleSendClick, handleStopClick } = useAreaText()
@@ -42,7 +42,8 @@ export default function ChatInput({ readOnly, v }) {
                 showVoice={showVoice}
                 accepts={accepts}
                 disabled={readOnly || audioOpening || inputDisabled}
-                size={eagentConfig?.uploaded_files_maximum_size || 50}
+                size={eagentConfig?.uploaded_files_maximum_size || 200}
+                shareToken={shareToken}
                 onChange={(files => {
                     setFileUploading(!files)
                     setChatFiles(files)
