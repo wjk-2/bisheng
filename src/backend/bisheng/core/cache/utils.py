@@ -215,8 +215,8 @@ async def save_file_to_folder(file: UploadFile, folder_name: str, file_name: str
     return str(file_path)
 
 
-# Maximum allowed file size: 100MB
-MAX_UPLOAD_FILE_SIZE = 100 * 1024 * 1024
+# Maximum allowed file size: 200MB
+MAX_UPLOAD_FILE_SIZE = 200 * 1024 * 1024
 
 
 @create_cache_folder
@@ -236,7 +236,7 @@ async def save_uploaded_file(file: UploadFile, folder_name, file_name, bucket_na
     file_content = await file.read()
     file_size = len(file_content)
     if file_size > MAX_UPLOAD_FILE_SIZE:
-        raise ValueError(f'File size ({file_size / (1024 * 1024):.2f}MB) exceeds the maximum allowed size (100MB)')
+        raise ValueError(f'File size ({file_size / (1024 * 1024):.2f}MB) exceeds the maximum allowed size ({MAX_UPLOAD_FILE_SIZE // (1024 * 1024)}MB)')
     # Reset file cursor for subsequent operations
     await file.seek(0)
 
