@@ -275,29 +275,31 @@ def is_list_of_lists_empty(data_list):
 def excel_file_to_markdown(
         excel_path, num_header_rows, rows_per_markdown, output_dir, append_header=True
 ):
-    logger.debug(f"\nStart ProcessingExcelDocumentation:'{excel_path}'")
+    logger.debug(f"\nStart Processing Excel: '{excel_path}'")
+    from bisheng.api.services.streaming_excel_reader import read_xlsx_streaming
+
     try:
-        workbook = openpyxl.load_workbook(excel_path, data_only=True, read_only=False)
+        sheets = read_xlsx_streaming(excel_path)
     except Exception as e:
-        logger.debug(f"Error: Unable to loadExcelDoc. '{excel_path}'Reason: {e}")
+        logger.debug(f"Error: Unable to load Excel '{excel_path}'. Reason: {e}")
         return
 
-    sheet_index = 0
-    for sheet_name in workbook.sheetnames:
-        logger.debug(f"\n  (In work)ExcelWorksheet'{sheet_name}'...")
-        sheet_obj = workbook[sheet_name]
-        unmerged_data_list_of_lists = unmerge_and_read_sheet(sheet_obj)
-        logger.debug(f"\n  <read all data>Excel<UNK>'{sheet_name}'...{len(unmerged_data_list_of_lists)}")
+    if not sheets:
+        logger.debug(f"Error: No sheets found or file is empty: '{excel_path}'")
+        return
 
-        # Using the new decision function
-        if is_list_of_lists_empty(unmerged_data_list_of_lists):
-            logger.debug(f"  Worksheet '{sheet_name}' Empty or no valid data, skipping.")
+    for sheet_index, (sheet_name, data_grid) in enumerate(sheets):
+        logger.debug(f"\n  Processing sheet '{sheet_name}'... {len(data_grid)} rows")
+
+        if is_list_of_lists_empty(data_grid):
+            logger.debug(f"  Sheet '{sheet_name}' is empty, skipping.")
             continue
 
-        df = pd.DataFrame(unmerged_data_list_of_lists)
+        import pandas as pd
+        df = pd.DataFrame(data_grid)
         df.fillna("", inplace=True)
         if df.empty:
-            logger.debug(f"  Worksheet '{sheet_name}' Empty after processingDataFrameSkip")
+            logger.debug(f"  Sheet '{sheet_name}' empty after processing, skipping.")
             continue
 
         process_dataframe_to_markdown_files(
@@ -308,11 +310,8 @@ def excel_file_to_markdown(
             output_dir,
             append_header=append_header,
         )
-        sheet_index += 1
 
-    if workbook:
-        workbook.close()
-    logger.debug(f"\nExcelDoc. '{excel_path}' Process Completed.")
+    logger.debug(f"\nExcel '{excel_path}' processing complete.")
 
 
 def csv_file_to_markdown(
