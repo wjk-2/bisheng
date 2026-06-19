@@ -19,7 +19,8 @@ export default function index() {
     const location = useLocation();
 
     // 根据路由区分显示：/sys → 用户管理, /sys/settings → 系统设置
-    const isSettingsMode = location.pathname.includes('/sys/settings');
+    // F3: 精确匹配避免 pathname.includes 子串误命中（任何含 /sys/settings 的路径会错误进入系统设置）
+    const isSettingsMode = location.pathname === '/sys/settings';
 
     if (isSettingsMode) {
         return <div className="w-full h-full px-2 pt-4">

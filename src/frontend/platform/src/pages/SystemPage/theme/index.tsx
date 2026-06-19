@@ -1,5 +1,6 @@
 import { Button } from "@/components/bs-ui/button";
 import { saveThemeApi } from "@/controllers/API";
+import { captureAndAlertRequestErrorHoc } from "@/controllers/request";
 import { RefreshCw } from "lucide-react";
 import { useState, useCallback, useRef } from "react";
 import Example from "./Example";
@@ -155,18 +156,27 @@ export default function Theme() {
     const { t } = useTranslation()
 
     const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // C6: 统一封装 saveThemeApi 错误处理，失败时弹项目惯用 toast，避免静默吞错导致 UI 假成功
+    const saveThemeWithError = useCallback((value: string) => {
+        captureAndAlertRequestErrorHoc(saveThemeApi(value));
+    }, []);
     const debouncedSaveTheme = useCallback((value: string) => {
         if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
         saveTimerRef.current = setTimeout(() => {
-            saveThemeApi(value);
+            saveThemeWithError(value);
         }, 300);
-    }, []);
+    }, [saveThemeWithError]);
     const applyTheme = (newTheme: CompTheme) => {
+        // C4: 取消挂起的 HSL 防抖 timer，防止旧请求后到覆盖恢复默认（last-write-wins 竞态）
+        if (saveTimerRef.current) {
+            clearTimeout(saveTimerRef.current);
+            saveTimerRef.current = null;
+        }
         const mode = localStorage.getItem('theme') === 'dark' ? 'dark' : 'light';
         applyThemeComp(newTheme, mode);
         setTheme(newTheme);
         window.ThemeStyle = { ...window.ThemeStyle, [mode]: newTheme };
-        saveThemeApi(JSON.stringify({ light: window.ThemeStyle.light, dark: window.ThemeStyle.dark, bg: window.ThemeStyle.bg }));
+        saveThemeWithError(JSON.stringify({ light: window.ThemeStyle.light, dark: window.ThemeStyle.dark, bg: window.ThemeStyle.bg }));
     };
 
     const handleHSLChange = (name: string, hsl: { h: number; s: number; l: number }) => {
@@ -197,7 +207,7 @@ export default function Theme() {
             </p>
             <RadioGroup value={bg} onValueChange={(val) => {
                 window.ThemeStyle = { ...window.ThemeStyle, bg: val };
-                saveThemeApi(JSON.stringify({ light: window.ThemeStyle.light, dark: window.ThemeStyle.dark, bg: val }));
+                saveThemeWithError(JSON.stringify({ light: window.ThemeStyle.light, dark: window.ThemeStyle.dark, bg: val }));
                 setBg(val)
             }}
                 className="flex space-x-2 h-[20px] mt-4 mb-6">
