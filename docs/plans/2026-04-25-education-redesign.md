@@ -1,3 +1,10 @@
+> **[文档状态：已废弃 / DEPRECATED]**
+> 本方案已被取代，仅保留作历史决策记录，请勿据此实现。
+> - 取代文档：[2026-04-28-education-route-fix.md](2026-04-28-education-route-fix.md)（当前权威实现计划；三层数据模型设计见 [.claude/archive/course-structure-redesign.md](../../.claude/archive/course-structure-redesign.md)）
+> - 废弃原因：本计划落地两层六表模型（Course → Unit + Class/ClassMember/UnitProgress/Portfolio），Alembic 迁移 `education_v3_20260425` 建表。后续三层重构（Path → Course → Unit）新增 EduPath 表、EduCourse 增加 path_id/stage/stage_order 字段（迁移 v4），本计划实现的两层结构被取代。
+> - 废弃日期：2026-04-28
+> - 当前权威方案见取代文档。
+
 # Education 模块重构实现计划（Milestone 1 — 学生主流程）
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.

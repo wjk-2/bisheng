@@ -1,3 +1,10 @@
+> **[文档状态：已废弃 / DEPRECATED]**
+> 本方案已被取代，仅保留作历史决策记录，请勿据此实现。
+> - 取代文档：[2026-04-28-education-route-fix.md](2026-04-28-education-route-fix.md)
+> - 废弃原因：本 seed 脚本在两层结构（edu_course / edu_unit）下插入 3 门样本课 + 10 个单元，迁移 ID `education_v3_seed_20260426`。三层重构后路径体系扩展为 4 条 EduPath + 29 门课程 + 29 单元，由 Alembic v4/v5（education_v4_seed_20260428、education_v5_courses_seed_20260428）取而代之，本 seed 不再使用。
+> - 废弃日期：2026-04-28
+> - 当前权威方案见取代文档。
+
 # Education 模块种子数据计划
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
