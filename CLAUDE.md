@@ -87,24 +87,13 @@ AI：LangChain 0.3.23 + LangGraph | 异步：Celery 5.3.6（队列 knowledge_cel
 
 ## 开发规范
 
-### 后端 Python — 验证过的导入路径
-- DDD 分层：domain/models → domain/schemas → domain/services → api/
-- ORM 基类：from bisheng.common.models.base import SQLModelSerializable
-- 数据库会话：from bisheng.core.database import get_sync_db_session（不是 session_getter）
-- 认证：from bisheng.common.dependencies.user_deps import UserPayload
-- 认证用法：login_user: UserPayload = Depends(UserPayload.get_login_user)
-- 配置：from bisheng.common.services.config_service import settings（不是 from bisheng.settings）
-- 时间戳字段：create_time / update_time（不是 created_at / updated_at）
-- 路由注册：bisheng/api/router.py
-
-以上为常用清单，完整与权威说明见 `.claude/dev-guide.md`，两处有出入时以 dev-guide 为准。
+### 后端 Python
+导入路径、ORM 基类、数据库会话、认证、配置等权威清单见 `.claude/dev-guide.md §3` 与 `.claude/dev-conventions.md §1`，两处有出入以 dev-guide 为准。
 
 ### 前端 TypeScript/React
-- Platform 状态管理：Zustand | HTTP 客户端：controllers/API/ + axios
-- Client (Workspace) 的 HTTP 层不同于 Platform，不在 controllers/API/ 下
-- UI 组件优先用 bs-comp 体系，不要直接引 Radix UI
-- 路由文件：routes/index.tsx（不是 routes.tsx）
-- 命名：组件 PascalCase.tsx，工具 camelCase.ts
+- Platform 用 Zustand，HTTP 层在 controllers/API/；Client (Workspace) 的 HTTP 层不同，不在该目录下
+- UI 组件优先用 bs-comp 体系，不直接引 Radix UI；路由文件 routes/index.tsx；组件 PascalCase.tsx，工具 camelCase.ts
+- 细则见 `.claude/dev-conventions.md §4`
 
 ### Nginx
 Nginx 中不存在 /education /build 等独立 location 块，Platform 路由靠 SPA try_files 兜底。
@@ -119,159 +108,11 @@ Nginx 中不存在 /education /build 等独立 location 块，Platform 路由靠
 |aliyun-agent 容器栈部署：cd docker && docker compose up -d（仅 120.55.180.232）
 |node3 裸 nginx 前端部署：./deploy-client.sh（仅 172.20.20.35）
 
-## 模型管理架构
-
-### 两套注册路径，落同一张表
-
-```
-路径 A：GPUStack 自动注册（deployment_bridge.py）
-  GPUStack 创建部署 → 自动建 LLMServer + LLMModel → 前端"模型部署"页可见
-  endpoint 固定为 {gpustack_url}/v1-openai，依赖 GPUStack 中间层
-
-路径 B：手动注册（模型管理页 → POST /api/v1/llm）
-  管理员填写名称、type(openai)、config(endpoint/key) → 手动建 LLMServer + LLMModel
-```
-
-### 关键文件
-
-| 文件 | 作用 |
-|------|------|
-| `src/backend/bisheng/llm/domain/models/llm_server.py` | LLMServer + LLMModel ORM 模型 + LLMDao |
-| `src/backend/bisheng/llm/domain/schemas.py` | LLMServerCreateReq / LLMModelCreateReq 请求体 |
-| `src/backend/bisheng/llm/domain/services/llm.py` | LLMService：注册、验证、调用入口 |
-| `src/backend/bisheng/llm/domain/llm/llm.py` | EagentLLM：按 server_type 选 LangChain 客户端 |
-| `src/backend/bisheng/llm/api/router.py` | LLM REST API（/api/v1/llm） |
-| `src/backend/bisheng/api/services/deployment_bridge.py` | GPUStack ↔ LLM 表桥接（自动注册/注销/状态同步） |
-| `src/backend/bisheng/api/services/deployment.py` | GPUStackService：与 GPUStack API 交互 |
-| `src/backend/bisheng/api/v1/deployment.py` | 模型部署 REST API（/api/v1/deployment） |
-| `src/frontend/platform/src/pages/ModelPage/management/` | 模型管理前端（手动注册页） |
-| `src/frontend/platform/src/pages/ModelPage/deployment/` | 模型部署前端（GPUStack 部署页） |
-
-### 数据库表结构
-
-**llm_server**（一个"模型供应商"）：
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | int PK | 自增主键 |
-| name | str unique | 显示名称（如"本地对话模型"） |
-| type | char(20) | 供应商类型：openai / azure_openai / ollama 等 25+ 种 |
-| config | JSON | 连接配置：`{openai_api_base, openai_api_key, ...}` |
-| limit_flag | bool | 是否启用每日调用限制 |
-| limit | int | 每日调用上限 |
-
-**llm_model**（一个具体模型，挂在 server 下，unique(server_id, model_name)）：
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | int PK | 自增主键 |
-| server_id | int FK | 关联 llm_server.id |
-| name | str | 模型显示名称 |
-| model_name | str | 调用时传给 API 的模型标识（必须与 vLLM --served-model-name 一致） |
-| model_type | char(20) | `llm` / `embedding` / `rerank` / `asr` / `tts` |
-| status | int | 0=正常, 1=异常, 2=未知 |
-| online | bool | 是否在线 |
-| config | JSON | 模型级配置 |
-
-### 调用链路
-
-```
-用户对话/智能体 → ChatManager
-  → LLMService.get_bisheng_llm(model_id)
-    → 读 llm_model 表 → 获取 model_name + server_id
-    → 读 llm_server 表 → 获取 type + config
-    → 按 type 选 LangChain 客户端
-      type=openai → ChatOpenAICompatible（即 OpenAI SDK）
-    → 调用 config.openai_api_base + /chat/completions 或 /embeddings
-```
-
-### type=openai 时的客户端映射
-
-LLM 初始化时，`type=openai` 对应 LangChain 的 `ChatOpenAICompatible`（[llm.py:164-189](src/backend/bisheng/llm/domain/llm/llm.py#L164-L189)），
-会读取 `config` 中的 `openai_api_base` 和 `openai_api_key`。vLLM 部署的模型统一用 `type=openai` 即可。
-
-### 模型类型枚举（LLMModelType）
-
-```python
-LLM = 'llm'          # 对话模型
-EMBEDDING = 'embedding'  # 向量模型
-RERANK = 'rerank'      # 重排模型
-ASR = 'asr'           # 语音识别
-TTS = 'tts'           # 语音合成
-```
-
-### 各场景默认模型配置（存 config 表）
-
-| 配置键 | 说明 | 配置 API |
-|--------|------|---------|
-| KNOWLEDGE_LLM | 知识库默认模型 | GET/POST /api/v1/llm/knowledge |
-| ASSISTANT_LLM | 智能体默认模型 | GET/POST /api/v1/llm/assistant |
-| WORKFLOW_LLM | 工作流默认模型 | GET/POST /api/v1/llm/workflow |
-| EVALUATION_LLM | 评测默认模型 | GET/POST /api/v1/llm/evaluation |
-
-### Workspace 对话模型启用
-
-注册到 llm_model 后，还需启用到 Workspace 对话才对普通用户可见：
-- `POST /api/v1/llm/chat/enable` — 启用（传 model_id + 可选 display_name）
-- `POST /api/v1/llm/chat/disable` — 禁用
-- `GET /api/v1/llm/chat/enabled-ids` — 查看已启用列表
-
-### 手动注册示例（无 GPUStack 时的标准方式）
-
-```
-POST /api/v1/llm
-Content-Type: application/json
-
-{
-  "name": "本地对话模型",
-  "type": "openai",
-  "config": {
-    "openai_api_base": "http://172.20.20.34:30425/v1",
-    "openai_api_key": "EMPTY"
-  },
-  "models": [
-    {
-      "name": "Qwen3.5-35B-A3B",
-      "model_name": "Qwen3.5-35B-A3B",
-      "model_type": "llm",
-      "online": true
-    }
-  ]
-}
-```
-
-### GPUStack 桥接自动注册原理（deployment_bridge.py）
-
-当通过 GPUStack 部署模型时，自动注册到 LLM 表：
-1. `register_deployment_to_llm()` — 创建 LLMServer(type=openai) + LLMModel
-2. 根据 categories 自动判断 model_type（含 "sentence-similarity" / "embedding" 等 → embedding，否则 → llm）
-3. `sync_deployment_status()` — 部署启停时同步 llm_model.online
-4. `unregister_deployment_from_llm()` — 部署删除时级联删除 LLM 记录
-5. 幂等：通过 `config._gpustack_model_id` 去重，不会重复注册
-
-### 注册后自动验证流程
-
-`LLMService.add_llm_server()` 会自动测试模型是否可用：
-- llm → 调用 `ainvoke('hello')`
-- embedding → 调用 `aembed_query('hello')`
-- 测试失败会将 status 设为 1（异常），记录失败原因到 remark
+## 模型管理
+模型注册（GPUStack 自动注册 / 手动 POST /api/v1/llm）、llm_server/llm_model 表结构、调用链路、各场景默认模型配置、GPUStack 桥接原理、注册后自动验证等详见 `.claude/model-architecture.md`。
 
 ## 运维信息
-
-两台部署机形态不同，命令不可互换（见上方「前端部署」段）。SSH 连接方式与密钥见全局记忆 reference_ssh_aliyun_agent、reference_ssh_hznu_eagent，本文件不存密码。
-
-### aliyun-agent（容器栈）
-- IP：120.55.180.232（公网，阿里云）
-- 形态：docker compose 全容器栈
-- 实跑容器：eagent-frontend、eagent-backend、eagent-backend-worker、eagent-office、mysql、redis、milvus、es、etcd、minio
-- 部署命令：cd docker && docker compose up -d
-- 镜像来源：本地 docker build（见 build-images.sh）
-
-### node3（裸 nginx，湖州师范）
-- IP：172.20.20.35（内网，经 node4-gpu 跳板）
-- 形态：裸 nginx + scp + 独立后端进程
-- 前端落点：/usr/share/nginx/html/{client,platform}/
-- 部署命令：./deploy-client.sh（client）、./deploy-platform.sh（platform）
+SSH 连接方式与密钥见全局记忆 reference_ssh_aliyun_agent、reference_ssh_hznu_eagent，本文件不存密码。两台部署机（aliyun-agent 容器栈 / node3 裸 nginx）的形态与部署命令见上方「前端部署」段。
 
 ### 上游官方镜像（不可改名、不可自建）
 - ft：dataelement/bisheng-ft:v0.5.0

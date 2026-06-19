@@ -1,25 +1,11 @@
-# 经验教训
+# 踩坑记录
+> 本文件只保留真正的 Bug 根因。已沉淀为代码规范的见 .claude/dev-conventions.md；运维事实/前端技巧/已失效条目见 .claude/archive/lessons-history-2026-06.md。详见 CLAUDE.md「踩坑记录」段。
 
-## 2026-04-06 Platform axios 拦截器已剥离响应包装
+## 指针
 
-**问题**：修改 `locationContext.tsx` 时，计划中写了 `res?.data?.data` 来访问 workstation config 数据，实际运行时拿到 `undefined`。
-
-**原因**：Platform 端的 axios 响应拦截器（`src/frontend/platform/src/controllers/request.ts` 第28-31行）已经做了 `return response.data.data`，即自动剥离了两层包装（axios envelope + UnifiedResponseModel）。所以 `getWorkstationConfigApi()` resolve 后拿到的直接就是业务数据对象。
-
-**教训**：修改 Platform 前端代码时，必须先读 `controllers/request.ts` 的拦截器逻辑，确认 API 调用返回值的实际结构。不能想当然地按后端原始响应结构来访问。
-
-**检查点**：
-- Client 和 Platform 的 HTTP 层不同。Client 用 `data-provider` 体系（有自己的 `_get` 函数做 `response.data` 剥离再加 `.then(res => res.data)`），Platform 用原始 axios + 拦截器
-- Platform 拦截器在 `status_code === 200` 时直接 `return response.data.data`
-- 所以 Platform 中任何 `getWorkstationConfigApi()` 等 API 函数，`.then()` 回调的参数就是业务数据本身
-
-## 2026-04-06 benchMenu 字段已废弃
-
-**问题**：`locationContext.tsx` 中原来有 `benchMenu` 的处理逻辑（从 workstation config 读取）。
-
-**原因**：`benchMenu` 在整个前端代码中已无任何引用，属于遗留代码。
-
-**教训**：本次改造时已一并清理。如果未来看到 workstation config 中有 `menuShow` 字段，那是 benchMenu 的后端来源，但前端已不使用。
+- **2026-04-06 Platform axios 拦截器已剥离响应包装**：现象 — `res?.data?.data` 拿到 undefined。根因 — `controllers/request.ts` 拦截器已自动 `return response.data.data`，API 调用回调拿到的就是业务数据本身。详见 `.claude/dev-guide.md §7`。
+- **2026-04-27 Worktree 分支策略**：同 Milestone 前后端必须共用同一 worktree，不得拆分到不同分支。规范见 `.claude/dev-conventions.md §6`。
+- **2026-06-09 InputForm 文件上传双 bug 互相掩护**：根因 — `isSSO` 硬编码 `true` 掩盖了 `flow` prop 未传的 bug，修复分享页后广场页立即崩溃；改动 `InputFileComponent` props 时必须同时验证广场页与分享页两条路径。双路径验证强制规范见 CLAUDE.md「前端文件上传改动：必须双路径验证」。
 
 ## 2026-04-07 workstation update_config 勿加 model ID 验证逻辑
 
@@ -75,32 +61,3 @@
 **影响**：前端 `getChatOnlineApi` 的调用方需要从 `res.data` 改为读 `res.data.list`（列表）和 `res.data.total`（总数）。已在 `AgentList.tsx` 中做兼容处理（`res.data?.list ?? res.data`）。
 
 **检查点**：如果将来有其他地方也调用 `/api/v1/chat/online`，注意响应结构已变更。
-
-## 2026-04-25 Tailwind 不支持多层渐变叠加
-
-**问题**：设计稿要求卡片 hover 时叠加 `linear-gradient(179deg, rgba(50,82,255,0.22)..., rgba(255,255,255,0) ...), #fff` 这种复合背景。
-
-**教训**：Tailwind utility class 无法表达多层渐变叠加（`background` 属性多值）。解决方法：用 `onMouseEnter/Leave` state 切换 `style={{ background: ... }}` inline style，不要试图用 Tailwind class 实现。
-
-**检查点**：凡是需要 `background: <gradient1>, <gradient2>` 两层叠加的场景，直接用 inline style。
-
-## 2026-04-26 Platform 页面背景架构规则
-
-**规则**：Platform 业务页面顶层容器不得设置任何背景色。背景由 `MainLayout.tsx:426` 的 `[background:var(--studio-page-bg)]` 统一承载。
-
-**Why**：新增页面时开发者习惯性写 `bg-background-login` 或 `bg-white` 作为容器背景，导致 MainLayout 的品牌渐变背景被完全遮盖，产品视觉出现白色割裂。本次共清理 17 处反模式。
-
-**How to apply**：
-- 新增页面：顶层容器只写 `h-full px-2 py-4`，不加任何 `bg-*`
-- 反模式识别：`return <div className="... bg-background-login ...">` 或 `bg-white`、`bg-gray-*`、`bg-background` 出现在顶层 div 上
-- 第二层等效顶层也要检查：第一层若是无背景的薄包裹层（如裸 `<div>` 或只有 `h-full`），第二层的背景色同样会覆盖 MainLayout
-- 合理例外：弹窗/Dialog、表格 footer（`eagent-table-footer`）、侧边面板、卡片内部元素的背景色保留
-- Client 端例外：`Root.tsx` 的 `<Outlet/>` 无背景，Client 页面需自行管理背景（如 `apps/index.tsx`）
-
-## 2026-04-06 nginx 缓存策略与部署
-
-**事实**：Platform 的 nginx 配置中：
-- `index.html` — `no-store, no-cache, must-revalidate`，不会缓存
-- `assets/*` — `max-age=31536000, immutable`，缓存一年
-- Vite 构建产物文件名带 content hash，内容变文件名就变
-- 因此部署后用户刷新页面即可拿到最新版本，无需 touch 或额外操作

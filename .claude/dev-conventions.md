@@ -56,6 +56,17 @@
 - **MUST** 时间戳字段使用 `create_time` / `update_time`
 - **MUST NOT** 使用 `created_at` / `updated_at`
 
+### 1.8 Service ownership 安全校验
+
+涉及「某用户创建/拥有的资源」的 Service 方法（查看、修改、删除、成员操作等），必须在执行业务逻辑前先做 ownership 校验，不可仅凭资源 id 直接操作。
+
+- **MUST** Service 方法若接收 `resource_id + operator_id`，必须先 GET 资源，再校验 `resource.owner_id == operator_id`，不匹配则抛 `ValueError`（由 Router 转 404）
+- **MUST NOT** 仅凭资源 id 查询/修改/删除资源而不校验归属，否则构成跨用户越权漏洞
+- **MUST** Router 层 `Depends` 权限级别与操作匹配：所有者专属操作用对应的强权限依赖（如 `get_teacher_user`），不可降级为 `get_login_user`
+- **MUST** 校验失败时返回 404 而非 403（不向非所有者泄露资源是否存在）
+
+背景：2026-04-27 Code Review 发现初版 `class_service.py` 的 `get_class_detail`、`add_member`、`remove_member` 未校验 `teacher_id`，任何登录用户可操作他人班级，属安全漏洞。
+
 ---
 
 ## 2. 数据模型
@@ -116,7 +127,10 @@
 
 ### 4.5 UI
 
-- **MUST NOT** 业务页面顶层容器设置背景色（由 MainLayout 统一承载）
+- **MUST NOT** 业务页面顶层容器设置背景色，背景由 `MainLayout.tsx` 的 `[background:var(--studio-page-bg)]` 统一承载。反模式：顶层 div 出现 `bg-background-login` / `bg-white` / `bg-gray-*` / `bg-background` 会遮盖 MainLayout 品牌渐变
+- **MUST** 检查「第二层等效顶层」：若第一层是无背景薄包裹层（裸 div 或仅 h-full），第二层背景同样会覆盖 MainLayout
+- 合理例外（保留背景）：弹窗/Dialog、表格 footer（`eagent-table-footer`）、侧边面板、卡片内部元素
+- Client 端例外：`Root.tsx` 的 `<Outlet/>` 无背景，Client 页面自行管理（如 `apps/index.tsx`）
 - **SHOULD** 优先使用 `@/components/bs-ui/` 组件，不直接引用 Radix UI
 
 ### 4.6 TypeScript 接口
@@ -186,9 +200,49 @@
 - Claude Code 会话无法自动切换 worktree（`EnterWorktree` 要求会话启动目录在 git 仓库内）
 - **MUST** 在所有文件操作和 bash 命令中使用 worktree 的**绝对路径**，明确指向当前开发的 worktree
 - **MUST** 在会话开始时通过 `git worktree list` 确认当前有哪些 worktree，以及各自的分支和 HEAD
-- 当前活跃 worktree 记录在 `context.md` 的「开发状态」节中
 
 ### 6.4 .claude/ 文件同步
 
 - **MUST** worktree 中对 `.claude/context.md`、`.claude/lessons.md` 的修改，在合并前同步复制回主工作树
 - **MUST NOT** 将 `.claude/` 目录的修改遗留在废弃 worktree 中
+
+---
+
+## 7. Share 豁免端点管理
+
+share 链接访问时，部分端点需允许匿名访问（即无 JWT 但持有有效 share_link 也能调用）。豁免端点集中由本规范管理，已在代码中落地，不得绕过。
+
+### 7.1 新增 share 豁免端点三步法
+
+新增 share 豁免端点时，必须同时做 3 件事：
+
+1. 将依赖从 `get_login_user` 改为 `get_user_or_default_operator`
+2. 在端点定义行上方加注释：`# [share-accessible] <一句话理由>`
+3. 在 `src/backend/bisheng/share_link/api/dependencies.py` 的 `get_user_or_default_operator` docstring 的"已豁免端点"列表里加一行
+
+验证方式：
+```bash
+grep -rn "\[share-accessible\]" src/backend/bisheng/
+```
+输出行数应与 `dependencies.py` 登记列表中的端点数相等。
+
+### 7.2 当前已豁免端点
+
+截至 2026-06-07（最后更新 2026-06-07），共 9 个：
+
+- `GET  /api/v1/flows/{flow_id}` — flows.py
+- `GET  /api/v1/assistant/info/{id}` — assistant.py
+- `GET  /api/v1/chat/history` — chat.py
+- `POST /api/v1/knowledge/upload` — knowledge.py
+- `POST /api/v1/workstation/files` — workstation.py
+- `POST /api/v1/workstation/chat/completions` — workstation.py
+- `POST /api/v1/upload/{flow_id}` — endpoints.py（访客上传文件）
+- `POST /api/v1/upload/workflow/{workflow_id}` — endpoints.py（访客上传工作流图标）
+- `POST /api/v1/linsight/workbench/upload-file` — linsight.py（linsight 分享页访客上传任务输入文件）
+
+注：WebSocket share 路由（`/workflow/chat/share/{id}`）用独立的 `get_default_operator`，不在此规范管辖范围。
+
+### 7.3 核心约束
+
+- `get_user_or_default_operator` 不校验 share_link 与当前资源的归属关系，业务层如需校验须自行在函数体内做二次验证
+- share 访客的 `user_id=-1`，函数体内依赖 user_id 做数据隔离的逻辑需特别注意
