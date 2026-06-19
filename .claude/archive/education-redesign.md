@@ -1,3 +1,10 @@
+> **[文档状态：已废弃 / DEPRECATED]**
+> 本方案已被取代，仅保留作历史决策记录，请勿据此实现。
+> - 取代文档：[course-structure-redesign.md](course-structure-redesign.md)
+> - 废弃原因：本归档描述的是两层六表模型（Course / Unit / Class / ClassMember / UnitProgress / Portfolio），course-structure-redesign.md 已明确将数据模型升级为三层（EduPath → EduCourse → EduUnit），表结构与课程体系重新设计，本归档作为设计史保留。
+> - 废弃日期：2026-04-28
+> - 当前权威方案见取代文档。
+
 # 教育模块重构设计讨论记录
 
 > 创建：2026-04-25
