@@ -10,8 +10,53 @@
  * 归一到 0-1 制。
  */
 
-/** 单套主题色（light 或 dark），key 为 CSS 变量名，value 为 HSL。s/l 为 0-1 制。 */
+/**
+ * 平台主题支持的 CSS 变量 key 白名单（类型安全用）。
+ *
+ * 与 DEFAULT_LIGHT_THEME / DEFAULT_DARK_THEME 的键集合、theme/index.tsx 的 themeKeys
+ * （i18n 映射）三处保持一致。新增主题变量时三处同步。
+ *
+ * 共 21 键（任务1 已补 ring / warning / warning-foreground，删除了非颜色的 --radius）。
+ */
+export type ThemeVarKey =
+    | '--primary'
+    | '--primary-foreground'
+    | '--background'
+    | '--foreground'
+    | '--muted'
+    | '--muted-foreground'
+    | '--card'
+    | '--card-foreground'
+    | '--popover'
+    | '--popover-foreground'
+    | '--border'
+    | '--input'
+    | '--secondary'
+    | '--secondary-foreground'
+    | '--accent'
+    | '--accent-foreground'
+    | '--destructive'
+    | '--destructive-foreground'
+    | '--ring'
+    | '--warning'
+    | '--warning-foreground'
+    | '--black-button';
+
+/**
+ * 单套主题色（light 或 dark），key 为 CSS 变量名，value 为 HSL。s/l 为 0-1 制。
+ *
+ * 保留 `Record<string, ...>` 而非 `Record<ThemeVarKey, ...>`：parseWebConfig 需兼容
+ * 后端遗留/脏数据（可能含白名单外的 key 或部分 key），强约束会让归一与兜底分支
+ * 类型报错。白名单约束由 themeRuntime.formatCssRules 的 KEY_RE 在运行时过滤，
+ * 由 ThemeVarKey 在类型层约束「已知完整主题」（见 ThemeComp）。
+ */
 export type CompTheme = Record<string, { h: number; s: number; l: number }>;
+
+/**
+ * 完整的已知主题：21 个 ThemeVarKey 全部齐备。用于 DEFAULT_LIGHT_THEME /
+ * DEFAULT_DARK_THEME 这类「平台内置、键集合确定」的常量，编译期锁定键完整性。
+ */
+export type ThemeComp = Record<ThemeVarKey, { h: number; s: number; l: number }>;
 
 /** 解析后的完整主题：light/dark 两套组件色 + 背景类型。 */
 export type ThemeValue = { light: CompTheme; dark: CompTheme; bg: string };
@@ -20,7 +65,7 @@ export type ThemeValue = { light: CompTheme; dark: CompTheme; bg: string };
  * 默认浅色主题（0-1 制）。作为 light 的兜底与「恢复默认」单一真相源。
  * 含任务1已补的 ring / warning / warning-foreground。
  */
-export const DEFAULT_LIGHT_THEME: CompTheme = {
+export const DEFAULT_LIGHT_THEME: ThemeComp = {
     '--background': { h: 0, s: 0, l: 1 },
     '--foreground': { h: 222.2, s: 0.474, l: 0.112 },
     '--muted': { h: 210, s: 0.4, l: 0.98 },
@@ -49,7 +94,7 @@ export const DEFAULT_LIGHT_THEME: CompTheme = {
  * 默认深色主题（0-1 制）。作为 dark 的兜底。
  * 含任务1已补的 ring / warning / warning-foreground。
  */
-export const DEFAULT_DARK_THEME: CompTheme = {
+export const DEFAULT_DARK_THEME: ThemeComp = {
     '--background': { h: 0, s: 0, l: 0.07 },
     '--foreground': { h: 0, s: 0, l: 1 },
     '--card': { h: 240, s: 0.01, l: 0.13 },
