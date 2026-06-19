@@ -23,7 +23,10 @@ import {
 declare global {
     interface Window {
         ThemeStyle: ThemeValue;
-        __injectThemeVars?: (comp: CompTheme) => void;
+        // bootstrap（index.html inline）定义并使用，签名 (comp, mode)。
+        // TS 代码现已改走 themeRuntime.applyLight/applyDark（双 style 常驻），
+        // 不再调用 __injectThemeVars；保留声明以反映 window 实际形态。
+        __injectThemeVars?: (comp: CompTheme, mode: 'light' | 'dark') => void;
     }
 }
 

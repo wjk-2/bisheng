@@ -4,14 +4,16 @@
  *
  * 覆盖：
  *   - formatCssRules：S1 校验（key 白名单 + hsl 数值范围 + 跳过非法项）+ 0-1 制 ×100 拼接
- *   - applyLight / applyDark：双 style 常驻（各自独立 id，原位更新不重复）
+ *   - buildStyleContent：selector + formatCssRules 拼完整 style 内容
+ *   - applyLight / applyDark：双 style 常驻（各自独立 id，原位更新不重复）+ C5 diff（相同 comp 不重写 innerHTML）
  *   - applyPreview：head 末尾覆盖、幂等重建
  *   - clearPreview：幂等（不存在不报错）
  *   - setMode：只 toggle .dark class，不重写 style
  */
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
     formatCssRules,
+    buildStyleContent,
     applyLight,
     applyDark,
     applyPreview,
@@ -98,6 +100,44 @@ describe('applyLight', () => {
         expect(styles.length).toBe(1);
         expect(styles[0].innerHTML).toContain('--primary:240');
     });
+
+    it('C5 diff：相同 comp 重复 applyLight 不重写 innerHTML', () => {
+        const comp = { '--primary': { h: 240, s: 1, l: 0.64 } };
+        applyLight(comp);
+        const style = document.getElementById('theme-vars-light') as HTMLStyleElement;
+        const firstContent = style.innerHTML;
+        // 模拟外部（如 bootstrap）介入后内容被改，再以同样 comp apply 应跳过
+        // 这里直接验证：第二次同样 comp 调用后内容不变（diff 命中 return）
+        // 用 spy 确认 innerHTML setter 未被触发
+        const spy = vi.spyOn(style, 'innerHTML', 'set');
+        applyLight(comp);
+        expect(style.innerHTML).toBe(firstContent);
+        expect(spy).not.toHaveBeenCalled();
+        spy.mockRestore();
+    });
+
+    it('C5 diff：comp 变化时正常重写', () => {
+        applyLight({ '--primary': { h: 0, s: 1, l: 0.5 } });
+        applyLight({ '--primary': { h: 240, s: 1, l: 0.64 } });
+        const style = document.getElementById('theme-vars-light') as HTMLStyleElement;
+        expect(style.innerHTML).toContain('--primary:240 100% 64%');
+    });
+});
+
+describe('buildStyleContent', () => {
+    it('selector + comp → `selector{rules}`', () => {
+        const content = buildStyleContent(':root', { '--primary': { h: 240, s: 1, l: 0.64 } });
+        expect(content).toBe(':root{--primary:240 100% 64%;}');
+    });
+
+    it('.dark 选择器同样拼接', () => {
+        const content = buildStyleContent('.dark', { '--background': { h: 240, s: 0.1, l: 0.04 } });
+        expect(content).toBe('.dark{--background:240 10% 4%;}');
+    });
+
+    it('空 comp → `selector{}`', () => {
+        expect(buildStyleContent(':root', {})).toBe(':root{}');
+    });
 });
 
 describe('applyDark', () => {
@@ -117,6 +157,30 @@ describe('applyDark', () => {
         applyDark(DEFAULT_DARK_THEME);
         expect(document.getElementById('theme-vars-light')).not.toBeNull();
         expect(document.getElementById('theme-vars-dark')).not.toBeNull();
+    });
+
+    it('C5 diff：相同 comp 重复 applyDark 不重写 innerHTML', () => {
+        const comp = { '--background': { h: 240, s: 0.1, l: 0.04 } };
+        applyDark(comp);
+        const style = document.getElementById('theme-vars-dark') as HTMLStyleElement;
+        const firstContent = style.innerHTML;
+        const spy = vi.spyOn(style, 'innerHTML', 'set');
+        applyDark(comp);
+        expect(style.innerHTML).toBe(firstContent);
+        expect(spy).not.toHaveBeenCalled();
+        spy.mockRestore();
+    });
+
+    it('C5 diff：comp 变化时正常重写（对称 applyLight 用例）', () => {
+        applyDark({ '--background': { h: 240, s: 0.1, l: 0.04 } });
+        const style = document.getElementById('theme-vars-dark') as HTMLStyleElement;
+        const spy = vi.spyOn(style, 'innerHTML', 'set');
+        applyDark({ '--background': { h: 200, s: 0.2, l: 0.1 } });
+        // setter 被触发（diff 未命中 → 重写）
+        expect(spy).toHaveBeenCalled();
+        // 内容正确：新 comp 拼接结果
+        expect(style.innerHTML).toBe('.dark{--background:200 20% 10%;}');
+        spy.mockRestore();
     });
 });
 

@@ -15,6 +15,18 @@
  *   - C2：现有 darkContext 切回浅色时若无对应数据会把 #theme-vars 清空成
  *     `:root{}`，丢失已注入色。本方案两套 style 独立常驻，互不影响。
  *
+ * 双 style 按需创建：light/dark style 在首次 applyLight/applyDark 时才插入 DOM，
+ *   用户未进主题页前两 style 均不存在（仅 bootstrap 单 #theme-vars 在线）。
+ *   阶段3 bootstrap 改造时统一在 index.html 初始化 DEFAULT 内容的双 style，
+ *   消除「React 挂载前 dark 模式无 #theme-vars-dark 在线」的过渡期。
+ *
+ * C5 diff：applyLight/applyDark 写入前先 diff（style.innerHTML === newContent 则 return）。
+ *   当前覆盖范围：仅 applyLight/applyDark 自身的重复调用（如 debounce / 多处触发同一 comp 时），
+ *   第二次相同 comp 写入直接 return，避免 innerHTML 重置 → 浏览器重算规则 → 闪烁。
+ *   未覆盖 bootstrap：index.html bootstrap 写单 `#theme-vars`（不同 DOM 节点），与 light/dark
+ *   双 style 各写各的，不存在同节点双写。阶段3 改 index.html bootstrap 改写 light/dark id 后，
+ *   C5 才真正覆盖 bootstrap 与运行时的同节点重复写入。
+ *
  * 预览态覆盖：applyPreview 把 light+dark 写进 head 末尾的 #theme-vars-preview，
  *   利用 CSS source order（后者优先）覆盖线上 light/dark style；clearPreview 删除。
  *
@@ -76,21 +88,39 @@ function getOrCreateStyle(id: string): HTMLStyleElement {
 }
 
 /**
+ * 拼出某选择器下 comp 对应的完整 style 内容：`selector{...formatCssRules(comp)...}`。
+ *
+ * 抽此函数是为 C5 diff：applyLight/applyDark 写入前先用同样规则算出 newContent，
+ * 与现有 style.innerHTML 比对，相同则不重写（消除 applyLight/applyDark 自身重复调用同一 comp
+ * 触发的双写闪烁 —— 第二次相同 comp 写入直接 return，避免 innerHTML 重置导致的样式重算）。
+ * 注：当前 C5 未覆盖 bootstrap（bootstrap 写单 #theme-vars，与 light/dark 双 style 不同节点，
+ * 不存在同节点双写）；阶段3 改 index.html bootstrap 写 light/dark id 后 C5 才覆盖该场景。
+ */
+export function buildStyleContent(selector: string, comp: CompTheme): string {
+    return `${selector}{${formatCssRules(comp)}}`;
+}
+
+/**
  * 写入线上浅色主题：`<style id="theme-vars-light">:root{...}</style>`。
- * style 不存在则创建；已存在则原位更新内容（不新增重复节点）。
+ * style 不存在则创建；已存在则 **diff 后**原位更新内容（C5：内容相同则跳过，不重写 innerHTML）。
  */
 export function applyLight(comp: CompTheme): void {
     const style = getOrCreateStyle(LIGHT_STYLE_ID);
-    style.innerHTML = `:root{${formatCssRules(comp)}}`;
+    const newContent = buildStyleContent(':root', comp);
+    if (style.innerHTML === newContent) return;
+    style.innerHTML = newContent;
 }
 
 /**
  * 写入线上深色主题：`<style id="theme-vars-dark">.dark{...}</style>`。
  * 选择器是 .dark，仅当 html 带 dark class 时生效（由 setMode 控制）。
+ * **diff 后**原位更新内容（C5：内容相同则跳过，不重写 innerHTML）。
  */
 export function applyDark(comp: CompTheme): void {
     const style = getOrCreateStyle(DARK_STYLE_ID);
-    style.innerHTML = `.${DARK_CLASS}{${formatCssRules(comp)}}`;
+    const newContent = buildStyleContent(`.${DARK_CLASS}`, comp);
+    if (style.innerHTML === newContent) return;
+    style.innerHTML = newContent;
 }
 
 /**
