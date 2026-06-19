@@ -15,7 +15,7 @@ from bisheng.common.constants.enums.telemetry import BaseTelemetryTypeEnum, Appl
 from bisheng.common.dependencies.user_deps import UserPayload
 from bisheng.common.errcode.http_error import NotFoundError
 from bisheng.common.errcode.server import SystemConfigEmptyError, SystemConfigInvalidError, UploadFileEmptyError, \
-    UploadFileExtError
+    UploadFileExtError, WebConfigConflictError
 from bisheng.common.models.config import Config, ConfigDao, ConfigKeyEnum
 from bisheng.common.schemas.telemetry.event_data_schema import NewMessageSessionEventData, ApplicationAliveEventData, \
     ApplicationProcessEventData
@@ -163,22 +163,87 @@ async def get_web_config(login_user: UserPayload = Depends(UserPayload.get_login
 @router.post('/web/config')
 async def update_web_config(request: Request,
                             admin_user: UserPayload = Depends(UserPayload.get_admin_user),
-                            value: str = Body(embed=True)):
-    """ Update some configuration items required by the front-end, the content is determined by the front-end """
+                            value: str = Body(embed=True),
+                            version: Optional[int] = Body(default=None, embed=True)):
+    """ Update some configuration items required by the front-end, the content is determined by the front-end.
+
+    C7 乐观锁：version 存在 value JSON 内（不改 config 表结构，避免 alembic 迁移）。
+    方案1（version 独立 Body 参数 + 后端管理写入）：
+      - 前端传入「调用方以为的当前 version」（save 前由 getCurrentVersion 拉取）
+      - 后端读 DB 现有 value JSON 内的 version 比对：
+          一致 → 允许更新，新 value JSON 内 version +1 后落库
+          不一致 → WebConfigConflictError(10032)，提示刷新
+      - 首次写入（DB 无记录）或 value JSON 损坏/无 version 字段 → 视 current_version = 0，
+        与传入 version=0 一致则放行（兼容旧数据，version 从 1 起计）。
+    向后兼容（过渡期）：version 未传（None）→ 走 legacy 无锁路径，直接覆盖、不校验不自增。
+      任务4 全量接入 themePersistence 后，所有调用都会带 version，此分支可移除。
+    Redis 缓存读路径（get_web_config）返回的 value 已含 version，前端 getCurrentVersion 直接 JSON.parse 取。
+    """
     logger.info(f'act=web_config_update user_name={admin_user.user_name} '
-                f'ip={get_request_ip(request)}')
+                f'ip={get_request_ip(request)} version={version}')
+
     web_conf = ConfigDao.get_config(ConfigKeyEnum.WEB_CONFIG)
-    if not web_conf:
-        web_conf = Config(key=ConfigKeyEnum.WEB_CONFIG.value, value=value)
+
+    # legacy 无锁路径：version 未传（旧调用方，如尚未收敛的 theme/index.tsx），直接覆盖不入锁
+    if version is None:
+        if not web_conf:
+            web_conf = Config(key=ConfigKeyEnum.WEB_CONFIG.value, value=value)
+        else:
+            web_conf.value = value
+        ConfigDao.upsert_config(web_conf)
+        try:
+            await get_redis_client_sync().adelete(WEB_CONFIG_REDIS_KEY)
+        except Exception as e:
+            logger.exception('web_config Redis invalidate failed: %s', e)
+        return resp_200(data={'value': web_conf.value})
+
+    # 读 DB 现有 version（损坏/无字段/无记录统一兜底为 0）
+    current_version = 0
+    if web_conf and web_conf.value:
+        try:
+            existing = json.loads(web_conf.value)
+            if isinstance(existing, dict) and isinstance(existing.get('version'), int):
+                current_version = existing['version']
+        except (json.JSONDecodeError, TypeError):
+            # 损坏 JSON 不阻断乐观锁判定，按 version=0 处理（与无记录同等对待）
+            current_version = 0
+
+    # 乐观锁比对：不一致直接拒绝，不 partial 更新，避免并发覆盖
+    if version != current_version:
+        logger.warning(f'act=web_config_conflict user_name={admin_user.user_name} '
+                       f'client_version={version} db_version={current_version}')
+        raise WebConfigConflictError().return_resp_instance()
+
+    # 把 version +1 写进新 value JSON（value 是前端 JSON 字符串，解析-设 version-序列化存）
+    try:
+        new_value_obj = json.loads(value) if value else {}
+        if not isinstance(new_value_obj, dict):
+            # value 不是 JSON 对象（极端情况），包成 {data: value} 防 version 无处可放
+            new_value_obj = {'data': value}
+    except (json.JSONDecodeError, TypeError):
+        # value 非法 JSON：仍允许落库（前端契约应由 themeConfig 保证合法），version 放不进去时跳过
+        new_value_obj = None
+
+    new_version = current_version + 1
+    if new_value_obj is not None:
+        new_value_obj['version'] = new_version
+        stored_value = json.dumps(new_value_obj, ensure_ascii=False)
     else:
-        web_conf.value = value
+        # value 非法 JSON 的兜底：原样存，version 不自增（不破坏既有数据，但放弃本次 version 推进）
+        stored_value = value
+        new_version = current_version
+
+    if not web_conf:
+        web_conf = Config(key=ConfigKeyEnum.WEB_CONFIG.value, value=stored_value)
+    else:
+        web_conf.value = stored_value
     ConfigDao.upsert_config(web_conf)
     # Redis 失效失败不阻断响应：DB 已成功写入，缓存靠 TTL 600s 兜底（参照 save_config 的 DB/Redis 异常分类）
     try:
         await get_redis_client_sync().adelete(WEB_CONFIG_REDIS_KEY)
     except Exception as e:
         logger.exception('web_config Redis invalidate failed: %s', e)
-    return resp_200(data={'value': web_conf.value})
+    return resp_200(data={'value': web_conf.value, 'version': new_version})
 
 
 @router.post('/process/{flow_id}')

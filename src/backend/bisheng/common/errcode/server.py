@@ -149,6 +149,15 @@ class SystemConfigInvalidError(BaseErrorCode):
     Msg: str = 'The system configuration format is incorrect, please check the configuration content'
 
 
+# C7: web_config 乐观锁冲突——多 admin 并发写时，传入 version 与 DB 现有 version 不一致。
+# 走业务码（HTTP 200 + status_code=10032）与 SystemConfigEmptyError(10030)/Invalid(10031) 同族，
+# 不用 HTTP 409 是因为本项目统一用 UnifiedResponseModel 包裹（见 schemas.resp_200/500），
+# HTTP 层恒 200，业务状态码在 status_code 字段（前端拦截器按此路由）。
+class WebConfigConflictError(BaseErrorCode):
+    Code: int = 10032
+    Msg: str = 'The theme configuration has been updated by another administrator, please refresh and try again'
+
+
 class UploadFileEmptyError(BaseErrorCode):
     Code: int = 10040
     Msg: str = 'Uploaded file cannot be empty'

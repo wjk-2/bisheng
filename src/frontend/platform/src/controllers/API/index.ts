@@ -98,10 +98,20 @@ export async function getAppConfig(): Promise<AppConfig> {
   return await axios.get(`/api/v1/env`);
 }
 /**
- * 获取平台配置
+ * 保存主题配置（web_config）。
+ *
+ * C7 乐观锁：version 为可选参数。
+ *   - 不传（undefined）→ legacy 无锁路径，body 只含 {value}，兼容尚未收敛的调用方（如 theme/index.tsx）。
+ *   - 传入数字 → 走乐观锁，body 含 {value, version}，后端比对 DB version，
+ *     冲突返业务码 10032（WebConfigConflictError）。
+ *
+ * 注意：本函数走项目 customAxios（controllers/request.ts），其响应拦截器对非 200 业务码
+ * 会 reject 出字符串（丢失 status_code）。需要差异化处理 10032 冲突的调用方
+ * （themePersistence）应改用其内部的 conflict-aware 调用，而非依赖本函数的 reject 值。
  */
-export async function saveThemeApi(data: string): Promise<unknown> {
-  return await axios.post(`/api/v1/web/config`, { value: data });
+export async function saveThemeApi(data: string, version?: number): Promise<unknown> {
+  const body = version === undefined ? { value: data } : { value: data, version };
+  return await axios.post(`/api/v1/web/config`, body);
 }
 /**
  * Reads all templates from the database.
