@@ -165,40 +165,32 @@ export function saveThemeDebounced(
             const settle = pendingResolve;
             saveTimer = null;
             pendingResolve = null;
-            try {
-                const result = await saveWithVersion(value, version);
-                if (result.ok) {
-                    settle?.();
-                    return;
-                }
-                if (result.conflict) {
-                    toast({
-                        title: i18n.t('prompt'),
-                        variant: 'error',
-                        description: i18n.t('theme.saveConflictRefresh'),
-                    });
-                    // 冲突后拉取最新 version 供调用方刷新 UI；拉取失败给 0 兜底
-                    const latest = await getCurrentVersion();
-                    onConflict?.(latest);
-                    settle?.();
-                    return;
-                }
-                // 其他失败：通用失败 toast
-                toast({
-                    title: i18n.t('prompt'),
-                    variant: 'error',
-                    description: i18n.t('theme.saveFailed'),
-                });
+            // saveWithVersion 契约：全路径 return SaveThemeResult，不抛错（HTTP 异常内已 catch），
+            // 故无需外层 try/catch——此处所有分支必落到 result.ok/conflict/其他失败之一。
+            const result = await saveWithVersion(value, version);
+            if (result.ok) {
                 settle?.();
-            } catch {
-                // 兜底：saveWithVersion 内已 catch，此处防极端未覆盖异常
-                toast({
-                    title: i18n.t('prompt'),
-                    variant: 'error',
-                    description: i18n.t('theme.saveFailed'),
-                });
-                settle?.();
+                return;
             }
+            if (result.conflict) {
+                toast({
+                    title: i18n.t('prompt'),
+                    variant: 'error',
+                    description: i18n.t('theme.saveConflictRefresh'),
+                });
+                // 冲突后拉取最新 version 供调用方刷新 UI；拉取失败给 0 兜底
+                const latest = await getCurrentVersion();
+                onConflict?.(latest);
+                settle?.();
+                return;
+            }
+            // 其他失败：通用失败 toast
+            toast({
+                title: i18n.t('prompt'),
+                variant: 'error',
+                description: i18n.t('theme.saveFailed'),
+            });
+            settle?.();
         }, SAVE_DEBOUNCE_MS);
     });
 }

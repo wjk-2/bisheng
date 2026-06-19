@@ -16,7 +16,8 @@
  * 与 DEFAULT_LIGHT_THEME / DEFAULT_DARK_THEME 的键集合、theme/index.tsx 的 themeKeys
  * （i18n 映射）三处保持一致。新增主题变量时三处同步。
  *
- * 共 21 键（任务1 已补 ring / warning / warning-foreground，删除了非颜色的 --radius）。
+ * 共 22 键（任务1 已补 ring / warning / warning-foreground，删除了非颜色的 --radius，
+ * 任务2 新增 --black-button）。
  */
 export type ThemeVarKey =
     | '--primary'
@@ -53,7 +54,7 @@ export type ThemeVarKey =
 export type CompTheme = Record<string, { h: number; s: number; l: number }>;
 
 /**
- * 完整的已知主题：21 个 ThemeVarKey 全部齐备。用于 DEFAULT_LIGHT_THEME /
+ * 完整的已知主题：22 个 ThemeVarKey 全部齐备。用于 DEFAULT_LIGHT_THEME /
  * DEFAULT_DARK_THEME 这类「平台内置、键集合确定」的常量，编译期锁定键完整性。
  */
 export type ThemeComp = Record<ThemeVarKey, { h: number; s: number; l: number }>;

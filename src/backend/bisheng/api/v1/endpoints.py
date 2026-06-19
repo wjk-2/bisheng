@@ -164,7 +164,7 @@ async def get_web_config(login_user: UserPayload = Depends(UserPayload.get_login
 async def update_web_config(request: Request,
                             admin_user: UserPayload = Depends(UserPayload.get_admin_user),
                             value: str = Body(embed=True),
-                            version: Optional[int] = Body(default=None, embed=True)):
+                            version: int = Body(default=0, embed=True)):
     """ Update some configuration items required by the front-end, the content is determined by the front-end.
 
     C7 乐观锁：version 存在 value JSON 内（不改 config 表结构，避免 alembic 迁移）。
@@ -175,27 +175,20 @@ async def update_web_config(request: Request,
           不一致 → WebConfigConflictError(10032)，提示刷新
       - 首次写入（DB 无记录）或 value JSON 损坏/无 version 字段 → 视 current_version = 0，
         与传入 version=0 一致则放行（兼容旧数据，version 从 1 起计）。
-    向后兼容（过渡期）：version 未传（None）→ 走 legacy 无锁路径，直接覆盖、不校验不自增。
-      任务4 全量接入 themePersistence 后，所有调用都会带 version，此分支可移除。
+
+    value 契约（保持乐观锁不变量完整）：
+      - value 必须是合法 JSON 字符串，且顶层为 dict 对象（web_config 语义即 {light, dark, bg, ...}）。
+      - 非法 JSON（json.loads 失败）或合法 JSON 但非 dict（数组/字符串/null/数字等）
+        → raise SystemConfigInvalidError(10031)，拒绝落库，不破坏乐观锁不变量。
+      - 前端调用方（themePersistence.saveThemeDebounced）序列化 window.ThemeStyle，
+        必为合法 dict JSON，正常路径不受影响。
+
     Redis 缓存读路径（get_web_config）返回的 value 已含 version，前端 getCurrentVersion 直接 JSON.parse 取。
     """
     logger.info(f'act=web_config_update user_name={admin_user.user_name} '
                 f'ip={get_request_ip(request)} version={version}')
 
     web_conf = ConfigDao.get_config(ConfigKeyEnum.WEB_CONFIG)
-
-    # legacy 无锁路径：version 未传（旧调用方，如尚未收敛的 theme/index.tsx），直接覆盖不入锁
-    if version is None:
-        if not web_conf:
-            web_conf = Config(key=ConfigKeyEnum.WEB_CONFIG.value, value=value)
-        else:
-            web_conf.value = value
-        ConfigDao.upsert_config(web_conf)
-        try:
-            await get_redis_client_sync().adelete(WEB_CONFIG_REDIS_KEY)
-        except Exception as e:
-            logger.exception('web_config Redis invalidate failed: %s', e)
-        return resp_200(data={'value': web_conf.value})
 
     # 读 DB 现有 version（损坏/无字段/无记录统一兜底为 0）
     current_version = 0
@@ -205,7 +198,7 @@ async def update_web_config(request: Request,
             if isinstance(existing, dict) and isinstance(existing.get('version'), int):
                 current_version = existing['version']
         except (json.JSONDecodeError, TypeError):
-            # 损坏 JSON 不阻断乐观锁判定，按 version=0 处理（与无记录同等对待）
+            # DB 侧损坏 JSON 不阻断乐观锁判定，按 version=0 处理（与无记录同等对待）
             current_version = 0
 
     # 乐观锁比对：不一致直接拒绝，不 partial 更新，避免并发覆盖
@@ -214,24 +207,23 @@ async def update_web_config(request: Request,
                        f'client_version={version} db_version={current_version}')
         raise WebConfigConflictError().return_resp_instance()
 
-    # 把 version +1 写进新 value JSON（value 是前端 JSON 字符串，解析-设 version-序列化存）
+    # value 校验：必须是合法 JSON 且顶层为 dict 对象（web_config 契约）。
+    # 非法值直接 reject 10031，不落库，保持乐观锁不变量完整（不写脏数据、不推进 version）。
     try:
-        new_value_obj = json.loads(value) if value else {}
-        if not isinstance(new_value_obj, dict):
-            # value 不是 JSON 对象（极端情况），包成 {data: value} 防 version 无处可放
-            new_value_obj = {'data': value}
-    except (json.JSONDecodeError, TypeError):
-        # value 非法 JSON：仍允许落库（前端契约应由 themeConfig 保证合法），version 放不进去时跳过
-        new_value_obj = None
+        new_value_obj = json.loads(value)
+    except (json.JSONDecodeError, TypeError) as e:
+        logger.warning('act=web_config_invalid user_name=%s reason=invalid_json value_prefix=%r',
+                       admin_user.user_name, value[:80])
+        raise SystemConfigInvalidError()
+    if not isinstance(new_value_obj, dict):
+        logger.warning('act=web_config_invalid user_name=%s reason=non_dict type=%s',
+                       admin_user.user_name, type(new_value_obj).__name__)
+        raise SystemConfigInvalidError()
 
+    # 把 version +1 写进新 value JSON（合法 dict，必能放下 version 字段）
     new_version = current_version + 1
-    if new_value_obj is not None:
-        new_value_obj['version'] = new_version
-        stored_value = json.dumps(new_value_obj, ensure_ascii=False)
-    else:
-        # value 非法 JSON 的兜底：原样存，version 不自增（不破坏既有数据，但放弃本次 version 推进）
-        stored_value = value
-        new_version = current_version
+    new_value_obj['version'] = new_version
+    stored_value = json.dumps(new_value_obj, ensure_ascii=False)
 
     if not web_conf:
         web_conf = Config(key=ConfigKeyEnum.WEB_CONFIG.value, value=stored_value)
