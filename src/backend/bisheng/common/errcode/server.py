@@ -146,7 +146,7 @@ class SystemConfigEmptyError(BaseErrorCode):
 
 class SystemConfigInvalidError(BaseErrorCode):
     Code: int = 10031
-    Msg: str = 'The system configuration format is incorrect, please check the configuration content:{exception}'
+    Msg: str = 'The system configuration format is incorrect, please check the configuration content'
 
 
 class UploadFileEmptyError(BaseErrorCode):

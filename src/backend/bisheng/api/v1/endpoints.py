@@ -113,22 +113,28 @@ def get_config(admin_user: UserPayload = Depends(UserPayload.get_admin_user)):
 def save_config(data: dict, admin_user: UserPayload = Depends(UserPayload.get_admin_user)):
     if not data.get('data', '').strip():
         raise SystemConfigEmptyError()
+
+    # YAML 解析与 linsight_invitation_code 校验失败属于用户配置格式错，映射为 10031
     try:
-        # Check for complianceyamlFormat
         config = yaml.safe_load(data.get('data'))
 
-        # Judging linsight_invitation_code Right?boolean
-        if isinstance(config, dict) and 'linsight_invitation_code' in config.keys():
-            if config['linsight_invitation_code'] is not None and bool(config['linsight_invitation_code']) not in [True,
-                                                                                                                   False]:
+        if isinstance(config, dict) and 'linsight_invitation_code' in config:
+            if config['linsight_invitation_code'] is not None \
+                    and not isinstance(config['linsight_invitation_code'], bool):
                 raise ValueError('linsight_invitation_code must be a boolean value')
+    except (yaml.YAMLError, ValueError) as e:
+        logger.exception('System config YAML parse / linsight validation failed: %s', e)
+        raise SystemConfigInvalidError()
 
+    # DB 写入与 Redis 失效属于基础设施异常，原样上抛以便运维区分定位
+    try:
         db_config = ConfigDao.get_config(ConfigKeyEnum.INIT_DB)
         db_config.value = data.get('data')
         ConfigDao.insert_config(db_config)
         get_redis_client_sync().delete('config:initdb_config')
     except Exception as e:
-        raise SystemConfigInvalidError()
+        logger.exception('System config DB write / Redis invalidate failed: %s', e)
+        raise
 
     return resp_200()
 
