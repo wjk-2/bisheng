@@ -38,6 +38,9 @@ const defaultLightTheme: CompTheme = {
     '--accent-foreground': { h: 222.2, s: 0.474, l: 0.112 },
     '--destructive': { h: 0, s: 1, l: 0.5 },
     '--destructive-foreground': { h: 210, s: 0.4, l: 0.98 },
+    '--ring': { h: 223, s: 0.48, l: 0.44 },
+    '--warning': { h: 38, s: 0.92, l: 0.50 },
+    '--warning-foreground': { h: 0, s: 0, l: 1 },
     '--black-button': { h: 0, s: 0, l: 0.07 },
 };
 
@@ -60,6 +63,9 @@ const defaultDarkTheme: CompTheme = {
     '--destructive-foreground': { h: 210, s: 0.4, l: 0.98 },
     '--border': { h: 225, s: 0.05, l: 0.27 },
     '--input': { h: 0, s: 0, l: 1 },
+    '--ring': { h: 216, s: 0.24, l: 0.30 },
+    '--warning': { h: 38, s: 0.95, l: 0.62 },
+    '--warning-foreground': { h: 0, s: 0, l: 1 },
     '--black-button': { h: 0, s: 0, l: 0.07 },
 };
 
@@ -90,9 +96,16 @@ function parseWebConfig(raw: string): ThemeValue {
 }
 
 function applyThemeComp(comp: CompTheme, mode: 'light' | 'dark') {
+    // S1: 校验 key 与 hsl 数值后再拼接，防 CSS 注入（admin 账号被攻破时后端 JSON 可能携带恶意 key）
+    const keyRe = /^--[a-z-]+$/;
     let rules = '';
     for (const key of Object.keys(comp)) {
+        if (!keyRe.test(key)) continue;
         const hsl = comp[key];
+        if (typeof hsl.h !== 'number' || typeof hsl.s !== 'number' || typeof hsl.l !== 'number') continue;
+        if (!(hsl.h >= 0 && hsl.h <= 360)) continue;
+        if (!(hsl.s >= 0 && hsl.s <= 1)) continue;
+        if (!(hsl.l >= 0 && hsl.l <= 1)) continue;
         rules += key + ':' + hsl.h + ' ' + (hsl.s * 100) + '% ' + (hsl.l * 100) + '%;';
     }
     const selector = mode === 'dark' ? '.dark' : ':root';
@@ -126,7 +139,6 @@ const themeKeys = {
     "--destructive": "theme.destructive",
     "--destructive-foreground": "theme.destructiveForeground",
     "--ring": "theme.ring",
-    "--radius": "theme.radius",
     "--warning": "theme.warning",
     "--warning-foreground": "theme.warningForeground",
     '--black-button': 'theme.blackButton',
@@ -139,7 +151,7 @@ export default function Theme() {
         if (saved && Object.keys(saved).length > 0) return saved;
         return mode === 'dark' ? { ...defaultDarkTheme } : { ...defaultLightTheme };
     });
-    const [bg, setBg] = useState(window.ThemeStyle.bg || 'logo')
+    const [bg, setBg] = useState(window.ThemeStyle?.bg || 'logo')
     const { t } = useTranslation()
 
     const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
