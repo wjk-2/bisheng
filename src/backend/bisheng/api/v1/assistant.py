@@ -17,7 +17,7 @@ from bisheng.common.schemas.api import PageData
 from bisheng.core.cache.redis_manager import get_redis_client
 from bisheng.database.models.assistant import Assistant
 from bisheng.open_endpoints.domain.utils import get_default_operator
-from bisheng.share_link.api.dependencies import header_share_token_parser
+from bisheng.share_link.api.dependencies import header_share_token_parser, get_user_or_default_operator
 from bisheng.share_link.domain.models.share_link import ShareLink
 from bisheng.utils import generate_uuid
 
@@ -37,9 +37,10 @@ def get_assistant(*,
     return resp_200(PageData(data=data, total=total))
 
 
-# Get the details of an assistant
+# [share-accessible] share 链接需读取智能体配置
 @router.get('/info/{assistant_id}')
-async def get_assistant_info(*, assistant_id: str, login_user: UserPayload = Depends(UserPayload.get_login_user),
+async def get_assistant_info(*, assistant_id: str,
+                             login_user: UserPayload = Depends(get_user_or_default_operator),
                              share_link: Union['ShareLink', None] = Depends(header_share_token_parser)):
     """Getting Helper Information"""
     res = await AssistantService.get_assistant_info(assistant_id, login_user, share_link)

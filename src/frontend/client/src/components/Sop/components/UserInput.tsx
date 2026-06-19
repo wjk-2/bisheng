@@ -23,7 +23,7 @@ interface UploadingFile {
     result?: any
 }
 
-export default function UserInput({ taskId, history = {}, disable = false, onSendInput }) {
+export default function UserInput({ taskId, history = {}, disable = false, onSendInput, shareToken = '' }) {
     const localize = useLocalize()
     const [inputValue, setInputValue] = useState(history.user_input || "")
     const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>(history?.files?.map(file => ({
@@ -153,6 +153,7 @@ export default function UserInput({ taskId, history = {}, disable = false, onSen
             uploadFile.mutate({
                 body: formData,
                 signal: abortController.signal,
+                shareToken: shareToken || undefined,
             })
         })
     }

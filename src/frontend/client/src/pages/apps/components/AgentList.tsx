@@ -69,7 +69,7 @@ export function AgentList({ category, searchQuery, onCardClick, currentUserId }:
     return (
         <div className="flex flex-col gap-6">
             {/* 卡片网格 */}
-            <div className="grid grid-cols-4 2xl:grid-cols-6 gap-4">
+            <div className="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
                 {agents.map((agent) => (
                     <AgentCard
                         key={agent.id}
@@ -82,9 +82,9 @@ export function AgentList({ category, searchQuery, onCardClick, currentUserId }:
 
             {/* 加载中骨架占位 */}
             {loading && (
-                <div className="grid grid-cols-4 2xl:grid-cols-6 gap-4">
+                <div className="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
                     {Array.from({ length: PAGE_SIZE }).map((_, i) => (
-                        <div key={i} className="h-[258px] rounded-lg bg-muted animate-pulse" />
+                        <div key={i} className="h-[210px] rounded-xl bg-muted animate-pulse" />
                     ))}
                 </div>
             )}

@@ -41,7 +41,7 @@ interface WorkflowNodeParam {
     hidden?: boolean;
 }
 
-const InputForm = ({ data, flow, logo }: { data: WorkflowNodeParam, flow: any }) => {
+const InputForm = ({ data, flow, logo, shareToken = '' }: { data: WorkflowNodeParam, flow: any, shareToken?: string }) => {
     const localize = useLocalize()
     const formDataRef = useRef(data.value.reduce((map, item) => {
         map[item.key] = { key: item.key, type: item.type, label: item.value, fileName: '', value: '' }
@@ -148,13 +148,14 @@ const InputForm = ({ data, flow, logo }: { data: WorkflowNodeParam, flow: any })
                                     case FormItemType.File:
                                         return (
                                             <InputFileComponent
-                                                isSSO
+                                                isSSO={!!shareToken}
+                                                shareToken={shareToken}
+                                                flow={flow}
                                                 disabled={false}
                                                 placeholder={localize('com_file_current_empty')}
                                                 value={''}
                                                 multiple={item.multiple}
                                                 onChange={(name) => updataFileName(item, name)}
-                                                // fileTypes={FileTypes[item.file_type.toUpperCase()]}
                                                 suffixes={FileTypes[item.file_type.toUpperCase()]}
                                                 onFileChange={(val) => handleChange(item, val)}
                                             />

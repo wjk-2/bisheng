@@ -54,6 +54,7 @@ export default function index({ id = '', vid = '', shareToken = '' }) {
                         versionId={versionId}
                         setVersions={setVersions}
                         setVersionId={setVersionId}
+                        shareToken={shareToken}
                     />
                 </div>
             </div>}

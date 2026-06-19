@@ -19,6 +19,7 @@ from bisheng.api.v1.schemas import (KnowledgeFileProcess, UpdatePreviewFileChunk
 from bisheng.common.constants.enums.telemetry import BaseTelemetryTypeEnum
 from bisheng.common.dependencies.user_deps import UserPayload
 from bisheng.common.errcode.http_error import UnAuthorizedError, NotFoundError
+from bisheng.share_link.api.dependencies import get_user_or_default_operator
 from bisheng.common.errcode.knowledge import KnowledgeCPError, KnowledgeQAError, KnowledgeRebuildingError, \
     KnowledgePreviewError, KnowledgeNotQAError, KnowledgeNoEmbeddingError, KnowledgeNotExistError, KnowledgeCPEmptyError
 from bisheng.common.errcode.server import NoLlmModelConfigError
@@ -46,10 +47,11 @@ from bisheng.worker.knowledge.qa import insert_qa_celery
 router = APIRouter(prefix='/knowledge', tags=['Knowledge'])
 
 
+# [share-accessible] share 对话允许访客上传临时文件（存 MinIO，不归属任何知识库）
 @router.post('/upload')
 async def upload_file(*,
                       file: UploadFile = File(...),
-                      login_user: UserPayload = Depends(UserPayload.get_login_user)):
+                      login_user: UserPayload = Depends(get_user_or_default_operator)):
     file_name = file.filename
     # Cache Local
     uuid_file_name = await KnowledgeService.save_upload_file_original_name(file_name)

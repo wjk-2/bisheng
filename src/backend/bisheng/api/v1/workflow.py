@@ -18,7 +18,9 @@ from bisheng.common.dependencies.user_deps import UserPayload
 from bisheng.common.errcode.flow import WorkflowNameExistsError, WorkFlowOnlineEditError, AppWriteAuthError
 from bisheng.common.errcode.http_error import UnAuthorizedError, NotFoundError
 from bisheng.common.services import telemetry_service
-from bisheng.core.database import get_sync_db_session
+from bisheng.core.database import get_sync_db_session, get_async_db_session
+from bisheng.share_link.domain.repositories.implementations.share_link_repository_impl import ShareLinkRepositoryImpl
+from bisheng.share_link.domain.services.share_link_service import ShareLinkService
 from bisheng.core.logger import trace_id_var
 from bisheng.core.storage.minio.minio_manager import get_minio_storage
 from bisheng.database.models.assistant import AssistantDao
@@ -164,7 +166,20 @@ def run_once(request: Request, login_user: UserPayload = Depends(UserPayload.get
 async def workflow_share(*,
                          workflow_id: str,
                          websocket: WebSocket,
-                         chat_id: Optional[str] = None):
+                         chat_id: Optional[str] = None,
+                         share_token: Optional[str] = Query(default=None)):
+    if not share_token:
+        await websocket.close(code=http_status.WS_1008_POLICY_VIOLATION, reason='share-token required')
+        return
+    try:
+        async with get_async_db_session() as session:
+            share_link = await ShareLinkService(ShareLinkRepositoryImpl(session)).get_share_link_by_token(share_token)
+    except Exception:
+        await websocket.close(code=http_status.WS_1008_POLICY_VIOLATION, reason='invalid share-token')
+        return
+    if not share_link.is_valid(workflow_id):
+        await websocket.close(code=http_status.WS_1008_POLICY_VIOLATION, reason='invalid share-token')
+        return
     login_user = get_default_operator()
     try:
         await chat_manager.dispatch_client(websocket, workflow_id, chat_id, login_user, WorkType.WORKFLOW, websocket)

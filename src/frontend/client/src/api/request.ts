@@ -80,6 +80,10 @@ async function _patch(url: string, data?: any, options?: AxiosRequestConfig) {
 customAxios.interceptors.response.use(
   (response) => {
     if (response.data.status_code === 403) {
+      // Share 路由无需登录，403 直接返回，不跳转
+      if (location.pathname.includes('/share/')) {
+        return response;
+      }
       // S-35: ERROR_REQUEST_PATH stores a URL path (non-sensitive) for post-login redirect
       localStorage.setItem('ERROR_REQUEST_PATH', response.config.url || '')
       location.href = `${__APP_ENV__.BASE_URL}/c/new?error=11403`;

@@ -21,20 +21,20 @@ export const useUploadFileMutation = (
   const queryClient = useQueryClient();
   const { onSuccess, ...options } = _options || {};
   return useMutation([MutationKeys.fileUpload], {
-    mutationFn: ({ body, signal }: { body: FormData, signal: AbortSignal | null }) => {
+    mutationFn: ({ body, signal, shareToken }: { body: FormData, signal: AbortSignal | null, shareToken?: string }) => {
       const width = body.get('width') ?? '';
       const height = body.get('height') ?? '';
       const version = body.get('version') ?? '';
       const endpoint = (body.get('endpoint') ?? '') as string;
       if (isAssistantsEndpoint(endpoint) && version === '2') {
-        return dataService.uploadFile(body, signal);
+        return dataService.uploadFile(body, signal, shareToken);
       }
 
       if (width !== '' && height !== '') {
         return dataService.uploadImage(body, signal);
       }
 
-      return dataService.uploadFile(body, signal);
+      return dataService.uploadFile(body, signal, shareToken);
     },
     ...options,
     onSuccess: (data, { body: formData }, context) => {

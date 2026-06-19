@@ -14,7 +14,7 @@ import { formatTime } from '~/utils';
 import { useAutoScroll } from '~/hooks/useAutoScroll';
 import { ShareSameSopControls } from '.';
 
-export const TaskFlow = ({ versionId, isSharePage, setVersions, setVersionId }) => {
+export const TaskFlow = ({ versionId, isSharePage, setVersions, setVersionId, shareToken = '' }) => {
     const { data: bsConfig } = useGetBsConfig();
     const { createLinsight, getLinsight, updateLinsight } = useLinsightManager()
     const { showToast } = useToastContext();
@@ -134,6 +134,7 @@ export const TaskFlow = ({ versionId, isSharePage, setVersions, setVersionId }) 
                         versionId={versionId}
                         linsight={linsight}
                         sendInput={sendInput}
+                        shareToken={shareToken}
                     />
                 }
             </div>

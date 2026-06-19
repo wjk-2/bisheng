@@ -29,6 +29,8 @@ from bisheng.database.models.message import ChatMessage, ChatMessageDao
 from bisheng.database.models.session import MessageSession, MessageSessionDao
 from bisheng.interface.types import get_all_types_dict
 from bisheng.open_endpoints.domain.utils import get_default_operator_async
+from bisheng.share_link.api.dependencies import get_user_or_default_operator, header_share_token_parser
+from bisheng.share_link.domain.models.share_link import ShareLink
 from bisheng.processing.process import process_graph_cached, process_tweaks
 from bisheng.services.deps import get_session_service, get_task_service
 from bisheng.services.task.service import TaskService
@@ -384,7 +386,8 @@ async def upload_icon(request: Request,
 
 @router.post('/upload/workflow/{workflow_id}')
 async def upload_icon_workflow(request: Request,
-                               login_user: UserPayload = Depends(UserPayload.get_login_user),
+                               login_user: UserPayload = Depends(get_user_or_default_operator),
+                               share_link: Union['ShareLink', None] = Depends(header_share_token_parser),
                                file: UploadFile = None,
                                workflow_id: str = Path(..., description='workflow id')):
     bucket = bisheng_settings.object_storage.minio.public_bucket
@@ -396,7 +399,8 @@ async def upload_icon_workflow(request: Request,
 async def create_upload_file(
         file: UploadFile,
         flow_id: str,
-        login_user: UserPayload = Depends(UserPayload.get_login_user)
+        login_user: UserPayload = Depends(get_user_or_default_operator),
+        share_link: Union['ShareLink', None] = Depends(header_share_token_parser)
 ):
     # Cache file
     try:

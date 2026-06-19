@@ -26,6 +26,8 @@ from bisheng.api.v1.schemas import UnifiedResponseModel, resp_200
 from bisheng.common.constants.enums.telemetry import BaseTelemetryTypeEnum, ApplicationTypeEnum
 from bisheng.common.dependencies.user_deps import UserPayload
 from bisheng.common.errcode.http_error import UnAuthorizedError, NotFoundError
+from bisheng.share_link.api.dependencies import get_user_or_default_operator, header_share_token_parser
+from bisheng.share_link.domain.models.share_link import ShareLink
 from bisheng.common.errcode.linsight import LinsightQuestionError, LinsightUseUpError, LinsightModifySopError, \
     LinsightStartTaskError, LinsightSessionVersionRunningError, LinsightQueueStatusError, FileUploadError, \
     SopShowcaseError
@@ -48,12 +50,13 @@ from bisheng.utils import util
 router = APIRouter()
 
 
-# Inspiration Upload File
+# [share-accessible] linsight 分享页允许访客上传任务输入文件
 @router.post("/workbench/upload-file", summary="Inspiration Upload File", response_model=UnifiedResponseModel)
 async def upload_file(
         background_tasks: BackgroundTasks,
         file: UploadFile = File(...),
-        login_user: UserPayload = Depends(UserPayload.get_login_user)) -> UnifiedResponseModel:
+        login_user: UserPayload = Depends(get_user_or_default_operator),
+        share_link: Union['ShareLink', None] = Depends(header_share_token_parser)) -> UnifiedResponseModel:
     """
     Inspiration Upload File
     :param background_tasks:

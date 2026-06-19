@@ -19,11 +19,11 @@ from bisheng.core.logger import trace_id_var
 from bisheng.database.models.flow import (Flow, FlowCreate, FlowDao, FlowRead, FlowType, FlowUpdate)
 from bisheng.database.models.flow_version import FlowVersionDao
 from bisheng.database.models.role_access import AccessType
-from bisheng.share_link.api.dependencies import header_share_token_parser
+from bisheng.share_link.api.dependencies import header_share_token_parser, get_user_or_default_operator
 from bisheng.share_link.domain.models.share_link import ShareLink
 
 # build router
-router = APIRouter(prefix='/flows', tags=['Flows'], dependencies=[Depends(UserPayload.get_login_user)])
+router = APIRouter(prefix='/flows', tags=['Flows'])
 
 
 @router.post('/', status_code=201)
@@ -116,8 +116,9 @@ def read_flows(*,
     return FlowService.get_all_flows(login_user, name, status, tag_id, page_num, page_size)
 
 
+# [share-accessible] share 链接需读取工作流定义
 @router.get('/{flow_id}')
-async def read_flow(*, flow_id: str, login_user: UserPayload = Depends(UserPayload.get_login_user),
+async def read_flow(*, flow_id: str, login_user: UserPayload = Depends(get_user_or_default_operator),
                     share_link: Union['ShareLink', None] = Depends(header_share_token_parser)):
     """Read a flow."""
     return await FlowService.get_one_flow(login_user, flow_id, share_link)

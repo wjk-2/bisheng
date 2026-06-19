@@ -6,6 +6,7 @@ import request from "~/api/request";
 import ChatView from "~/components/Chat/ChatView";
 import Sop from "~/components/Sop";
 import AppChat from "./appChat";
+import { generateUUID } from "~/utils";
 
 const Apptypes = {
     'skill': 1,
@@ -76,6 +77,17 @@ function PasswordGate({ shareToken, onPass }: { shareToken: string; onPass: () =
     );
 }
 
+// 同一 share 链接在同一浏览器内复用同一 chatId，保证会话连续性
+function getOrCreateShareChatId(shareToken: string): string {
+    const key = `share_chat_id_${shareToken}`
+    let chatId = sessionStorage.getItem(key)
+    if (!chatId) {
+        chatId = generateUUID(32)
+        sessionStorage.setItem(key, chatId)
+    }
+    return chatId
+}
+
 export default function Share() {
     const { token: shareToken, vid } = useParams()
     const [type, setType] = useState('')
@@ -89,7 +101,7 @@ export default function Share() {
             if (res.status_code === 404) {
                 return navigate('/404', { replace: true })
             }
-            setType(res.data.resource_type)
+            setType(res.data.resource_type?.toLowerCase())
             setShareInfo(res.data)
             setHasPassword(!!res.data.has_password)
         })
@@ -119,11 +131,23 @@ export default function Share() {
                     <ChatView id={shareInfo.resource_id} shareToken={shareToken} />
                 </div>
             )
+        case 'workflow':
+            // workflow 每次访问都生成新 chatId，确保 isNew=true，input 节点正确推送 dialog_input
+            return (
+                <div className="h-screen w-screen overflow-hidden">
+                    <AppChat
+                        chatId={generateUUID(32)}
+                        flowId={shareInfo.meta_data.flowId}
+                        shareToken={shareToken}
+                        flowType={Apptypes[type]}
+                    />
+                </div>
+            )
         default:
             return (
                 <div className="h-screen w-screen overflow-hidden">
                     <AppChat
-                        chatId={shareInfo.resource_id}
+                        chatId={getOrCreateShareChatId(shareToken!)}
                         flowId={shareInfo.meta_data.flowId}
                         shareToken={shareToken}
                         flowType={Apptypes[type]}

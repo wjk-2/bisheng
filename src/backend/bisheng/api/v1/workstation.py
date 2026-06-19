@@ -41,7 +41,7 @@ from bisheng.database.models.message import ChatMessage, ChatMessageDao
 from bisheng.database.models.session import MessageSession, MessageSessionDao
 from bisheng.llm.domain import LLMService
 from bisheng.llm.domain.llm import EagentLLM
-from bisheng.share_link.api.dependencies import header_share_token_parser
+from bisheng.share_link.api.dependencies import header_share_token_parser, get_user_or_default_operator, get_optional_user
 from bisheng.share_link.domain.models.share_link import ShareLink
 from bisheng.tool.domain.models.gpts_tools import GptsToolsDao
 from bisheng.tool.domain.services.executor import ToolExecutor
@@ -131,36 +131,6 @@ async def final_message(conversation: MessageSession, title: str, requestMessage
     return f'event: message\ndata: {msg}\n\n'
 
 
-@router.get('/config', summary='Get workbench configuration', response_model=UnifiedResponseModel)
-def get_config(
-        request: Request,
-        login_user: UserPayload = Depends(UserPayload.get_login_user)):
-    """ Get model configurations related to reviews """
-    ret = WorkStationService.get_config()
-
-    etl_for_lm_url = eagent_settings.get_knowledge().etl4lm.url
-    ret = ret.model_dump() if ret else {}
-
-    ret['enable_etl4lm'] = bool(etl_for_lm_url)
-    linsight_invitation_code = eagent_settings.get_all_config().get('linsight_invitation_code', None)
-    ret['linsight_invitation_code'] = linsight_invitation_code if linsight_invitation_code else False
-    ret['linsight_cache_dir'] = "./"
-    ret['waiting_list_url'] = eagent_settings.get_linsight_conf().waiting_list_url
-
-    return resp_200(data=ret)
-
-
-@router.post('/config', summary='Update workbench configuration', response_model=UnifiedResponseModel)
-def update_config(
-        request: Request,
-        login_user: UserPayload = Depends(UserPayload.get_admin_user),
-        data: WorkstationConfig = Body(..., description='Default Model Configuration'),
-):
-    """ Update model configurations related to reviews """
-    ret = WorkStationService.update_config(request, login_user, data)
-    return resp_200(data=ret)
-
-
 _MAX_UPLOAD_SIZE = 100 * 1024 * 1024  # 100MB
 
 
@@ -198,12 +168,47 @@ def deleteKnowledge(request: Request,
     return resp_200(data=res)
 
 
+# [public] 无需认证，platform/client 全局布局均会调用，未登录时返回空配置而非 403
+@router.get('/config', summary='Get workbench configuration', response_model=UnifiedResponseModel)
+async def get_config(
+        request: Request,
+        login_user: Optional[UserPayload] = Depends(get_optional_user)):
+    """ Get model configurations related to reviews """
+    ret = WorkStationService.get_config()
+
+    etl_for_lm_url = eagent_settings.get_knowledge().etl4lm.url
+    ret = ret.model_dump() if ret else {}
+
+    ret['enable_etl4lm'] = bool(etl_for_lm_url)
+    linsight_invitation_code = eagent_settings.get_all_config().get('linsight_invitation_code', None)
+    ret['linsight_invitation_code'] = linsight_invitation_code if linsight_invitation_code else False
+    ret['linsight_cache_dir'] = "./"
+    ret['waiting_list_url'] = eagent_settings.get_linsight_conf().waiting_list_url
+    if ret.get('webSearch') and ret['webSearch'].get('params'):
+        ret['webSearch']['params'].pop('api_key', None)
+
+    return resp_200(data=ret)
+
+
+@router.post('/config', summary='Update workbench configuration', response_model=UnifiedResponseModel)
+def update_config(
+        request: Request,
+        login_user: UserPayload = Depends(UserPayload.get_admin_user),
+        data: WorkstationConfig = Body(..., description='Default Model Configuration'),
+):
+    """ Update model configurations related to reviews """
+    ret = WorkStationService.update_config(request, login_user, data)
+    return resp_200(data=ret)
+
+
+# [share-accessible] share 对话允许访客上传附件（存 MinIO，路径由对话上下文控制归属）
 @router.post('/files')
 async def upload_file(
         request: Request,
         file: UploadFile = File(...),
         file_id: str = Body(..., description='Doc.ID'),
-        login_user: UserPayload = Depends(UserPayload.get_login_user),
+        login_user: UserPayload = Depends(get_user_or_default_operator),
+        share_link: Union['ShareLink', None] = Depends(header_share_token_parser),
 ):
     """
     Upload file
@@ -424,10 +429,12 @@ async def _log_telemetry_events(user_id: str, conversation_id: str, start_time: 
     )
 
 
+# [share-accessible] share 对话允许访客发送消息
 @router.post('/chat/completions')
 async def chat_completions(
         data: APIChatCompletion,
-        login_user: UserPayload = Depends(UserPayload.get_login_user),
+        login_user: UserPayload = Depends(get_user_or_default_operator),
+        share_link: Union['ShareLink', None] = Depends(header_share_token_parser),
 ):
     start_time = time.time()
     try:

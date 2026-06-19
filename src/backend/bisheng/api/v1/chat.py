@@ -40,7 +40,7 @@ from bisheng.database.models.session import MessageSession, MessageSessionDao, S
 from bisheng.database.models.user_group import UserGroupDao
 from bisheng.graph.graph.base import Graph
 from bisheng.open_endpoints.domain.utils import get_default_operator
-from bisheng.share_link.api.dependencies import header_share_token_parser
+from bisheng.share_link.api.dependencies import header_share_token_parser, get_user_or_default_operator
 from bisheng.share_link.domain.models.share_link import ShareLink
 from bisheng.user.domain.models.user import UserDao
 from bisheng.utils import get_request_ip
@@ -153,20 +153,25 @@ def get_app_chat_list(*,
     return resp_200(PageList(list=result, total=total))
 
 
+# [share-accessible] share 对话需读取历史消息
 @router.get('/chat/history')
 async def get_chat_message(*,
                            chat_id: str,
                            flow_id: str,
                            id: Optional[str] = None,
                            page_size: Optional[int] = 20,
-                           login_user: UserPayload = Depends(UserPayload.get_login_user),
+                           login_user: UserPayload = Depends(get_user_or_default_operator),
                            share_link: Union['ShareLink', None] = Depends(header_share_token_parser)):
     history = await ChatSessionService.get_chat_history(chat_id, flow_id, id, page_size)
 
-    # # Authorization check
+    # share 访客：meta_data.flowId 与 flow_id 匹配即可访问
+    # resource_id 存的是 chat_id，flow_id 存在 meta_data['flowId']
+    if share_link and share_link.meta_data and share_link.meta_data.get('flowId') == flow_id:
+        return resp_200(history)
+
+    # 登录用户：只能看自己的历史
     if history and login_user.user_id != history[0].user_id:
-        if not share_link or share_link.resource_id != chat_id:
-            return UnAuthorizedError.return_resp()
+        return UnAuthorizedError.return_resp()
     return resp_200(history)
 
 

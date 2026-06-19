@@ -36,8 +36,9 @@ export default function ChatView({ data, cid, v, readOnly, shareToken = '' }) {
                     logo={Logo}
                     readOnly={readOnly}
                     disabledSearch={data.flow_type === 10}
+                    shareToken={shareToken}
                 />
-                <ChatInput v={v} readOnly={readOnly} />
+                <ChatInput v={v} readOnly={readOnly} shareToken={shareToken} />
             </div>
         </div>
     </div>

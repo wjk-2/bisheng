@@ -221,6 +221,7 @@ const Task = ({
     que,
     hasSubTask,
     sendInput,
+    shareToken = '',
     setCurrentDirectFile,
     onSearchKnowledge,
     onWebSearch,
@@ -334,6 +335,7 @@ const Task = ({
                                         taskId={task.id}
                                         history={_history}
                                         onSendInput={sendInput}
+                                        shareToken={shareToken}
                                     ></UserInput>
                                     : <div>
                                         <p key={index}>{_history.call_reason}</p>
@@ -367,7 +369,7 @@ const Task = ({
 };
 
 
-export const TaskFlowContent = ({ versionId, linsight, sendInput, onSearchKnowledge }) => {
+export const TaskFlowContent = ({ versionId, linsight, sendInput, shareToken = '', onSearchKnowledge }) => {
     const { status, sop, title, tasks, taskError, summary, file_list: files, queueCount = 0 } = linsight
     const allFiles = linsight?.output_result?.all_from_session_files || []
 
@@ -463,13 +465,15 @@ export const TaskFlowContent = ({ versionId, linsight, sendInput, onSearchKnowle
                     }}
                     onSearchKnowledge={setKnowledgeInfo}
                     onWebSearch={setWebSearchInfo}
-                    sendInput={sendInput} >
+                    sendInput={sendInput}
+                    shareToken={shareToken} >
                     {
                         task.children?.map((_task, i) => <Task
                             key={_task.id}
                             que={i + 1}
                             task={_task}
                             sendInput={sendInput}
+                            shareToken={shareToken}
                             setCurrentDirectFile={(file) => {
                                 setIsPreviewOpen(true);
                                 setCurrentDirectFile(file)

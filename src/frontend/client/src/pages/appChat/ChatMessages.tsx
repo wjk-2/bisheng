@@ -17,7 +17,7 @@ import ResouceModal from "./components/ResouceModal";
 import { currentChatState, currentRunningState } from "./store/atoms";
 import { useMessage } from "./useMessages";
 
-export default function ChatMessages({ useName, readOnly, title, logo, disabledSearch = false }) {
+export default function ChatMessages({ useName, readOnly, title, logo, disabledSearch = false, shareToken = '' }) {
     const { messageScrollRef, chatId, messages } = useMessage(readOnly)
     const { inputForm, guideWord, inputDisabled } = useRecoilValue(currentRunningState) ?? {}
     const chatState = useRecoilValue(currentChatState)
@@ -67,12 +67,7 @@ export default function ChatMessages({ useName, readOnly, title, logo, disabledS
                             showButton={!inputDisabled && chatState?.flow.flow_type !== 10}
                         />;
                     case 'guide_word':
-                        return <MessageRemark
-                            key={msg.id}
-                            logo={logo}
-                            title={title}
-                            message={msg.message.guide_word}
-                        />;
+                        return null;
                     case 'output_msg':
                     case 'stream_msg':
                     case "answer":
@@ -135,7 +130,7 @@ export default function ChatMessages({ useName, readOnly, title, logo, disabledS
         {guideWord && !inputDisabled && !inputForm && !readOnly && <GuideWord data={guideWord} />}
         {/* 表单 */}
         {inputForm && (chatState?.flow.flow_type === 10 ?
-            <InputForm data={inputForm} flow={chatState.flow} logo={logo} /> :
+            <InputForm data={inputForm} flow={chatState.flow} logo={logo} shareToken={shareToken} /> :
             <InputFormSkill flow={chatState.flow} logo={logo} />
         )}
 

@@ -202,6 +202,22 @@ class FlowService(BaseService):
         # Restore this skill version
         version_info.is_delete = 0
 
+        # 同步 start 节点的 guide_word 到 flow 表
+        if flow_version.data and flow_info.flow_type == FlowType.WORKFLOW.value:
+            try:
+                nodes = flow_version.data.get('nodes', [])
+                for node in nodes:
+                    nd = node.get('data', {})
+                    if nd.get('type') == 'start':
+                        for group in nd.get('group_params', []):
+                            for param in group.get('params', []):
+                                if param.get('key') == 'guide_word':
+                                    flow_info.guide_word = param.get('value') or None
+                        break
+                await FlowDao.aupdate_flow(flow_info)
+            except Exception as e:
+                logger.warning(f'sync guide_word failed flow_id={flow_info.id}: {e}')
+
         flow_version = await FlowVersionDao.aupdate_version(version_info)
 
         if flow_version.flow_type == FlowType.FLOW.value:

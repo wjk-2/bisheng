@@ -32,7 +32,7 @@ export default function useChatHelpers(shareToken: string = '') {
             ? {
                 [FLOW_TYPES.SKILL]: `${host}${basePath}/api/v1/chat/share/${flow.id}?type=L1`,
                 [FLOW_TYPES.ASSISTANT]: `${window.location.host}${basePath}/api/v1/assistant/chat/share/${flow.id}`,
-                [FLOW_TYPES.WORK_FLOW]: `${host}${basePath}/api/v1/workflow/chat/share/${flow.id}?chat_id=${chatId}`
+                [FLOW_TYPES.WORK_FLOW]: `${host}${basePath}/api/v1/workflow/chat/share/${flow.id}?chat_id=${chatId}&share_token=${shareToken}`
             }
             : {
                 [FLOW_TYPES.SKILL]: `${host}${basePath}/api/v1/chat/${flow.id}?type=L1`,

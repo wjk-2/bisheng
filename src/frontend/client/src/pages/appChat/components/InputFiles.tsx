@@ -9,7 +9,7 @@ import { useToastContext } from "~/Providers";
 import { cn, generateUUID, getFileExtension } from "~/utils";
 
 // @accepts '.png,.jpg'
-export default function InputFiles({ v, showVoice, accepts, disabled = false, size, onChange }) {
+export default function InputFiles({ v, showVoice, accepts, disabled = false, size, shareToken = '', onChange }) {
     const t = useLocalize()
     const [files, setFiles] = useState([]);
     const filesRef = useRef([]);
@@ -82,7 +82,7 @@ export default function InputFiles({ v, showVoice, accepts, disabled = false, si
                     filesRef.current = updatedFiles;
                     return updatedFiles;
                 });
-            }).then(response => {
+            }, shareToken).then(response => {
                 const filePath = response.data.file_path; // Assuming the response contains the file ID
                 filesRef.current = filesRef.current.map(f => {
                     if (f.id === id) {

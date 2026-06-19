@@ -101,7 +101,7 @@ export async function getChatHistoryApi({ flowId, chatId, flowType, id, shareTok
     : { flowId: string, chatId: string, flowType: string, id?: number, shareToken?: string }): Promise<any> {
     const filterFlowMsg = (data) => {
         return data.filter(item =>
-            ["question", "output_with_input_msg", "output_with_choose_msg", "stream_msg", "output_msg", "guide_question", "guide_word", "node_run", "answer"].includes(item.category)
+            ["question", "output_with_input_msg", "output_with_choose_msg", "stream_msg", "output_msg", "guide_question", "node_run", "answer"].includes(item.category)
             && (item.message || item.reasoning_log))
     }
 
@@ -216,12 +216,13 @@ export async function getSourceChunksApi(chatId: string, messageId: number, keys
 /**
  * 聊天窗上传文件
  */
-export async function uploadChatFile(v, file: File, onProgress): Promise<any> {
+export async function uploadChatFile(v, file: File, onProgress, shareToken?: string): Promise<any> {
     const formData = new FormData();
     formData.append("file", file);
     return await request.post(`/api/v1/knowledge/upload`, formData, {
         headers: {
-            "Content-Type": "multipart/form-data"
+            "Content-Type": "multipart/form-data",
+            ...(shareToken ? { "share-token": shareToken } : {})
         },
         onUploadProgress: (progressEvent) => {
             // Calculate progress percentage
@@ -260,7 +261,7 @@ export async function uploadFile(
 ): Promise<any> {
     const formData = new FormData();
     formData.append("file", file);
-    return await request.post(`/api/v1/upload/${id}`, formData);
+    return await request.postMultiPart(`/api/v1/upload/${id}`, formData);
 }
 
 // Function to upload the file with progress tracking

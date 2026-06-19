@@ -47,7 +47,7 @@ const AuthContextProvider = ({
   }, [user])
 
   const navigate = useNavigate();
-  const { data: bsConfig } = useGetBsConfig()
+  const { data: bsConfig } = useGetBsConfig({ enabled: isAuthenticated })
 
   const setUserContext = useCallback(
     (userContext: TUserContext) => {

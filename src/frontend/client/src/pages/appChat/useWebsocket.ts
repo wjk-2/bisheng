@@ -248,6 +248,7 @@ export const useWebSocket = (helpers) => {
                 message: error.message,
                 severity: NotificationSeverity.ERROR,
             })
+            helpers.handleMsgError({ code: '', data: null }, false) // P1-C: 发送异常后恢复输入状态，避免界面卡死
         }
     }
 
@@ -312,7 +313,7 @@ export const useWebSocket = (helpers) => {
                                     dialog_files_content: filePath
                                 },
                                 message,
-                                message_id: sessionInfo.message_id,
+                                message_id: sessionInfo?.message_id ?? '',
                                 category: 'question',
                                 extra: '',
                                 source: 0
@@ -335,7 +336,7 @@ export const useWebSocket = (helpers) => {
                             [submitData.nodeId!]: {
                                 data: submitData.data,
                                 message: submitData.input,
-                                message_id: sessionInfoMap.get(helpers.chatId).message_id,
+                                message_id: sessionInfoMap.get(helpers.chatId)?.message_id ?? '',
                                 category: 'question',
                                 extra: '',
                                 source: 0

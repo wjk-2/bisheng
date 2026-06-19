@@ -479,8 +479,11 @@ export const uploadImage = (
   });
 };
 
-export const uploadFile = (data: FormData, signal?: AbortSignal | null): Promise<f.TFileUpload> => {
-  const requestConfig = signal ? { signal } : undefined;
+export const uploadFile = (data: FormData, signal?: AbortSignal | null, shareToken?: string): Promise<f.TFileUpload> => {
+  const requestConfig = {
+    ...(signal ? { signal } : {}),
+    ...(shareToken ? { headers: { 'share-token': shareToken } } : {}),
+  };
   return request.postMultiPart(endpoints.images(), data, requestConfig).then(res => {
     if (!res.data.temp_file_id) {
       res.data.temp_file_id = data.get('file_id')
