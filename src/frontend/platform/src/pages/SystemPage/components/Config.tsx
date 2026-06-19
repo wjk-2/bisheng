@@ -23,11 +23,11 @@ export default function Config() {
     }, [])
 
     const handleSave = () => {
-        if (validataRef.current.length) {
+        if (validateRef.current.length) {
             return toast({
                 variant: 'error',
                 title: `yaml${t('formatError')}`,
-                description: validataRef.current.map(el => el.text)
+                description: validateRef.current.map(el => el.text)
             })
         }
 
@@ -45,7 +45,7 @@ export default function Config() {
     }
 
     const codeRef = useRef('')
-    const validataRef = useRef([])
+    const validateRef = useRef([])
     return <div className=" max-w-[80%] mx-auto">
         <p className="font-bold mt-8 mb-2">{t('system.parameterConfig')}</p>
         <AceEditor
@@ -59,7 +59,7 @@ export default function Config() {
             enableLiveAutocompletion
             name="CodeEditor"
             onChange={(value) => codeRef.current = value}
-            onValidate={(e) => validataRef.current = e}
+            onValidate={(e) => validateRef.current = e}
             className="h-[70vh] w-full rounded-lg border-[1px] border-border custom-scroll"
         />
         <div className="flex justify-center mt-8">

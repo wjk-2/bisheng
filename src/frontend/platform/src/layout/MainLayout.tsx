@@ -324,7 +324,7 @@ export default function MainLayout() {
                             <span className="text-sm font-medium text-primary">{user.user_name?.charAt(0)?.toUpperCase() || 'U'}</span>
                         </div>
                         <SelectHover
-                            triagger={
+                            trigger={
                                 <span className="text-sm text-foreground cursor-pointer flex items-center gap-1 max-w-32 truncate">
                                     {user.user_name} <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
                                 </span>

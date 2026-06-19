@@ -16,8 +16,15 @@
     </style>
     <script>
       (function() {
+        // 防首屏 FOUC：dark 模式下提前给 <html> 加 .dark class，
+        // 让 Tailwind dark: 变体与 React 挂载后的 darkContext 一致，避免组件层以 light 渲染后再切换造成的闪烁
         var theme = window.localStorage.getItem('theme');
-        if (document.body) document.body.style.backgroundColor = theme === 'dark' ? '#020617' : '#ffffff';
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+          if (document.body) document.body.style.backgroundColor = '#020617';
+        } else {
+          if (document.body) document.body.style.backgroundColor = '#ffffff';
+        }
       })();
     </script>
     <script>

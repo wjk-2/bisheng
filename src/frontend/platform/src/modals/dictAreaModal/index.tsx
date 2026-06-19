@@ -15,13 +15,13 @@ export default function DictAreaModal({
     const [open, setOpen] = useState(false);
 
     const codeRef = useRef(value);
-    const validataRef = useRef([])
+    const validateRef = useRef([])
 
     const { t } = useTranslation()
 
     const { setErrorData } = useContext(alertContext);
     const handleCreate = () => {
-        if (validataRef.current.length) return setErrorData({
+        if (validateRef.current.length) return setErrorData({
             title: `${t('prompt')}:`,
             list: [t('model.jsonFormatError')]
         });
@@ -52,7 +52,7 @@ export default function DictAreaModal({
                         enableLiveAutocompletion
                         name="CodeEditor"
                         onChange={(value) => codeRef.current = value}
-                        onValidate={(e) => validataRef.current = e}
+                        onValidate={(e) => validateRef.current = e}
                         className="h-[500px] w-full rounded-lg border-[1px] border-border custom-scroll"
                     />
                     <div className="flex h-fit w-full justify-end">

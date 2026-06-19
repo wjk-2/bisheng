@@ -8,12 +8,12 @@ export function SelectHoverItem({ children, ...props }) {
     </div>
 }
 
-export function SelectHover({ triagger, children }) {
+export function SelectHover({ trigger, children }) {
 
     return <TooltipProvider delayDuration={100}>
         <Tooltip>
             <TooltipTrigger asChild>
-                {triagger}
+                {trigger}
             </TooltipTrigger>
             <TooltipContent className="text-popover-foreground bg-popover dark:bg-[#2A2B2E] shadow-md">
                 {children}
