@@ -67,7 +67,8 @@ class ConfigDao(ConfigBase):
             return config
 
     @classmethod
-    def insert_config(cls, config: Config) -> Config:
+    def upsert_config(cls, config: Config) -> Config:
+        # session.add 对 persistent 对象走 UPDATE，对 transient 走 INSERT，实际为 upsert 语义
         with get_sync_db_session() as session:
             session.add(config)
             session.commit()
@@ -75,7 +76,7 @@ class ConfigDao(ConfigBase):
             return config
 
     @classmethod
-    async def async_insert_config(cls, config: Config) -> Config:
+    async def async_upsert_config(cls, config: Config) -> Config:
         async with get_async_db_session() as session:
             session.add(config)
             await session.commit()

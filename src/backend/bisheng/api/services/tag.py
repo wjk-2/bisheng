@@ -159,5 +159,5 @@ class TagService:
         else:
             home_tags.value = json.dumps(tag_ids)
 
-        ConfigDao.insert_config(home_tags)
+        ConfigDao.upsert_config(home_tags)
         return True

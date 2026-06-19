@@ -110,9 +110,13 @@ def get_config(admin_user: UserPayload = Depends(UserPayload.get_admin_user)):
 
 
 @router.post('/config/save')
-def save_config(data: dict, admin_user: UserPayload = Depends(UserPayload.get_admin_user)):
+def save_config(request: Request, data: dict,
+                admin_user: UserPayload = Depends(UserPayload.get_admin_user)):
     if not data.get('data', '').strip():
         raise SystemConfigEmptyError()
+
+    logger.info(f'act=system_config_save user_name={admin_user.user_name} '
+                f'ip={get_request_ip(request)}')
 
     # YAML 解析与 linsight_invitation_code 校验失败属于用户配置格式错，映射为 10031
     try:
@@ -130,7 +134,7 @@ def save_config(data: dict, admin_user: UserPayload = Depends(UserPayload.get_ad
     try:
         db_config = ConfigDao.get_config(ConfigKeyEnum.INIT_DB)
         db_config.value = data.get('data')
-        ConfigDao.insert_config(db_config)
+        ConfigDao.upsert_config(db_config)
         get_redis_client_sync().delete('config:initdb_config')
     except Exception as e:
         logger.exception('System config DB write / Redis invalidate failed: %s', e)
@@ -139,12 +143,20 @@ def save_config(data: dict, admin_user: UserPayload = Depends(UserPayload.get_ad
     return resp_200()
 
 
+# web_config 的 Redis 缓存 key，与 initdb_config 缓存模式保持一致
+WEB_CONFIG_REDIS_KEY = 'config:web_config'
+
+
 @router.get('/web/config')
-async def get_web_config():
+async def get_web_config(login_user: UserPayload = Depends(UserPayload.get_login_user)):
     """ Get some configuration items required by the front-end, the content is determined by the front-end """
+    cached = await get_redis_client_sync().aget(WEB_CONFIG_REDIS_KEY)
+    if cached is not None:
+        return resp_200(data={'value': cached})
     web_conf = ConfigDao.get_config(ConfigKeyEnum.WEB_CONFIG)
     if not web_conf:
         return resp_200(data='')
+    await get_redis_client_sync().aset(WEB_CONFIG_REDIS_KEY, web_conf.value, 600)
     return resp_200(data={'value': web_conf.value})
 
 
@@ -153,14 +165,19 @@ async def update_web_config(request: Request,
                             admin_user: UserPayload = Depends(UserPayload.get_admin_user),
                             value: str = Body(embed=True)):
     """ Update some configuration items required by the front-end, the content is determined by the front-end """
-    logger.info(
-        f'update_web_config user_name={admin_user.user_name}, ip={get_request_ip(request)}')
+    logger.info(f'act=web_config_update user_name={admin_user.user_name} '
+                f'ip={get_request_ip(request)}')
     web_conf = ConfigDao.get_config(ConfigKeyEnum.WEB_CONFIG)
     if not web_conf:
         web_conf = Config(key=ConfigKeyEnum.WEB_CONFIG.value, value=value)
     else:
         web_conf.value = value
-    ConfigDao.insert_config(web_conf)
+    ConfigDao.upsert_config(web_conf)
+    # Redis 失效失败不阻断响应：DB 已成功写入，缓存靠 TTL 600s 兜底（参照 save_config 的 DB/Redis 异常分类）
+    try:
+        await get_redis_client_sync().adelete(WEB_CONFIG_REDIS_KEY)
+    except Exception as e:
+        logger.exception('web_config Redis invalidate failed: %s', e)
     return resp_200(data={'value': web_conf.value})
 
 

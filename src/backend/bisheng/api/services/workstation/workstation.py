@@ -40,7 +40,7 @@ class WorkStationService(BaseService):
             config.value = json.dumps(data.dict())
         else:
             config = Config(key=ConfigKeyEnum.WORKSTATION.value, value=json.dumps(data.dict()))
-        ConfigDao.insert_config(config)
+        ConfigDao.upsert_config(config)
 
         return data
 

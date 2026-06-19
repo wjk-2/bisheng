@@ -150,7 +150,7 @@ class LLMService:
                     if len(new_models) != len(current_models):
                         ws_config.models = new_models
                         config.value = ws_config.model_dump_json()
-                        await ConfigDao.async_insert_config(config)
+                        await ConfigDao.async_upsert_config(config)
                         logger.info(f'Cleaned {len(current_models) - len(new_models)} models from chat config for server {server_id}')
         except Exception as e:
             logger.warning(f'Failed to clean chat config for server {server_id}: {e}')
@@ -401,7 +401,7 @@ class LLMService:
             config.value = json.dumps(data)
         else:
             config = Config(key=key.value, value=json.dumps(data, ensure_ascii=False))
-        await ConfigDao.async_insert_config(config)
+        await ConfigDao.async_upsert_config(config)
         return data
 
     @classmethod
@@ -662,7 +662,7 @@ class LLMService:
 
         config.value = json.dumps(config_obj.model_dump(), ensure_ascii=False)
 
-        await ConfigDao.async_insert_config(config)
+        await ConfigDao.async_upsert_config(config)
 
         return config_obj
 
@@ -777,7 +777,7 @@ class LLMService:
 
         # 写回 Config 表
         config.value = ws_config.model_dump_json()
-        await ConfigDao.async_insert_config(config)
+        await ConfigDao.async_upsert_config(config)
 
         logger.info(f'Enabled model {model_id} ({model.model_name}) to chat')
         return {'enabled': True, 'model_id': model_id}
@@ -797,7 +797,7 @@ class LLMService:
         if len(new_models) != len(current_models):
             ws_config.models = new_models
             config.value = ws_config.model_dump_json()
-            await ConfigDao.async_insert_config(config)
+            await ConfigDao.async_upsert_config(config)
             logger.info(f'Disabled model {model_id} from chat')
 
         return {'enabled': False, 'model_id': model_id}
