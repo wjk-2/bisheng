@@ -11,7 +11,7 @@ E-Agent 是一款面向高校的 AI 智能体平台，覆盖智能体教学、�
 ## 架构
 
 - **Client (工作台)** `/workspace/*` — 统一入口，使用智能体
-- **Platform (教学及开发中心)** `/education` `/build` `/model` `/sys` — 开发和管理智能体
+- **Platform (教学及开发中心)** `/education` `/build` `/model` `/sys`（前端 SPA 路由前缀，非 Nginx location）— 开发和管理智能体
 
 ## 技术栈
 

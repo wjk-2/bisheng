@@ -23,7 +23,7 @@ ssh node4-gpu "ssh root@172.20.20.35 'grep -E \"upload|403|No permission\" /mnt/
 本项目两台部署机形态不同，命令不可互换：
 
 - aliyun-agent（120.55.180.232）：全容器栈。前端以 eagent/frontend 容器运行，3001 由 docker-proxy 监听，宿主机无裸 nginx。整体用 cd docker && docker compose up -d。前端改动需重建 eagent/frontend 镜像后 docker compose up -d eagent-frontend。
-- node3（172.20.20.35，湖州师范）：裸 nginx + scp。前端改动执行项目根 deploy-client.sh，脚本覆盖构建→打包→清理→上传→解压→验证，写 /usr/share/nginx/html/client/。
+- node3（172.20.20.35，湖州师范）：裸 nginx + scp。前端改动执行项目根 deploy-client.sh（client）或 deploy-platform.sh（platform），脚本采用原子回退部署（构建→打包→上传→stage 校验→mv 原子替换→备份轮转），分别写 /usr/share/nginx/html/client/ 与 /platform/。
 
 禁止在 aliyun-agent 跑 deploy-client.sh，禁止在 node3 跑 docker compose。
 
@@ -46,7 +46,7 @@ ssh node4-gpu "ssh root@172.20.20.35 'grep -E \"upload|403|No permission\" /mnt/
 |应用|URL|定位|
 |---|---|---|
 |Client (Workspace)|/workspace/*|统一入口 — 使用智能体|
-|Platform|/education /build /model /sys 等|教学及开发中心 — 开发/管理智能体|
+|Platform|/education /build /model /sys 等（前端 SPA 路由前缀，非 Nginx location）|教学及开发中心 — 开发/管理智能体|
 
 用户动线：所有人登录 → Workspace → 普通用户留在应用广场，开发者点"教学及开发平台"进 Platform。
 认证：同域同端口共享 cookie，登录一次两边认证。权限由 web_menu 数组控制。
@@ -96,6 +96,8 @@ AI：LangChain 0.3.23 + LangGraph | 异步：Celery 5.3.6（队列 knowledge_cel
 - 配置：from bisheng.common.services.config_service import settings（不是 from bisheng.settings）
 - 时间戳字段：create_time / update_time（不是 created_at / updated_at）
 - 路由注册：bisheng/api/router.py
+
+以上为常用清单，完整与权威说明见 `.claude/dev-guide.md`，两处有出入时以 dev-guide 为准。
 
 ### 前端 TypeScript/React
 - Platform 状态管理：Zustand | HTTP 客户端：controllers/API/ + axios
@@ -268,8 +270,8 @@ Content-Type: application/json
 ### node3（裸 nginx，湖州师范）
 - IP：172.20.20.35（内网，经 node4-gpu 跳板）
 - 形态：裸 nginx + scp + 独立后端进程
-- 前端落点：/usr/share/nginx/html/client/
-- 部署命令：./deploy-client.sh
+- 前端落点：/usr/share/nginx/html/{client,platform}/
+- 部署命令：./deploy-client.sh（client）、./deploy-platform.sh（platform）
 
 ### 上游官方镜像（不可改名、不可自建）
 - ft：dataelement/bisheng-ft:v0.5.0
