@@ -23,10 +23,10 @@ import {
 declare global {
     interface Window {
         ThemeStyle: ThemeValue;
-        // bootstrap（index.html inline）定义并使用，签名 (comp, mode)。
-        // TS 代码现已改走 themeRuntime.applyLight/applyDark（双 style 常驻），
-        // 不再调用 __injectThemeVars；保留声明以反映 window 实际形态。
-        __injectThemeVars?: (comp: CompTheme, mode: 'light' | 'dark') => void;
+        // bootstrap（index.html inline）fetch web_config 后塞入，供 theme/index.tsx
+        // versionRef 同步读初值，消除 getCurrentVersion 异步窗口（version 方案 B）。
+        // fetch 失败或缺字段时为 undefined，versionRef fallback 到 0 并仍走 getCurrentVersion。
+        __themeVersion?: number;
     }
 }
 
@@ -78,14 +78,19 @@ export default function Theme() {
     /**
      * C7 乐观锁 version 缓存。
      *
-     * 挂载时拉取一次当前 version；每次 saveThemeDebounced 带上此 version；
+     * version 方案 B（消除竞态）：初值同步读 window.__themeVersion（bootstrap fetch web_config 后塞入），
+     * 消除原「versionRef 初值 0 + getCurrentVersion 异步」窗口期 —— 首次调色可能误报 10032 冲突（自愈但有 UX 瑕疵）。
+     *
+     * getCurrentVersion 仍作 fallback：若 bootstrap 没塞（如 fetch 失败、缺 version 字段），useEffect 内异步补拉。
      * 冲突时由 onConflict 回调刷新到最新（下次 save 用新 version 重试）。
      * 用 useRef 而非 useState：version 变化不需要触发重渲染，避免无谓 render。
      */
-    const versionRef = useRef<number>(0);
+    const versionRef = useRef<number>(window.__themeVersion ?? 0);
     useEffect(() => {
-        // 挂载时拉取当前 version，供后续 saveThemeDebounced 乐观锁比对
-        getCurrentVersion().then(v => { versionRef.current = v; });
+        // 若 bootstrap 已塞 __themeVersion 则跳过异步拉取；否则作 fallback 补拉一次
+        if (window.__themeVersion === undefined) {
+            getCurrentVersion().then(v => { versionRef.current = v; });
+        }
         return () => {
             // 卸载时取消挂起的 debounce save，防旧请求后到覆盖（替代原 C4 clearTimeout）
             cancelPendingSave();
