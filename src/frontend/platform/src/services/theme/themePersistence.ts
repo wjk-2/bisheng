@@ -50,10 +50,11 @@ const persistenceAxios = axios.create({
 });
 
 /**
- * 从 web_config 接口响应解析当前 version。
+ * 从 web_config 接口响应解析当前锁版本（_lock_version）。
  *
- * 后端 get_web_config 返回 {value: <JSON 字符串>}，value 内含 version 字段（C7 写入）。
- * 无 version 字段（旧数据 / 首次）视为 0，与后端 current_version 兜底逻辑对齐。
+ * 后端 get_web_config 返回 {value: <JSON 字符串>}，value 内含 _lock_version 字段
+ * （3B.2 起 C7 锁版本独立字段）。老数据可能仍是 version 字段（迁移期），回退读 version。
+ * 无 _lock_version / version 字段（旧数据 / 首次）视为 0，与后端 current_version 兜底逻辑对齐。
  *
  * 失败（网络错 / 解析错）一律返回 0，绝不抛错——让 save 以 version=0 尝试，由后端判定。
  */
@@ -67,8 +68,14 @@ export async function getCurrentVersion(): Promise<number> {
         const raw = typeof outer === 'string' ? outer : outer.value;
         if (!raw) return 0;
         const parsed = JSON.parse(raw);
-        if (parsed && typeof parsed.version === 'number') {
-            return parsed.version;
+        if (parsed && typeof parsed === 'object') {
+            // 优先 _lock_version（新 schema），回退 version（老 schema 迁移期锁版本字段）
+            if (typeof parsed._lock_version === 'number') {
+                return parsed._lock_version;
+            }
+            if (typeof parsed.version === 'number') {
+                return parsed.version;
+            }
         }
         return 0;
     } catch {

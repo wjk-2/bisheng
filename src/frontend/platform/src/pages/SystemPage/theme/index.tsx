@@ -12,6 +12,7 @@ import {
     type CompTheme,
     type ThemeValue,
     type ThemeVarKey,
+    serializeV3,
 } from "@/services/theme/themeConfig";
 import { applyLight, applyDark } from "@/services/theme/themeRuntime";
 import {
@@ -59,9 +60,33 @@ const themeKeys: Record<ThemeVarKey, string> = {
     '--black-button': 'theme.blackButton',
 };
 
-/** 序列化当前 window.ThemeStyle 为后端存储格式（{light, dark, bg}）。 */
+/**
+ * 序列化当前 window.ThemeStyle 为后端存储格式。
+ *
+ * 双路径（3B.2 起）：
+ *   - v3 schema（ts.v3Schema===true 且 brand/neutral 齐备）：调 serializeV3 产出
+ *     {version:3, brand, neutral, bg, _lock_version}。3B.2 阶段派生未实现，
+ *     此分支由 3B.5 BrandPicker 写入 window.ThemeStyle 后触发，当前不会被走到。
+ *   - v1/v2（默认）：沿用原序列化 {light, dark, bg}，HSLitem 手工调色路径不变。
+ *
+ * 兼容性：产出字符串均喂给 themePersistence.saveThemeDebounced → 后端 update_web_config，
+ * 后端按 value JSON 顶层 dict 校验，v1/v2/v3 三种结构都是合法 dict，正常落库。
+ */
 function serializeThemeStyle(): string {
     const ts = window.ThemeStyle;
+    if (ts.v3Schema && ts.brand && ts.neutral) {
+        // v3 路径（3B.5 预留接缝，3B.2 派生未实现不会走到）
+        return serializeV3({
+            v3Schema: ts.v3Schema,
+            brand: ts.brand,
+            neutral: ts.neutral,
+            bg: ts.bg,
+            _lock_version: ts._lock_version ?? 0,
+            light: ts.light,
+            dark: ts.dark,
+        });
+    }
+    // v1/v2 路径（HSLitem 手工调色现状）
     return JSON.stringify({ light: ts.light, dark: ts.dark, bg: ts.bg });
 }
 

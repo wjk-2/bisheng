@@ -13,8 +13,8 @@ import {
 } from '../themeConfig';
 
 describe('parseWebConfig', () => {
-    it('空 / null / undefined → 默认主题（bg 为空串）', () => {
-        const expected = { light: DEFAULT_LIGHT_THEME, dark: DEFAULT_DARK_THEME, bg: '' };
+    it('空 / null / undefined → 默认主题（bg 为空串，v3Schema=false）', () => {
+        const expected = { v3Schema: false, light: DEFAULT_LIGHT_THEME, dark: DEFAULT_DARK_THEME, bg: '' };
         expect(parseWebConfig('')).toEqual(expected);
         // @ts-expect-error: 显式验证 null/undefined 兜底
         expect(parseWebConfig(null)).toEqual(expected);
@@ -22,9 +22,10 @@ describe('parseWebConfig', () => {
         expect(parseWebConfig(undefined)).toEqual(expected);
     });
 
-    it('损坏 JSON → 默认主题（不抛错）', () => {
+    it('损坏 JSON → 默认主题（不抛错，v3Schema=false）', () => {
         const result = parseWebConfig('{invalid');
         expect(result).toEqual({
+            v3Schema: false,
             light: DEFAULT_LIGHT_THEME,
             dark: DEFAULT_DARK_THEME,
             bg: '',
@@ -39,7 +40,7 @@ describe('parseWebConfig', () => {
             bg: 'logo',
         });
         const result = parseWebConfig(raw);
-        expect(result.light['--primary']).toEqual({ h: 240, s: 1, l: 0.64 });
+        expect(result.light!['--primary']).toEqual({ h: 240, s: 1, l: 0.64 });
         expect(result.dark).toBe(DEFAULT_DARK_THEME);
         expect(result.bg).toBe('logo');
     });
@@ -55,8 +56,8 @@ describe('parseWebConfig', () => {
             bg: 'gradient',
         });
         const result = parseWebConfig(raw);
-        expect(result.light['--primary']).toEqual({ h: 240, s: 1, l: 0.64 });
-        expect(result.dark['--primary']).toEqual({ h: 220, s: 0.85, l: 0.65 });
+        expect(result.light!['--primary']).toEqual({ h: 240, s: 1, l: 0.64 });
+        expect(result.dark!['--primary']).toEqual({ h: 220, s: 0.85, l: 0.65 });
         expect(result.bg).toBe('gradient');
     });
 
@@ -65,7 +66,7 @@ describe('parseWebConfig', () => {
             light: { '--primary': { h: 240, s: 1, l: 0.64 } },
         });
         const result = parseWebConfig(raw);
-        expect(result.light['--primary']).toEqual({ h: 240, s: 1, l: 0.64 });
+        expect(result.light!['--primary']).toEqual({ h: 240, s: 1, l: 0.64 });
         // v2 缺 dark 时 parseWebConfig 走 normLegacy(parsed.dark || DEFAULT_DARK_THEME)
         // 返回的是 normLegacy 的新对象，引用不等但值相等；用深比较验证兜底内容。
         expect(result.dark).toEqual(DEFAULT_DARK_THEME);

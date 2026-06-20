@@ -167,36 +167,55 @@ async def update_web_config(request: Request,
                             version: int = Body(default=0, embed=True)):
     """ Update some configuration items required by the front-end, the content is determined by the front-end.
 
-    C7 乐观锁：version 存在 value JSON 内（不改 config 表结构，避免 alembic 迁移）。
-    方案1（version 独立 Body 参数 + 后端管理写入）：
-      - 前端传入「调用方以为的当前 version」（save 前由 getCurrentVersion 拉取）
-      - 后端读 DB 现有 value JSON 内的 version 比对：
-          一致 → 允许更新，新 value JSON 内 version +1 后落库
+    C7 乐观锁：锁版本存于 value JSON 内的 _lock_version 字段（独立字段，不复用 version）。
+    3B.2 拆分（解决原 endpoints.py:225 冲突点）：
+      - version（顶层 schema 版本号）：v1/v2/v3 区分用，由数据本身决定（v3 时 =3），
+        不参与并发控制，后端不覆盖。
+      - _lock_version（锁版本号）：每次写入 +1，C7 多 admin 并发比对用。
+      历史实现把两者塞进同一个 value.version 字段，v3 schema 版本号会被锁版本覆盖，
+      字段语义冲突。3B.2 拆为独立字段 _lock_version。
+
+    乐观锁流程（方案1：version 独立 Body 参数 + 后端管理写入）：
+      - 前端传入「调用方以为的当前 _lock_version」（save 前由 getCurrentVersion 拉取）
+      - 后端读 DB 现有 value JSON 内的 _lock_version 比对：
+          一致 → 允许更新，新 value JSON 内 _lock_version +1 后落库
           不一致 → WebConfigConflictError(10032)，提示刷新
-      - 首次写入（DB 无记录）或 value JSON 损坏/无 version 字段 → 视 current_version = 0，
-        与传入 version=0 一致则放行（兼容旧数据，version 从 1 起计）。
+      - 首次写入（DB 无记录）或 value JSON 损坏/无 _lock_version 字段 → 视 current_version = 0，
+        与传入 version=0 一致则放行（兼容旧数据，_lock_version 从 1 起计）。
+
+    老数据兼容（迁移期）：DB value 可能仍是旧 schema（锁版本写在 version 字段）。
+      读 _lock_version 时若不存在，回退读 version 字段作为锁版本（一次性兼容）；
+      写入时统一写新字段 _lock_version，下次写入起老 version 字段不再承担锁版本语义，
+      若 value 是 v3 数据，version 字段保留为 schema 版本号（=3）。
 
     value 契约（保持乐观锁不变量完整）：
-      - value 必须是合法 JSON 字符串，且顶层为 dict 对象（web_config 语义即 {light, dark, bg, ...}）。
+      - value 必须是合法 JSON 字符串，且顶层为 dict 对象（web_config 语义即
+        v1 {comp,bg} / v2 {light,dark,bg} / v3 {version:3,brand,neutral,bg,_lock_version}）。
       - 非法 JSON（json.loads 失败）或合法 JSON 但非 dict（数组/字符串/null/数字等）
         → raise SystemConfigInvalidError(10031)，拒绝落库，不破坏乐观锁不变量。
-      - 前端调用方（themePersistence.saveThemeDebounced）序列化 window.ThemeStyle，
+      - 前端调用方（themePersistence.saveThemeDebounced）序列化 ThemeValue，
         必为合法 dict JSON，正常路径不受影响。
 
-    Redis 缓存读路径（get_web_config）返回的 value 已含 version，前端 getCurrentVersion 直接 JSON.parse 取。
+    Redis 缓存读路径（get_web_config）返回的 value 已含 _lock_version（或老数据 version），
+    前端 getCurrentVersion 直接 JSON.parse 取。
     """
     logger.info(f'act=web_config_update user_name={admin_user.user_name} '
                 f'ip={get_request_ip(request)} version={version}')
 
     web_conf = ConfigDao.get_config(ConfigKeyEnum.WEB_CONFIG)
 
-    # 读 DB 现有 version（损坏/无字段/无记录统一兜底为 0）
+    # 读 DB 现有锁版本（损坏/无字段/无记录统一兜底为 0）。
+    # 兼容老数据：优先读 _lock_version，缺失则回退读 version（老 schema 锁版本字段）。
     current_version = 0
     if web_conf and web_conf.value:
         try:
             existing = json.loads(web_conf.value)
-            if isinstance(existing, dict) and isinstance(existing.get('version'), int):
-                current_version = existing['version']
+            if isinstance(existing, dict):
+                if isinstance(existing.get('_lock_version'), int):
+                    current_version = existing['_lock_version']
+                elif isinstance(existing.get('version'), int):
+                    # 老 schema 迁移期：锁版本曾写在 version 字段，回退读
+                    current_version = existing['version']
         except (json.JSONDecodeError, TypeError):
             # DB 侧损坏 JSON 不阻断乐观锁判定，按 version=0 处理（与无记录同等对待）
             current_version = 0
@@ -220,9 +239,11 @@ async def update_web_config(request: Request,
                        admin_user.user_name, type(new_value_obj).__name__)
         raise SystemConfigInvalidError()
 
-    # 把 version +1 写进新 value JSON（合法 dict，必能放下 version 字段）
+    # 把锁版本 +1 写进新 value JSON 的 _lock_version 字段（独立字段，不覆盖 version schema 版本号）。
+    # 不动 new_value_obj['version']：v3 数据的 version=3（schema 版本号）保持原样；
+    # v1/v2 数据无 version 字段也不强行塞（schema 版本号由数据本身决定）。
     new_version = current_version + 1
-    new_value_obj['version'] = new_version
+    new_value_obj['_lock_version'] = new_version
     stored_value = json.dumps(new_value_obj, ensure_ascii=False)
 
     if not web_conf:

@@ -92,6 +92,28 @@ describe('getCurrentVersion', () => {
         mockGet.mockRejectedValueOnce(new Error('network'));
         await expect(getCurrentVersion()).resolves.toBe(0);
     });
+
+    it('3B.2：value 含 _lock_version → 优先返回 _lock_version（不被 version 干扰）', async () => {
+        // v3 数据：version=3 是 schema 版本号，_lock_version=7 是锁版本，应返回 7
+        mockGet.mockResolvedValueOnce({
+            data: {
+                status_code: 200,
+                data: { value: JSON.stringify({ version: 3, _lock_version: 7, bg: 'logo' }) },
+            },
+        });
+        await expect(getCurrentVersion()).resolves.toBe(7);
+    });
+
+    it('3B.2：value 含 _lock_version 但值为非 number → 回退/兜底 0', async () => {
+        mockGet.mockResolvedValueOnce({
+            data: {
+                status_code: 200,
+                data: { value: JSON.stringify({ _lock_version: 'bad', version: 5 }) },
+            },
+        });
+        // _lock_version 非 number 不取，回退读 version=5
+        await expect(getCurrentVersion()).resolves.toBe(5);
+    });
 });
 
 describe('saveThemeDebounced', () => {
