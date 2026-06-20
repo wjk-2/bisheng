@@ -37,8 +37,6 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
       if (!parsed) return;
       applyLight(parsed.light);
       applyDark(parsed.dark);
-      // 保留 window.ThemeStyle 写入：供 3A.4 bootstrap 协调 + 未来消费者
-      (window as any).ThemeStyle = { light: parsed.light, dark: parsed.dark, bg: parsed.bg };
     });
   }, []);
 

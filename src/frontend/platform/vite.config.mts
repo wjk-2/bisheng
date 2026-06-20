@@ -76,23 +76,22 @@ export default defineConfig(() => {
             }
 
             if (id.includes('node_modules')) {
-              // 注意：ace-builds, react-ace, react-markdown 等依赖 React
-              // 不要将它们单独分块，否则会导致循环依赖
-              // 统一放入 vendor chunk
+              // 注意：ace-builds, react-ace, react-markdown, mathjax 等依赖彼此或被循环引用
+              // 不要将它们单独分块，否则会触发 ES module 跨 chunk import 的 TDZ
+              // （ReferenceError: Cannot access 'X' before initialization）
+              // 统一放入 vendor chunk，让 rollup 在同一模块图内正确排序求值顺序
               if (id.includes('@xyflow/react')) {
                 return 'reactflow';
               }
               if (id.includes('pdfjs-dist')) {
                 return 'pdfjs';
               }
-              if (id.includes('mathjax-full') || id.includes('rehype-mathjax')) {
-                return 'mathjax';
-              }
               if (id.includes('react-window') || id.includes('react-beautiful-dnd') || id.includes('react-dropzone')) {
                 return 'reactdrop';
               }
 
-              // 其他 node_modules 包（包括 ace-builds, react-markdown 等）放入 vendor chunk
+              // 其他 node_modules 包（包括 mathjax-full, rehype-mathjax, ace-builds,
+              // react-markdown 等）放入 vendor chunk
               return 'vendor';
             }
           }

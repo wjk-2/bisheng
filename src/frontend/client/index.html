@@ -87,6 +87,9 @@
         style.innerHTML = content;
       }
 
+      // 双 fetch 语义：本 bootstrap fetch（React 前）与运行时 ThemeContext 的 fetch 都写同 id 节点
+      // （theme-vars-light/dark）。靠 writeStyle 的 C5 diff（innerHTML 内容相同则跳过）保证最终一致——
+      // 后 resolve 的 fetch 若数据相同不重写，避免覆盖。改 C5 逻辑时注意此依赖。
       fetch('/workspace/api/v1/web/config').then(function(res) {
         return res.json();
       }).then(function(res) {
