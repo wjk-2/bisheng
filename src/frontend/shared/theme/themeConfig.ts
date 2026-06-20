@@ -11,6 +11,47 @@
  */
 
 /**
+ * Radix Colors slate 系列中性灰阶（官方 sRGB hex 值，静态查表）。
+ *
+ * 3B 阶段「输入 1 色 → 派生整套」中，中性灰阶不随品牌色变化，直接复用
+ * Radix 官方 slate 系列 12 步明度梯度。light slate9（#8b8d98）与
+ * dark slate9（#696e77）是中性基准灰，3B.3 派生算法以此为锚点。
+ *
+ * 数据来源：@radix-ui/colors 包内 slate.css / slate-dark.css 的 sRGB hex 段
+ * （color(display-p3 ...) 段未采用，仅取 sRGB 兜底值以兼容旧浏览器）。
+ * 仅本地查表硬编码为静态常量，不引 @radix-ui/colors 作为运行时依赖。
+ */
+export const NEUTRAL_SCALE_LIGHT: Record<string, string> = {
+    '1': '#fcfcfd',
+    '2': '#f9f9fb',
+    '3': '#f0f0f3',
+    '4': '#e8e8ec',
+    '5': '#e0e1e6',
+    '6': '#d9d9e0',
+    '7': '#cdced6',
+    '8': '#b9bbc6',
+    '9': '#8b8d98',
+    '10': '#80838d',
+    '11': '#60646c',
+    '12': '#1c2024',
+};
+
+export const NEUTRAL_SCALE_DARK: Record<string, string> = {
+    '1': '#111113',
+    '2': '#18191b',
+    '3': '#212225',
+    '4': '#272a2d',
+    '5': '#2e3135',
+    '6': '#363a3f',
+    '7': '#43484e',
+    '8': '#5a6169',
+    '9': '#696e77',
+    '10': '#777b84',
+    '11': '#b0b4ba',
+    '12': '#edeef0',
+};
+
+/**
  * 平台主题支持的 CSS 变量 key 白名单（类型安全用）。
  *
  * 与 DEFAULT_LIGHT_THEME / DEFAULT_DARK_THEME 的键集合、theme/index.tsx 的 themeKeys

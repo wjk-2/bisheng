@@ -18,3 +18,4 @@
  */
 export * from './themeConfig';
 export * from './themeRuntime';
+export * from './colorUtils';
