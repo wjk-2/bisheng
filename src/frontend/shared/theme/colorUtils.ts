@@ -53,6 +53,9 @@ export function hexToRgb(hex: string): Rgb {
  */
 export function rgbToHex(r: number, g: number, b: number): string {
     const clamp = (v: number): number => {
+        // NaN/±Infinity 兜底：Math.round(NaN)=NaN，而 NaN<0 与 NaN>255 均为 false 会放行，
+        // 导致 toString(16) 产出 '#NaN...' 污染 CSS 变量且无报错。非有限值统一兜底为 0。
+        if (!Number.isFinite(v)) return 0;
         const rounded = Math.round(v);
         if (rounded < 0) return 0;
         if (rounded > 255) return 255;

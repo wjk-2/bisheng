@@ -47,6 +47,11 @@ describe('rgbToHex', () => {
     it('浮点四舍五入：255.4 → ff, 255.6 → ff', () => {
         expect(rgbToHex(255.4, 255.6, 0)).toBe('#ffff00');
     });
+    it('NaN/Infinity 兜底为 0（防污染 CSS 变量）', () => {
+        expect(rgbToHex(NaN, 0, 0)).toBe('#000000');
+        expect(rgbToHex(Infinity, 0, 0)).toBe('#000000');
+        expect(rgbToHex(-Infinity, 0, 0)).toBe('#000000');
+    });
 });
 
 describe('rgbToHsl', () => {
@@ -76,6 +81,15 @@ describe('hslToRgb', () => {
     });
     it('(240,100,50) 纯蓝 → {0,0,255}', () => {
         expect(hslToRgb(240, 100, 50)).toEqual({ r: 0, g: 0, b: 255 });
+    });
+    it('h>360 归一：(480,100,50) === (120,100,50)', () => {
+        expect(hslToRgb(480, 100, 50)).toEqual(hslToRgb(120, 100, 50));
+    });
+    it('h<0 归一：(-120,100,50) === (240,100,50)', () => {
+        expect(hslToRgb(-120, 100, 50)).toEqual(hslToRgb(240, 100, 50));
+    });
+    it('s=0 灰度分支：(0,0,50) → 中灰 {127.5,127.5,127.5}', () => {
+        expect(hslToRgb(0, 0, 50)).toEqual({ r: 127.5, g: 127.5, b: 127.5 });
     });
 });
 
