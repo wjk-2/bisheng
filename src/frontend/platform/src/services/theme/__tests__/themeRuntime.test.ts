@@ -36,14 +36,34 @@ describe('formatCssRules', () => {
         expect(rules).toBe('--primary:240 100% 64%;--background:0 0% 100%;');
     });
 
-    it('S1: 非法 key（非 --[a-z-] 格式）跳过', () => {
+    it('S1: 非法 key（非 --[a-z][a-z0-9-]* 格式）跳过', () => {
         const rules = formatCssRules({
             '--primary': { h: 240, s: 1, l: 0.64 },
             // @ts-expect-error: 故意塞非法 key 验证白名单
             'evil{evil}': { h: 0, s: 0, l: 0 },
             '--UPPER': { h: 0, s: 0, l: 0 },
+            '--under_score': { h: 0, s: 0, l: 0 },
+            '--123': { h: 0, s: 0, l: 0 },
         });
         expect(rules).toBe('--primary:240 100% 64%;');
+    });
+
+    it('S1: 数字键放行（阶段3 品牌色色阶 --brand-50 / --brand-500 / --brand-900）', () => {
+        const rules = formatCssRules({
+            '--brand-50': { h: 240, s: 1, l: 0.95 },
+            '--brand-500': { h: 240, s: 1, l: 0.64 },
+            '--brand-900': { h: 240, s: 1, l: 0.10 },
+        });
+        expect(rules).toBe('--brand-50:240 100% 95%;--brand-500:240 100% 64%;--brand-900:240 100% 10%;');
+    });
+
+    it('S1: 首字符数字仍非法（--123 / --4xx）', () => {
+        const rules = formatCssRules({
+            '--123': { h: 0, s: 1, l: 0.5 },
+            '--4xx': { h: 0, s: 1, l: 0.5 },
+            '--brand-1': { h: 0, s: 1, l: 0.5 }, // 对照组：首字母合法，放行
+        });
+        expect(rules).toBe('--brand-1:0 100% 50%;');
     });
 
     it('S1: h/s/l 非 number 跳过', () => {

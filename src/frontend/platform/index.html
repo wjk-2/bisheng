@@ -33,11 +33,14 @@
         //   - #theme-vars-dark  → .dark{...dark comp...}
         // 两 style 都创建常驻；首屏正确（消除 FOUC），运行时 theme/index.tsx 复用同两节点（C5 diff 生效）。
         // 注：本段是内联脚本（React 前，不能 import themeRuntime/themeConfig），注入逻辑为纯 JS 内联副本，
-        //     制式与 formatCssRules 一致（key 白名单 ^--[a-z-]+$；h∈[0,360]；s/l∈[0,1] ×100）。
+        //     制式与 formatCssRules 一致（key 白名单 ^--[a-z][a-z0-9-]*$；h∈[0,360]；s/l∈[0,1] ×100）。
         //     阶段3 build-time 内联会消除该副本。
         (function() {
-          // CSS 变量 key 白名单（与 themeRuntime.KEY_RE 一致），防 CSS 注入
-          var KEY_RE = /^--[a-z-]+$/;
+          // CSS 变量 key 白名单（与 themeRuntime.KEY_RE 一致）：
+          //   允许 `--` 起首 + 小写字母/数字/连字符（首字符必须字母）。
+          //   阶段3 品牌色派生产色阶键（如 --brand-50 / --brand-500 / --brand-900），需放行数字；
+          //   仍禁大写/特殊字符防 CSS 注入。
+          var KEY_RE = /^--[a-z][a-z0-9-]*$/;
 
           function formatRules(comp) {
             var rules = '';

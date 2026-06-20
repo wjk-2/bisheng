@@ -97,4 +97,25 @@ describe('normLegacy', () => {
             '--x': { h: 0, s: 0.01, l: 0.5 },
         });
     });
+
+    it('同一 comp 内 key 制式混用：逐 key 独立判定（a passthrough / b ÷100）', () => {
+        const mixed = {
+            '--a': { h: 240, s: 1, l: 0.64 },     // s≤1 且 l≤1 → 0-1 制 passthrough
+            '--b': { h: 0, s: 100, l: 50 },       // s=100>1  → 0-100 制 ÷100
+        };
+        expect(normLegacy(mixed)).toEqual({
+            '--a': { h: 240, s: 1, l: 0.64 },
+            '--b': { h: 0, s: 1, l: 0.5 },
+        });
+    });
+
+    it('混合制式反向（a ÷100 / b passthrough）：判定与 key 出现顺序无关', () => {
+        const mixed = {
+            '--b': { h: 0, s: 100, l: 50 },       // 0-100 制 → ÷100
+            '--a': { h: 240, s: 1, l: 0.64 },     // 0-1 制 → passthrough
+        };
+        const result = normLegacy(mixed);
+        expect(result['--a']).toEqual({ h: 240, s: 1, l: 0.64 });
+        expect(result['--b']).toEqual({ h: 0, s: 1, l: 0.5 });
+    });
 });

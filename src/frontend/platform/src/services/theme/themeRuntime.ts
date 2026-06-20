@@ -45,14 +45,23 @@ const PREVIEW_STYLE_ID = 'theme-vars-preview';
 /** html 标记深色模式的 class（与 darkContext / tailwind darkMode:['class'] 对齐）。 */
 const DARK_CLASS = 'dark';
 
-/** CSS 变量 key 白名单：仅允许 `--小写字母与连字符`，防 CSS 注入。 */
-const KEY_RE = /^--[a-z-]+$/;
+/**
+ * CSS 变量 key 白名单：允许 `--` 起首，后跟小写字母、数字、连字符，首字符必须为字母。
+ *
+ * 正则：`^--[a-z][a-z0-9-]*$`
+ *   - 允许字母 + 数字 + 连字符：阶段3 品牌色派生会产色阶键（如 `--brand-50` /
+ *     `--brand-500` / `--brand-900`），需放行数字。
+ *   - 首字符必须字母：拒绝 `--123` 这类纯数字起首键（非合法 CSS 变量名习惯）。
+ *   - 禁止大写字母 / 下划线 / 特殊字符：与 Tailwind / shadcn 体系小写连字符约定一致，
+ *     并阻断可能的 CSS 注入向量（如 `--;` / `--x;}` / `--<script>` 等无效或危险序列）。
+ */
+const KEY_RE = /^--[a-z][a-z0-9-]*$/;
 
 /**
  * 把 CompTheme 拼成 CSS 规则体（不含选择器与花括号）。
  *
  * S1 安全校验（复用自现有 applyThemeComp）：
- *   - key 必须匹配 /^--[a-z-]+$/，否则跳过
+ *   - key 必须匹配 KEY_RE（^--[a-z][a-z0-9-]*$，见上方白名单注释），否则跳过
  *   - h/s/l 必须都是 number，否则跳过
  *   - h∈[0,360]、s∈[0,1]、l∈[0,1]，任一越界跳过
  *

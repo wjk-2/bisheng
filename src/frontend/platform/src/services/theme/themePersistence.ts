@@ -142,6 +142,24 @@ let pendingResolve: (() => void) | null = null;
  *   - 其他失败 → toast「主题保存失败」（与现有 captureAndAlertRequestErrorHop 体验一致）
  *   - 被新调用覆盖的旧调用 → 立即 resolve（静默丢弃，不发请求）
  *
+ * 多实例隐患（模块级单 timer）：
+ *   本函数用模块级单 timer（saveTimer / pendingResolve，见上方模块级注释），意味着
+ *   整个平台同一时刻只有一个挂起的 save——**跨所有组件实例共享**，而非每调用方一个 timer。
+ *   当前唯一调用方是 theme/index.tsx，行为正常。但若阶段3 新增 BrandPicker 等组件也调
+ *   saveThemeDebounced，会与 theme/index.tsx 抢同一个 timer：后调的覆盖先调的（先调的被
+ *   静默丢弃、立即 resolve）。多实例场景下需要评估是否：
+ *     (a) 收敛 timer 到调用方（每调用方各自 useRef 持有 timer，各自 last-write-wins）
+ *     (b) 调用方串行化（统一经 theme store / index.tsx 汇聚后再调本函数）
+ *   在阶段3 落地前不预先选型，本注释只标记该约束为「已知语义」。
+ *
+ * Promise 语义：
+ *   - 返回的 Promise 在「被新调用覆盖时」立即 resolve（静默丢弃，不发请求），
+ *     resolve 仅代表「这次调用已离开队列」，**不代表保存成功**。
+ *   - 真正完成保存的最后一次调用，其 Promise 在 saveWithVersion 落定后才 resolve。
+ *   - 综上：调用方**不应在 .then 里做「已保存」UI 反馈**——无法仅凭 resolve 区分
+ *     「被丢弃」与「已落库」。如需基于「保存成功」的 UI 反馈，应由调用方在 onConflict
+ *     之外的回调路径单独约定（当前未提供 onSuccess 回调；如需要阶段3 再补）。
+ *
  * @param value    ThemeValue 序列化后的 JSON 字符串
  * @param version  调用方以为的当前 version（由 getCurrentVersion 取得）
  * @param onConflict  冲突时的回调（可选），参数为重新拉取的 version
