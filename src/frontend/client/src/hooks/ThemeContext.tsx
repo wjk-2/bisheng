@@ -3,6 +3,7 @@ import React, { createContext, useState, useEffect } from 'react';
 import { getInitialTheme, applyFontSize } from '~/utils';
 import store from '~/store';
 import { getWebConfigApi } from '../api/apps';
+import { applyLight, applyDark, setMode } from '@shared/theme/themeRuntime';
 
 type ProviderValue = {
   theme: string;
@@ -26,61 +27,29 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const [theme, setTheme] = useState(getInitialTheme);
   const setFontSize = useSetRecoilState(store.fontSize);
 
-  const applyThemeVars = (comp: Record<string, { h: number; s: number; l: number }>, mode: 'light' | 'dark') => {
-    let rules = '';
-    for (const key of Object.keys(comp)) {
-      const hsl = comp[key];
-      rules += key + ':' + hsl.h + ' ' + (hsl.s * 100) + '% ' + (hsl.l * 100) + '%;';
-    }
-    const selector = mode === 'dark' ? '.dark' : ':root';
-    let style = document.getElementById('theme-vars') as HTMLStyleElement | null;
-    if (!style) {
-      style = document.createElement('style') as HTMLStyleElement;
-      style.id = 'theme-vars';
-      document.head.appendChild(style);
-    }
-    style.innerHTML = selector + '{' + rules + '}';
-  };
-
   const rawSetTheme = (rawTheme: string) => {
-    const root = window.document.documentElement;
-    const darkMode = isDark(rawTheme);
-    root.classList.remove(darkMode ? 'light' : 'dark');
-    root.classList.add(darkMode ? 'dark' : 'light');
     localStorage.setItem('theme', rawTheme);
-    const ts = (window as any).ThemeStyle;
-    if (ts && typeof ts === 'object') {
-      const newMode = rawTheme === 'dark' ? 'dark' : 'light';
-      const comp = ts[newMode] ?? {};
-      if (Object.keys(comp).length > 0) {
-        applyThemeVars(comp, newMode);
-      } else {
-        // 没有对应模式的自定义数据，清空 theme-vars 让 CSS .dark {} 规则生效
-        const style = document.getElementById('theme-vars');
-        if (style) style.innerHTML = ':root{}';
-      }
-    }
+    setMode(isDark(rawTheme) ? 'dark' : 'light');
   };
 
   useEffect(() => {
     getWebConfigApi().then((parsed) => {
       if (!parsed) return;
-      const currentMode = localStorage.getItem('theme') === 'dark' ? 'dark' : 'light';
-      let comp: Record<string, { h: number; s: number; l: number }> = {};
-      if (parsed.light) {
-        // v2 格式：按当前模式选择
-        comp = (currentMode === 'dark' ? parsed.dark : parsed.light) ?? {};
-      } else if (parsed.comp && currentMode === 'light') {
-        // v1 格式：只有 light 数据，暗色模式下不注入，让 .dark {} 规则生效
-        comp = parsed.comp;
-      }
-      if (Object.keys(comp).length > 0) {
-        applyThemeVars(comp, currentMode);
-      }
-      (window as any).ThemeStyle = parsed.light
-        ? { light: parsed.light, dark: parsed.dark ?? {}, bg: parsed.bg ?? '' }
-        : { light: parsed.comp ?? {}, dark: {}, bg: parsed.bg ?? '' };
+      applyLight(parsed.light);
+      applyDark(parsed.dark);
+      // 保留 window.ThemeStyle 写入：供 3A.4 bootstrap 协调 + 未来消费者
+      (window as any).ThemeStyle = { light: parsed.light, dark: parsed.dark, bg: parsed.bg };
     });
+  }, []);
+
+  // C3：跨 tab 同步。他 tab 改 localStorage.theme 时本 tab 跟随。
+  // 仅当 newValue 有效（'light'/'dark'）才跟随；他 tab 删除 theme（newValue=null）时本 tab 保持当前，不强制切浅色。
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'theme' && e.newValue) setTheme(e.newValue);
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
   }, []);
 
   useEffect(() => {
