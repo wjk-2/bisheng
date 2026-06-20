@@ -244,6 +244,8 @@ export default defineConfig(({ command }) => ({
     alias: {
       '~': path.join(__dirname, 'src/'),
       $fonts: path.resolve(__dirname, 'public/fonts'),
+      // shared 主题层（platform + client 共用），shared 位于 src/frontend/shared
+      '@shared': path.resolve(__dirname, '../shared'),
     },
   },
 }));

@@ -28,6 +28,7 @@ module.exports = {
       'jest-file-loader',
     '^test/(.*)$': '<rootDir>/test/$1',
     '^~/(.*)$': '<rootDir>/src/$1',
+    '^@shared/(.*)$': '<rootDir>/../shared/$1',
     '^~/data-provider/data-provider/src/react-query$': '<rootDir>/../node_modules/~/data-provider/data-provider/src/src/react-query',
   },
   restoreMocks: true,
