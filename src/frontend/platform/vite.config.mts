@@ -4,6 +4,7 @@ import { defineConfig } from "vite";
 import { createHtmlPlugin } from 'vite-plugin-html';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import svgr from "vite-plugin-svgr";
+import { inlineThemePlugin } from '../shared/theme/inlineThemePlugin';
 // import { visualizer } from 'rollup-plugin-visualizer';
 
 /**
@@ -106,6 +107,7 @@ export default defineConfig(() => {
       }
     },
     plugins: [
+      inlineThemePlugin('platform'),
       react(),
       svgr(),
       createHtmlPlugin({

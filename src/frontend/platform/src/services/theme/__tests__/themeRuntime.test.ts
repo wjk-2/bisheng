@@ -26,7 +26,7 @@ import { DEFAULT_LIGHT_THEME, DEFAULT_DARK_THEME } from '../themeConfig';
 describe('formatCssRules', () => {
     it('合法 0-1 制 → 拼 `key:h s% l%;`（s/l ×100）', () => {
         const rules = formatCssRules({ '--primary': { h: 240, s: 1, l: 0.64 } });
-        expect(rules).toBe('--primary:240 100% 64%;');
+        expect(rules).toBe('--primary:240 100% 64%');
     });
 
     it('多 key 全部拼接', () => {
@@ -34,7 +34,7 @@ describe('formatCssRules', () => {
             '--primary': { h: 240, s: 1, l: 0.64 },
             '--background': { h: 0, s: 0, l: 1 },
         });
-        expect(rules).toBe('--primary:240 100% 64%;--background:0 0% 100%;');
+        expect(rules).toBe('--primary:240 100% 64%;--background:0 0% 100%');
     });
 
     it('S1: 非法 key（非 --[a-z][a-z0-9-]* 格式）跳过', () => {
@@ -46,7 +46,7 @@ describe('formatCssRules', () => {
             '--under_score': { h: 0, s: 0, l: 0 },
             '--123': { h: 0, s: 0, l: 0 },
         });
-        expect(rules).toBe('--primary:240 100% 64%;');
+        expect(rules).toBe('--primary:240 100% 64%');
     });
 
     it('S1: 数字键放行（阶段3 品牌色色阶 --brand-50 / --brand-500 / --brand-900）', () => {
@@ -55,7 +55,7 @@ describe('formatCssRules', () => {
             '--brand-500': { h: 240, s: 1, l: 0.64 },
             '--brand-900': { h: 240, s: 1, l: 0.10 },
         });
-        expect(rules).toBe('--brand-50:240 100% 95%;--brand-500:240 100% 64%;--brand-900:240 100% 10%;');
+        expect(rules).toBe('--brand-50:240 100% 95%;--brand-500:240 100% 64%;--brand-900:240 100% 10%');
     });
 
     it('S1: 首字符数字仍非法（--123 / --4xx）', () => {
@@ -64,7 +64,7 @@ describe('formatCssRules', () => {
             '--4xx': { h: 0, s: 1, l: 0.5 },
             '--brand-1': { h: 0, s: 1, l: 0.5 }, // 对照组：首字母合法，放行
         });
-        expect(rules).toBe('--brand-1:0 100% 50%;');
+        expect(rules).toBe('--brand-1:0 100% 50%');
     });
 
     it('S1: h/s/l 非 number 跳过', () => {
@@ -73,7 +73,7 @@ describe('formatCssRules', () => {
             '--a': { h: 'x', s: 1, l: 0.5 },
             '--b': { h: 0, s: 1, l: 0.5 },
         });
-        expect(rules).toBe('--b:0 100% 50%;');
+        expect(rules).toBe('--b:0 100% 50%');
     });
 
     it('S1: h 越界跳过（>360 / <0）', () => {
@@ -83,7 +83,7 @@ describe('formatCssRules', () => {
             '--c': { h: 360, s: 1, l: 0.5 },
             '--d': { h: 0, s: 1, l: 0.5 },
         });
-        expect(rules).toBe('--c:360 100% 50%;--d:0 100% 50%;');
+        expect(rules).toBe('--c:360 100% 50%;--d:0 100% 50%');
     });
 
     it('S1: s/l 越界跳过（>1 / <0）', () => {
@@ -93,7 +93,7 @@ describe('formatCssRules', () => {
             '--c': { h: 0, s: -0.1, l: 0.5 },
             '--d': { h: 0, s: 1, l: 1 }, // 边界合法
         });
-        expect(rules).toBe('--d:0 100% 100%;');
+        expect(rules).toBe('--d:0 100% 100%');
     });
 
     it('空对象 → 空串', () => {
@@ -148,12 +148,12 @@ describe('applyLight', () => {
 describe('buildStyleContent', () => {
     it('selector + comp → `selector{rules}`', () => {
         const content = buildStyleContent(':root', { '--primary': { h: 240, s: 1, l: 0.64 } });
-        expect(content).toBe(':root{--primary:240 100% 64%;}');
+        expect(content).toBe(':root{--primary:240 100% 64%}');
     });
 
     it('.dark 选择器同样拼接', () => {
         const content = buildStyleContent('.dark', { '--background': { h: 240, s: 0.1, l: 0.04 } });
-        expect(content).toBe('.dark{--background:240 10% 4%;}');
+        expect(content).toBe('.dark{--background:240 10% 4%}');
     });
 
     it('空 comp → `selector{}`', () => {
@@ -200,7 +200,7 @@ describe('applyDark', () => {
         // setter 被触发（diff 未命中 → 重写）
         expect(spy).toHaveBeenCalled();
         // 内容正确：新 comp 拼接结果
-        expect(style.innerHTML).toBe('.dark{--background:200 20% 10%;}');
+        expect(style.innerHTML).toBe('.dark{--background:200 20% 10%}');
         spy.mockRestore();
     });
 });
@@ -277,7 +277,7 @@ describe('buildScopedCss', () => {
     // 复用 formatCssRules（已含 KEY_RE 白名单 + hsl 校验）。
     it('返回 .scopeClass{formatCssRules(comp)} 形式', () => {
         const css = buildScopedCss('brand-preview-a', { '--primary': { h: 240, s: 1, l: 0.64 } });
-        expect(css).toBe('.brand-preview-a{--primary:240 100% 64%;}');
+        expect(css).toBe('.brand-preview-a{--primary:240 100% 64%}');
     });
 
     it('结果含 scopeClass 选择器前缀', () => {
@@ -296,7 +296,7 @@ describe('buildScopedCss', () => {
             '--primary': { h: 240, s: 1, l: 0.5 },
         });
         // 非法 key 被跳过，只保留合法项
-        expect(css).toBe('.s{--primary:240 100% 50%;}');
+        expect(css).toBe('.s{--primary:240 100% 50%}');
     });
 
     it('非法 hsl 数值被跳过（s>1）', () => {
@@ -304,6 +304,6 @@ describe('buildScopedCss', () => {
             '--bad': { h: 0, s: 2, l: 0.5 }, // s 越界
             '--ok': { h: 0, s: 1, l: 0.5 },
         });
-        expect(css).toBe('.s{--ok:0 100% 50%;}');
+        expect(css).toBe('.s{--ok:0 100% 50%}');
     });
 });

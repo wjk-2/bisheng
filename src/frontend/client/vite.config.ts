@@ -6,6 +6,8 @@ import { defineConfig } from 'vite';
 import { compression } from 'vite-plugin-compression2';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
+// 3B.6 build-time 默认主题内联插件（相对路径：vite.config 加载时 @shared alias 尚未生效）
+import { inlineThemePlugin } from '../shared/theme/inlineThemePlugin';
 
 const app_env = {
   BASE_URL: '/workspace',
@@ -77,6 +79,8 @@ export default defineConfig(({ command }) => ({
         }
       ]
     }),
+    // 3B.6 build-time 默认主题内联：双 style + window.ThemeStyle + window.__themeVersion=0
+    inlineThemePlugin('client'),
     // visualizer({
     //   open: true, // 打包后自动打开分析页面
     //   filename: "stats.html",

@@ -41,86 +41,10 @@
       }
     })();
   </script>
-  <script>
-    // bootstrap（React 挂载前）内联主题变量：双 style 常驻，与 themeRuntime.applyLight/applyDark 对齐。
-    //   - #theme-vars-light → :root{...light comp...}
-    //   - #theme-vars-dark  → .dark{...dark comp...}
-    // 两 style 都创建常驻；首屏正确（消除 FOUC），运行时 ThemeContext 复用同两节点（C5 diff 生效）。
-    // 注：本段是内联脚本（React 前，不能 import themeRuntime/themeConfig），注入逻辑为纯 JS 内联副本，
-    //     制式与 platform/index.html bootstrap 完全一致（KEY_RE / formatRules / writeStyle / 双 style id / window 全局）。
-    //     阶段3 build-time 内联会消除该副本。
-    // fetch URL：client base=/workspace，nginx ^(/workspace)?/api location 会 rewrite 去掉 /workspace 前缀，
-    //   等价于 platform 的 <%- baseUrl %>/api/v1/web/config（baseUrl=/platform）。
-    (function() {
-      // CSS 变量 key 白名单（与 themeRuntime.KEY_RE 一致）：
-      //   允许 `--` 起首 + 小写字母/数字/连字符（首字符必须字母）。
-      //   阶段3 品牌色派生产色阶键（如 --brand-50 / --brand-500 / --brand-900），需放行数字；
-      //   仍禁大写/特殊字符防 CSS 注入。
-      var KEY_RE = /^--[a-z][a-z0-9-]*$/;
-
-      function formatRules(comp) {
-        var rules = '';
-        var keys = Object.keys(comp);
-        for (var i = 0; i < keys.length; i++) {
-          var key = keys[i];
-          if (!KEY_RE.test(key)) continue;
-          var hsl = comp[key];
-          if (!hsl || typeof hsl.h !== 'number' || typeof hsl.s !== 'number' || typeof hsl.l !== 'number') continue;
-          if (!(hsl.h >= 0 && hsl.h <= 360)) continue;
-          if (!(hsl.s >= 0 && hsl.s <= 1)) continue;
-          if (!(hsl.l >= 0 && hsl.l <= 1)) continue;
-          rules += key + ':' + hsl.h + ' ' + (hsl.s * 100) + '% ' + (hsl.l * 100) + '%;';
-        }
-        return rules;
-      }
-
-      function writeStyle(id, selector, comp) {
-        var style = document.getElementById(id);
-        if (!style) {
-          style = document.createElement('style');
-          style.id = id;
-          document.head.appendChild(style);
-        }
-        var content = selector + '{' + formatRules(comp) + '}';
-        // C5 diff：内容相同则不重写（避免 innerHTML 重置 → 浏览器重算 → 闪烁）
-        if (style.innerHTML === content) return;
-        style.innerHTML = content;
-      }
-
-      // 双 fetch 语义：本 bootstrap fetch（React 前）与运行时 ThemeContext 的 fetch 都写同 id 节点
-      // （theme-vars-light/dark）。靠 writeStyle 的 C5 diff（innerHTML 内容相同则跳过）保证最终一致——
-      // 后 resolve 的 fetch 若数据相同不重写，避免覆盖。改 C5 逻辑时注意此依赖。
-      fetch('/workspace/api/v1/web/config').then(function(res) {
-        return res.json();
-      }).then(function(res) {
-        var raw = res.data ? res.data.value : '';
-        var parsed = {};
-        try { if (raw) parsed = JSON.parse(raw); } catch(e) {}
-        var themeVal;
-        if (parsed.light) {
-          themeVal = { light: parsed.light || {}, dark: parsed.dark || {}, bg: parsed.bg || '' };
-        } else if (parsed.comp) {
-          // v1 兼容：comp → light，dark 留空（让 CSS 默认兜底）
-          themeVal = { light: parsed.comp, dark: {}, bg: parsed.bg || '' };
-        } else {
-          themeVal = { light: {}, dark: {}, bg: '' };
-        }
-        window.ThemeStyle = themeVal;
-        // 双 style 常驻：light 永远写 :root，dark 永远写 .dark（与运行时 themeRuntime 对齐）
-        writeStyle('theme-vars-light', ':root', themeVal.light || {});
-        writeStyle('theme-vars-dark', '.dark', themeVal.dark || {});
-        // version 方案 B：塞全局变量供 ThemeContext 同步读 versionRef 初值，消除 getCurrentVersion 异步窗口（竞态）
-        if (typeof parsed.version === 'number') {
-          window.__themeVersion = parsed.version;
-        }
-      }).catch(function() {
-        // fetch 失败（含未登录 401）：写空 style（CSS 默认兜底，登录后 ThemeContext 运行时 fetch 覆盖）
-        window.ThemeStyle = { light: {}, dark: {}, bg: '' };
-        writeStyle('theme-vars-light', ':root', {});
-        writeStyle('theme-vars-dark', '.dark', {});
-      });
-    })();
-  </script>
+  <!-- 主题 bootstrap 已由 vite inlineThemePlugin('client') 在 build-time 注入：
+       双 style（light/dark 派生令牌）+ window.ThemeStyle（v3 元数据）+ version 同步初值。
+       首屏不再 fetch 后端 web_config（消除 P2 阻塞 + 未登录 401）。
+       登录后 React 挂载，orchestrator/ThemeContext 拉用户自定义主题覆盖（applyLight/applyDark 写同 id 节点，C5 diff 无闪烁）。 -->
   <script defer type="module" src="/src/main.jsx"></script>
 </head>
 

@@ -69,7 +69,12 @@ const KEY_RE = /^--[a-z][a-z0-9-]*$/;
  * 不合法项静默跳过（上层 normLegacy 已做制式归一，此处只兜底防恶意/脏数据）。
  */
 export function formatCssRules(comp: CompTheme): string {
-    let rules = '';
+    // 用数组收集再 join，末项不带尾分号（CSS 合法）。
+    // 关键：build-time 内联（inlineThemePlugin）与运行时 applyLight/applyDark 写入同 id 节点，
+    // C5 diff 要求两者字节一致。若末项带尾分号，platform 的 createHtmlPlugin minify 会吃掉它，
+    // 导致「内联（无尾分号）≠ 运行时（有尾分号）」首次 diff 失败触发一次 innerHTML 重写。
+    // join(';') 让两端产出统一为「项间分号、末项无」，minify 后仍一致，C5 diff 永久正确。
+    const parts: string[] = [];
     for (const key of Object.keys(comp)) {
         if (!KEY_RE.test(key)) continue;
         const hsl = comp[key];
@@ -78,9 +83,9 @@ export function formatCssRules(comp: CompTheme): string {
         if (!(hsl.h >= 0 && hsl.h <= 360)) continue;
         if (!(hsl.s >= 0 && hsl.s <= 1)) continue;
         if (!(hsl.l >= 0 && hsl.l <= 1)) continue;
-        rules += `${key}:${hsl.h} ${hsl.s * 100}% ${hsl.l * 100}%;`;
+        parts.push(`${key}:${hsl.h} ${hsl.s * 100}% ${hsl.l * 100}%`);
     }
-    return rules;
+    return parts.join(';');
 }
 
 /**

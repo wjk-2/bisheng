@@ -139,6 +139,22 @@ export type ThemeValue = {
 };
 
 /**
+ * 默认品牌色（学术蓝）。单一真相源，供 build-time 内联 + orchestrator 兜底共用。
+ *
+ * 用途：
+ *   - build-time 内联插件 deriveTheme(DEFAULT_BRAND) 产 22 令牌内联进 index.html（3B.6）
+ *   - orchestrator computeInitialBrand 兜底（v2/损坏数据降级到此）
+ *   - platform presets.ts PRESETS[0].brand 引用此常量（避免字面量漂移）
+ *
+ * dark 是 light 在暗背景下的适配版（提亮降饱和），darkMode=false（仅记录偏好，不切全局 mode）。
+ */
+export const DEFAULT_BRAND = {
+    light: '#2563EB',
+    dark: '#60A5FA',
+    darkMode: false,
+} as const;
+
+/**
  * 默认浅色主题（0-1 制）。作为 light 的兜底与「恢复默认」单一真相源。
  * 含任务1已补的 ring / warning / warning-foreground。
  */

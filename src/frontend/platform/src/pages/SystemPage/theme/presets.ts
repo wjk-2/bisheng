@@ -11,6 +11,8 @@
  * light/dark 值均通过 isValidHex 校验（合法 #rrggbb）。
  */
 
+import { DEFAULT_BRAND } from '@shared/theme/themeConfig';
+
 /** 单个品牌的取值集合。 */
 export interface BrandValue {
     /** 浅色模式品牌色（#rrggbb）。 */
@@ -41,7 +43,8 @@ export const PRESETS: Preset[] = [
     {
         id: 'academicBlue',
         labelKey: 'theme.preset.academicBlue',
-        brand: { light: '#2563EB', dark: '#60A5FA', darkMode: false },
+        // 引用 DEFAULT_BRAND 单一源：与 build-time 内联默认主题 + orchestrator 兜底同源，避免字面量漂移
+        brand: { ...DEFAULT_BRAND },
     },
     {
         id: 'normalGreen',
