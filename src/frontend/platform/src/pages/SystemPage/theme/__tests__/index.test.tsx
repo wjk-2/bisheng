@@ -88,11 +88,10 @@ beforeEach(() => {
 });
 
 describe('Theme orchestrator —— 渲染与初始', () => {
-    it('① 渲染不崩，4 子组件容器 + 应用按钮都在', () => {
+    it('① 渲染不崩，3 子组件容器 + 应用按钮都在', () => {
         render(<Theme />);
         expect(screen.getByTestId('brand-light-text')).toBeInTheDocument();
         expect(screen.getByTestId(`preset-${PRESETS[0].id}`)).toBeInTheDocument();
-        expect(screen.getByTestId('derived-light')).toBeInTheDocument();
         expect(screen.getByTestId('theme-preview-light')).toBeInTheDocument();
         expect(screen.getByTestId('theme-apply')).toBeInTheDocument();
     });

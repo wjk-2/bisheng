@@ -89,10 +89,6 @@
       "invalidHex": "请输入合法 HEX 颜色，如 #4747FF",
       "pendingHex": "输入中…"
     },
-    "derived": {
-      "light": "浅色派生",
-      "dark": "深色派生"
-    },
     "preview": {
       "button": "主按钮",
       "outline": "描边按钮",
@@ -108,10 +104,6 @@
       "nodeEnd": "结束",
       "lightTitle": "浅色",
       "darkTitle": "深色"
-    },
-    "semantic": {
-      "fixed": "固定语义色",
-      "fixedDesc": "以下颜色由系统语义决定，不随品牌色变化"
     },
     "preset": {
       "academicBlue": "学术蓝",

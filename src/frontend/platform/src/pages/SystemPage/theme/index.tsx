@@ -1,14 +1,14 @@
 /**
  * Theme orchestrator —— 3B.5 步骤 4 主题配置编排层。
  *
- * 定位：装配层（非展示、非机制）。组合 4 个展示组件（BrandPicker / PresetThemes /
- *   DerivedPreview / ThemePreview）+ bg RadioGroup，接 themeApply 三态接口
+ * 定位：装配层（非展示、非机制）。组合 3 个展示组件（BrandPicker / PresetThemes /
+ *   ThemePreview）+ bg RadioGroup，接 themeApply 三态接口
  *   （previewTheme / commitTheme / resetTheme），完成单向数据流 + M1/M2/M3 闭环。
  *
  * 数据流（单向，props down / callback up）：
  *   - 编辑态（preview）：BrandPicker.onChange / PresetThemes.onSelect / 还原默认
  *       → setBrand + previewTheme（写 #theme-vars-preview，不落库、不碰 window.ThemeStyle）
- *       → setDerived（刷新右栏 DerivedPreview / ThemePreview）
+ *       → setDerived（刷新右栏 ThemePreview）
  *   - 落库态（commit）：「应用」按钮 / bg RadioGroup
  *       → commitTheme（撤预览 → 写线上双 style → 写 window.ThemeStyle v3 → save）
  *
@@ -43,7 +43,6 @@ import {
 import { PRESETS, type BrandValue } from "./presets";
 import BrandPicker from "./BrandPicker";
 import PresetThemes from "./PresetThemes";
-import DerivedPreview from "./DerivedPreview";
 import ThemePreview from "./ThemePreview";
 
 declare global {
@@ -103,7 +102,7 @@ export default function Theme() {
     // 单向数据流 state（4.1）：
     //   brand —— 当前编辑的品牌色（preview 态，未 commit）
     //   bg    —— 工作流背景类型（'logo' | 'gradient'），向下兼容 window.ThemeStyle.bg
-    //   derived —— brand 派生出的 {light, dark}，喂右栏 DerivedPreview / ThemePreview
+    //   derived —— brand 派生出的 {light, dark}，喂右栏 ThemePreview
     const [brand, setBrand] = useState<BrandValue>(() => computeInitialBrand());
     const [bg, setBg] = useState<string>(window.ThemeStyle?.bg || 'logo');
     // 初始 derived 用纯 deriveTheme（无副作用），**不调 previewTheme**：
@@ -282,7 +281,6 @@ export default function Theme() {
             <div className="px-4 py-4 bg-card overflow-auto">
                 <p className="text-xl mb-4">{t('theme.componentPreview')}</p>
                 <div className="flex flex-col gap-8">
-                    <DerivedPreview light={derived.light} dark={derived.dark} />
                     <ThemePreview light={derived.light} dark={derived.dark} />
                 </div>
             </div>
