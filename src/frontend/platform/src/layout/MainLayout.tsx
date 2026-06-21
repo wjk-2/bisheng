@@ -54,14 +54,30 @@ export default function MainLayout() {
     // auth 未完成前不渲染受保护内容，避免权限检查竞态
     if (userLoading) return null;
     const { language, languageNames, options, changLanguage, t } = useLanguage(user)
-    const [collapsed, setCollapsed] = useState(false)
+    // 收起态持久化（对齐 client navVisible localStorage），刷新后保持用户偏好
+    const [collapsed, setCollapsed] = useState(() => {
+      try {
+        const saved = localStorage.getItem('platform-sidebar-collapsed');
+        return saved !== null ? JSON.parse(saved) : false;
+      } catch {
+        return false;
+      }
+    })
     // 优化后的侧边栏样式
     const sidebarWidthClass = collapsed ? "w-[72px] min-w-[72px] px-2" : "w-[200px] min-w-[200px] px-3"
     const navBaseClass = "navlink group inline-flex items-center rounded-lg w-full h-9 transition-all duration-200 hover:translate-x-0.5"
     const navPaddingClass = collapsed ? "justify-center px-2" : "gap-2.5 px-3"
     const navTextClass = collapsed ? "hidden" : "text-sm font-medium whitespace-nowrap overflow-hidden text-ellipsis"
     const navHoverClass = "hover:bg-muted text-muted-foreground hover:text-foreground"
-    const toggleSidebar = () => setCollapsed(prev => !prev)
+    const toggleSidebar = () => setCollapsed(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem('platform-sidebar-collapsed', JSON.stringify(next));
+      } catch {
+        /* localStorage 不可用时静默降级（内存态仍生效） */
+      }
+      return next;
+    })
     const toggleLabel = collapsed ? t('menu.expandSidebar') : t('menu.collapseSidebar')
 
     const handleLogout = () => {

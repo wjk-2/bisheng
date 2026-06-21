@@ -13,11 +13,14 @@ interface AccordionNavProps {
 /**
  * 左侧导航栏的手风琴组件
  * 用于展示 Prompts、Bookmarks、Parameters 等可折叠面板
+ *
+ * 注：useLeftNavLinks 当前返回空数组（v2 暂隐藏 Prompts/Bookmarks，Parameters 未放），
+ * 故本组件实际 return null。未做收起态适配（死代码不适配，避免无效工作）。
  */
 function AccordionNav({ links }: AccordionNavProps) {
   const localize = useLocalize();
   const [active, setActive] = useState<string | undefined>(
-    localStorage.getItem('nav:active-panel') || undefined
+    localStorage.getItem('nav:active-panel') || undefined,
   );
 
   const setActivePanel = (id: string) => {

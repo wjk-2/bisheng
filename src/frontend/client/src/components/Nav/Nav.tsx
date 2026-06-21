@@ -6,7 +6,7 @@ import MyKnowledgeView from '~/components/Chat/Input/Files/MyKnowledgeView';
 import { Conversations } from '~/components/Conversations';
 import { Spinner } from '~/components/svg';
 import { useConversationsInfiniteQuery } from '~/data-provider';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   useAuthContext,
   useLocalStorage,
@@ -18,7 +18,6 @@ import store from '~/store';
 import { cn } from '~/utils';
 import AccountSettings from './AccountSettings';
 import AccordionNav from './AccordionNav';
-import NavToggle from './NavToggle';
 import NewChat from './NewChat';
 import useLeftNavLinks from '~/hooks/Nav/useLeftNavLinks';
 
@@ -32,11 +31,9 @@ const Nav = ({
   const localize = useLocalize();
   const { isAuthenticated } = useAuthContext();
 
-  const [navWidth, setNavWidth] = useState('200px');
   const [isHovering, setIsHovering] = useState(false);
   const isSmallScreen = useMediaQuery('(max-width: 768px)');
   const [newUser, setNewUser] = useLocalStorage('newUser', true);
-  const [isToggleHovering, setIsToggleHovering] = useState(false);
   const [showKnowledge, setShowKnowledge] = useRecoilState(store.showKnowledge);
 
   // 左侧手风琴导航链接
@@ -50,15 +47,10 @@ const Nav = ({
     setIsHovering(false);
   }, []);
 
+  // 移动端首次进入若未设过 navVisible，默认收起（小屏不适合默认展开侧栏）
   useEffect(() => {
-    if (isSmallScreen) {
-      const savedNavVisible = localStorage.getItem('navVisible');
-      if (savedNavVisible === null) {
-        toggleNavVisible();
-      }
-      setNavWidth('200px');
-    } else {
-      setNavWidth('200px');
+    if (isSmallScreen && localStorage.getItem('navVisible') === null) {
+      toggleNavVisible();
     }
   }, [isSmallScreen]);
 
@@ -114,6 +106,9 @@ const Nav = ({
     }
   };
 
+  // collapsed：桌面端收起态（移动端收起是遮罩式隐藏，不算图标栏 collapsed）
+  const collapsed = !navVisible && !isSmallScreen;
+
   return (
     <>
       {showKnowledge && <MyKnowledgeView open={showKnowledge} onOpenChange={setShowKnowledge} />}
@@ -123,19 +118,15 @@ const Nav = ({
           'nav active max-w-[200px] flex-shrink-0 overflow-x-hidden bg-background/80 border-r border-border'
         }
         style={{
-          width: navVisible ? navWidth : '0px',
-          visibility: navVisible ? 'visible' : 'hidden',
+          // 桌面端收起 → 72px 图标栏（对齐 platform）；移动端收起 → 0px 隐藏 + 遮罩
+          width: navVisible ? '200px' : isSmallScreen ? '0px' : '72px',
+          visibility: navVisible ? 'visible' : isSmallScreen ? 'hidden' : 'visible',
           transition: 'width 0.2s, visibility 0.2s',
         }}
       >
-        <div className="h-full w-[200px]">
+        <div className={cn('h-full', collapsed ? 'w-[72px]' : 'w-[200px]')}>
           <div className="flex h-full min-h-0 flex-col">
-            <div
-              className={cn(
-                'flex h-full min-h-0 flex-col transition-opacity',
-                isToggleHovering && !isSmallScreen ? 'opacity-50' : 'opacity-100',
-              )}
-            >
+            <div className="flex h-full min-h-0 flex-col">
               <div
                 className={cn(
                   'scrollbar-trigger relative h-full w-full flex-1 items-start border-white/20',
@@ -144,60 +135,71 @@ const Nav = ({
                 <nav
                   id="chat-history-nav"
                   aria-label={localize('com_ui_chat_history')}
-                  className="flex h-full w-full flex-col px-3 pb-3.5"
+                  className={cn(
+                    'flex h-full w-full flex-col pb-3.5',
+                    collapsed ? 'px-2' : 'px-3',
+                  )}
                 >
                   {/* 新建 */}
                   <NewChat
                     toggleNav={itemToggleNav}
                     isSmallScreen={isSmallScreen}
+                    collapsed={collapsed}
                   />
-                  {/* 左侧手风琴导航：Prompts、Bookmarks、Parameters */}
+                  {/* 左侧手风琴导航：Prompts、Bookmarks、Parameters（useLeftNavLinks 当前空，不渲染）*/}
                   <AccordionNav links={leftNavLinks} />
-                  <div
-                    className={cn(
-                      '-mr-2 flex-1 flex-col overflow-y-auto pr-2 transition-opacity duration-500',
-                      isHovering ? '' : 'scrollbar-transparent',
-                    )}
-                    onMouseEnter={handleMouseEnter}
-                    onMouseLeave={handleMouseLeave}
-                    ref={containerRef}
-                  >
-                    {/* 会话列表 */}
-                    <Conversations
-                      conversations={conversations}
-                      moveToTop={moveToTop}
-                      toggleNav={itemToggleNav}
-                    />
-                    {(isFetchingNextPage || showLoading) && (
-                      <Spinner className={cn('m-1 mx-auto mb-4 h-4 w-4 text-text-primary')} />
-                    )}
-                  </div>
-                  {/* 收起侧边栏 */}
+                  {/* 会话列表：收起态隐藏（桌面端图标栏放不下动态列表）*/}
+                  {navVisible && (
+                    <div
+                      className={cn(
+                        '-mr-2 flex-1 flex-col overflow-y-auto pr-2 transition-opacity duration-500',
+                        isHovering ? '' : 'scrollbar-transparent',
+                      )}
+                      onMouseEnter={handleMouseEnter}
+                      onMouseLeave={handleMouseLeave}
+                      ref={containerRef}
+                    >
+                      {/* 会话列表 */}
+                      <Conversations
+                        conversations={conversations}
+                        moveToTop={moveToTop}
+                        toggleNav={itemToggleNav}
+                      />
+                      {(isFetchingNextPage || showLoading) && (
+                        <Spinner className={cn('m-1 mx-auto mb-4 h-4 w-4 text-text-primary')} />
+                      )}
+                    </div>
+                  )}
+                  {/* 收起/展开按钮：始终在底部（对齐 platform，移除原左缘浮岛 NavToggle）*/}
                   <div className="border-t border-border pt-2 mt-2">
                     <button
                       onClick={toggleNavVisible}
-                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-200 text-xs"
+                      aria-label={localize(
+                        collapsed ? 'com_nav_open_sidebar' : 'com_nav_close_sidebar',
+                      )}
+                      className={cn(
+                        'flex items-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-200 text-xs',
+                        collapsed ? 'justify-center px-2 py-2' : 'w-full gap-2 px-3 py-2',
+                      )}
                     >
-                      <ChevronLeft className="w-4 h-4" />
-                      <span>{localize('com_nav_close_sidebar')}</span>
+                      {collapsed ? (
+                        <ChevronRight className="w-4 h-4" />
+                      ) : (
+                        <>
+                          <ChevronLeft className="w-4 h-4" />
+                          <span>{localize('com_nav_close_sidebar')}</span>
+                        </>
+                      )}
                     </button>
                   </div>
                   {/* 左下角设置 */}
-                  <AccountSettings />
+                  <AccountSettings collapsed={collapsed} />
                 </nav>
               </div>
             </div>
           </div>
         </div>
       </div>
-      {/* 展开 */}
-      <NavToggle
-        isHovering={isToggleHovering}
-        setIsHovering={setIsToggleHovering}
-        onToggle={toggleNavVisible}
-        navVisible={navVisible}
-        className="fixed left-0 top-1/2 z-40 hidden md:flex"
-      />
       {isSmallScreen && (
         <div
           id="mobile-nav-mask-toggle"
