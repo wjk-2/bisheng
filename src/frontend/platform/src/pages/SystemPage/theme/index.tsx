@@ -1,25 +1,50 @@
+/**
+ * Theme orchestrator —— 3B.5 步骤 4 主题配置编排层。
+ *
+ * 定位：装配层（非展示、非机制）。组合 4 个展示组件（BrandPicker / PresetThemes /
+ *   DerivedPreview / ThemePreview）+ bg RadioGroup，接 themeApply 三态接口
+ *   （previewTheme / commitTheme / resetTheme），完成单向数据流 + M1/M2/M3 闭环。
+ *
+ * 数据流（单向，props down / callback up）：
+ *   - 编辑态（preview）：BrandPicker.onChange / PresetThemes.onSelect / 还原默认
+ *       → setBrand + previewTheme（写 #theme-vars-preview，不落库、不碰 window.ThemeStyle）
+ *       → setDerived（刷新右栏 DerivedPreview / ThemePreview）
+ *   - 落库态（commit）：「应用」按钮 / bg RadioGroup
+ *       → commitTheme（撤预览 → 写线上双 style → 写 window.ThemeStyle v3 → save）
+ *
+ * 砍项（相对 3B.5 前的手工调色版）：
+ *   - 删 HSLitem.tsx（react-color SketchPicker 逐令牌手工调色）→ 改 brand 驱动派生
+ *   - 删 themeKeys（HSLitem 专用 i18n 映射）、handleHSLChange、serializeThemeStyle
+ *     （序列化收敛进 themeApply.commitTheme 内部的 serializeV3）
+ *   - 删 NeutralToneSelector（plan 砍，neutral 硬编码 slate）
+ *
+ * window.ThemeStyle 写入收敛：本编排层不再直接写 window.ThemeStyle，写入全部经
+ *   themeApply.commitTheme（v3 结构）。preview 态不写 window.ThemeStyle（themeApply 保证）。
+ */
 import { Button } from "@/components/bs-ui/button";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, X } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
-import Example from "./Example";
-import HSLitem from "./HSLitem";
 import { RadioGroup, RadioGroupItem } from "@/components/bs-ui/radio";
 import { Label } from "@/components/bs-ui/label";
 import { useTranslation } from "react-i18next";
+import { toast } from "@/components/bs-ui/toast/use-toast";
+import { deriveTheme, type CompTheme, type ThemeValue } from "@/services/theme/themeConfig";
 import {
-    DEFAULT_LIGHT_THEME,
-    DEFAULT_DARK_THEME,
-    type CompTheme,
-    type ThemeValue,
-    type ThemeVarKey,
-    serializeV3,
-} from "@/services/theme/themeConfig";
-import { applyLight, applyDark } from "@/services/theme/themeRuntime";
+    previewTheme,
+    commitTheme,
+    resetTheme,
+    type ApplyDeps,
+} from "@/services/theme/themeApply";
 import {
     saveThemeDebounced,
     getCurrentVersion,
     cancelPendingSave,
 } from "@/services/theme/themePersistence";
+import { PRESETS, type BrandValue } from "./presets";
+import BrandPicker from "./BrandPicker";
+import PresetThemes from "./PresetThemes";
+import DerivedPreview from "./DerivedPreview";
+import ThemePreview from "./ThemePreview";
 
 declare global {
     interface Window {
@@ -32,184 +57,235 @@ declare global {
 }
 
 /**
- * themeKeys：CSS 变量 key → i18n 文案 key 的映射，用于 HSLitem 标签国际化。
- * 用 ThemeVarKey 索引锁死键集合与 DEFAULT_LIGHT_THEME 一致（新增变量时编译期提醒同步）。
+ * 中性灰阶常量（plan 砍了 NeutralToneSelector，3B 阶段固定 slate）。
+ * deriveTheme / previewTheme / commitTheme 三处共用同一引用，避免散落。
  */
-const themeKeys: Record<ThemeVarKey, string> = {
-    "--primary": "theme.primary",
-    "--primary-foreground": "theme.primaryForeground",
-    "--background": "theme.background",
-    "--foreground": "theme.foreground",
-    "--muted": "theme.muted",
-    "--muted-foreground": "theme.mutedForeground",
-    "--card": "theme.card",
-    "--card-foreground": "theme.cardForeground",
-    "--popover": "theme.popover",
-    "--popover-foreground": "theme.popoverForeground",
-    "--border": "theme.border",
-    "--input": "theme.input",
-    "--secondary": "theme.secondary",
-    "--secondary-foreground": "theme.secondaryForeground",
-    "--accent": "theme.accent",
-    "--accent-foreground": "theme.accentForeground",
-    "--destructive": "theme.destructive",
-    "--destructive-foreground": "theme.destructiveForeground",
-    "--ring": "theme.ring",
-    "--warning": "theme.warning",
-    "--warning-foreground": "theme.warningForeground",
-    '--black-button': 'theme.blackButton',
-};
+const NEUTRAL = { preset: 'slate' } as const;
 
 /**
- * 序列化当前 window.ThemeStyle 为后端存储格式。
+ * 计算初始品牌色（v1/v2/v3 加载兜底链，plan 验收项）。
  *
- * 双路径（3B.2 起）：
- *   - v3 schema（ts.v3Schema===true 且 brand/neutral 齐备）：调 serializeV3 产出
- *     {version:3, brand, neutral, bg, _lock_version}。3B.2 阶段派生未实现，
- *     此分支由 3B.5 BrandPicker 写入 window.ThemeStyle 后触发，当前不会被走到。
- *   - v1/v2（默认）：沿用原序列化 {light, dark, bg}，HSLitem 手工调色路径不变。
+ * 三态判定（与 themeConfig.parseWebConfig 的 schema 判定同源）：
+ *   - v3：window.ThemeStyle.v3Schema===true 且 brand 完整 → 用现有 v3 brand（保留用户已存配置）
+ *   - v2：window.ThemeStyle.light 存在但无 v3Schema → v2 手工调色无法逆向出单一品牌色，
+ *     降级到默认预设 PRESETS[0]（学术蓝），并由 detectLegacy 标记触发降级 banner（4.5）
+ *   - 兜底（空 / 损坏 / v1）：PRESETS[0].brand（学术蓝）
  *
- * 兼容性：产出字符串均喂给 themePersistence.saveThemeDebounced → 后端 update_web_config，
- * 后端按 value JSON 顶层 dict 校验，v1/v2/v3 三种结构都是合法 dict，正常落库。
+ * 注：本函数只决定 brand 初值，不读 _lock_version 作版本源（M2 由 versionRef 方案 B 负责）。
  */
-function serializeThemeStyle(): string {
+function computeInitialBrand(): BrandValue {
     const ts = window.ThemeStyle;
-    if (ts.v3Schema && ts.brand && ts.neutral) {
-        // v3 路径（3B.5 预留接缝，3B.2 派生未实现不会走到）
-        return serializeV3({
-            v3Schema: ts.v3Schema,
-            brand: ts.brand,
-            neutral: ts.neutral,
-            bg: ts.bg,
-            _lock_version: ts._lock_version ?? 0,
-            light: ts.light,
-            dark: ts.dark,
-        });
+    if (ts?.v3Schema && ts.brand
+        && typeof ts.brand.light === 'string'
+        && typeof ts.brand.dark === 'string'
+        && typeof ts.brand.darkMode === 'boolean') {
+        return { light: ts.brand.light, dark: ts.brand.dark, darkMode: ts.brand.darkMode };
     }
-    // v1/v2 路径（HSLitem 手工调色现状）
-    return JSON.stringify({ light: ts.light, dark: ts.dark, bg: ts.bg });
+    // v2 / v1 / 空 / 损坏：统一降级到默认预设（v2 手工值无法逆向出品牌色）
+    return { ...PRESETS[0].brand };
+}
+
+/**
+ * 检测是否为 v2 手工调色遗留配置（用于决定是否渲染降级 banner）。
+ *
+ * 判定：window.ThemeStyle.light 存在（v2/v1 手工色板）但无 v3Schema 标记。
+ * 这与 computeInitialBrand 的 v2 降级分支同条件——v2 数据走 PRESETS[0] 默认值，
+ * 应用后旧手工配置将被 brand 派生覆盖，故需 banner 提示（plan 3B.2 v2 降级 UI 闭环）。
+ */
+function detectLegacyV2(): boolean {
+    const ts = window.ThemeStyle;
+    return !!(ts && !ts.v3Schema && ts.light && Object.keys(ts.light).length > 0);
 }
 
 export default function Theme() {
-    const [theme, setTheme] = useState(() => {
-        const mode = localStorage.getItem('theme') === 'dark' ? 'dark' : 'light';
-        const saved = window.ThemeStyle?.[mode];
-        if (saved && Object.keys(saved).length > 0) return saved;
-        return mode === 'dark' ? { ...DEFAULT_DARK_THEME } : { ...DEFAULT_LIGHT_THEME };
-    });
-    const [bg, setBg] = useState(window.ThemeStyle?.bg || 'logo')
-    const { t } = useTranslation()
+    const { t } = useTranslation();
+
+    // 单向数据流 state（4.1）：
+    //   brand —— 当前编辑的品牌色（preview 态，未 commit）
+    //   bg    —— 工作流背景类型（'logo' | 'gradient'），向下兼容 window.ThemeStyle.bg
+    //   derived —— brand 派生出的 {light, dark}，喂右栏 DerivedPreview / ThemePreview
+    const [brand, setBrand] = useState<BrandValue>(() => computeInitialBrand());
+    const [bg, setBg] = useState<string>(window.ThemeStyle?.bg || 'logo');
+    // 初始 derived 用纯 deriveTheme（无副作用），**不调 previewTheme**：
+    // previewTheme 会写 #theme-vars-preview 覆盖线上主题，预览态只应由用户交互（preview 回调）触发，
+    // 组件 mount 不应污染线上态（用户只是打开主题页，尚未调色）。
+    const [derived, setDerived] = useState<{ light: CompTheme; dark: CompTheme }>(
+        () => deriveTheme(brand, NEUTRAL),
+    );
+    // v2 降级 banner 可见性（4.5）。初值据 detectLegacyV2，用户可关闭。
+    const [legacyBanner, setLegacyBanner] = useState<boolean>(() => detectLegacyV2());
 
     /**
-     * C7 乐观锁 version 缓存。
+     * C7 乐观锁 version 缓存（M2 闭环，方案 B）。
      *
-     * version 方案 B（消除竞态）：初值同步读 window.__themeVersion（bootstrap fetch web_config 后塞入），
-     * 消除原「versionRef 初值 0 + getCurrentVersion 异步」窗口期 —— 首次调色可能误报 10032 冲突（自愈但有 UX 瑕疵）。
-     *
-     * getCurrentVersion 仍作 fallback：若 bootstrap 没塞（如 fetch 失败、缺 version 字段），useEffect 内异步补拉。
-     * 冲突时由 onConflict 回调刷新到最新（下次 save 用新 version 重试）。
-     * 用 useRef 而非 useState：version 变化不需要触发重渲染，避免无谓 render。
+     * 方案 B（消除竞态）：初值同步读 window.__themeVersion（bootstrap fetch web_config 后塞入），
+     * 消除「versionRef 初值 0 + getCurrentVersion 异步」窗口期——首次应用可能误报 10032 冲突。
+     * getCurrentVersion 仍作 fallback：bootstrap 没塞时 useEffect 内异步补拉。
+     * 卸载时 cancelPendingSave 取消挂起 save，防旧请求后到覆盖。
+     * 用 useRef 而非 useState：version 变化不触发重渲染。
      */
     const versionRef = useRef<number>(window.__themeVersion ?? 0);
     useEffect(() => {
-        // 若 bootstrap 已塞 __themeVersion 则跳过异步拉取；否则作 fallback 补拉一次
         if (window.__themeVersion === undefined) {
             getCurrentVersion().then(v => { versionRef.current = v; });
         }
         return () => {
-            // 卸载时取消挂起的 debounce save，防旧请求后到覆盖（替代原 C4 clearTimeout）
             cancelPendingSave();
         };
     }, []);
 
     /**
-     * 把 newTheme 写入当前 mode 的 DOM 与 window.ThemeStyle，并触发 debounced save。
+     * 持久化依赖注入（M2 闭环：onConflict 刷新 versionRef）。
      *
-     * 收敛后注入走 themeRuntime.applyLight / applyDark（双 style 常驻，按当前 mode
-     * 只更新对应那套；另一 mode style 不动，避免单 #theme-vars 整体替换的 A4/C2 缺陷）。
-     * 持久化走 themePersistence.saveThemeDebounced（内置 300ms debounce + 10032 冲突
-     * toast + onConflict 回调刷新 version）。
+     * commitTheme 内部：getCurrentVersion 取锁版本 → saveThemeDebounced(value, version, onConflict)。
+     * onConflict 在 10032 冲突后把 versionRef 刷新到 latest（下次 commit 用新 version 重试）。
+     * useRef 持有 deps，避免每次 render 重建对象引用。
      */
-    const applyThemeChange = (newTheme: CompTheme, options: { debounce: boolean }) => {
-        const mode = localStorage.getItem('theme') === 'dark' ? 'dark' : 'light';
-        // 双 style 注入：只写当前 mode 的那套，另一套保持不动（双 style 常驻方案）
-        if (mode === 'dark') {
-            applyDark(newTheme);
-        } else {
-            applyLight(newTheme);
+    const depsRef = useRef<ApplyDeps>({
+        getCurrentVersion,
+        saveThemeDebounced,
+        cancelPendingSave,
+    });
+    // M2 闭环点：冲突回调刷新 versionRef（与 commitTheme 写的 _lock_version 天然一致，
+    // 不读 window.ThemeStyle._lock_version 作版本源——themeApply 写它仅向下兼容）。
+    const onConflict = (latest: number) => { versionRef.current = latest; };
+
+    /**
+     * 预览品牌色（编辑态，不落库）：setBrand + previewTheme + setDerived。
+     * BrandPicker.onChange 与 PresetThemes.onSelect 共用此路径。
+     */
+    const preview = (next: BrandValue) => {
+        setBrand(next);
+        const d = previewTheme(next, NEUTRAL);
+        setDerived(d);
+    };
+
+    /**
+     * 应用当前 brand（commit，落库）。
+     *
+     * M1 闭环（一致性窗口）：commitTheme 调用包 try/catch，依赖 themePersistence 全兜底
+     *   （冲突 toast + onConflict + 失败 toast）。orchestrator 不实现自动回滚——persistence
+     *   全兜底下 M1 窗口不触发（YAGNI）。成功后 orchestrator 自己 toast「已应用」
+     *   （独立于 persistence 静默成功）。
+     * M3 最后防线：万一非法 hex 漏过 BrandPicker 校验，commitTheme→deriveTheme reject，
+     *   catch 后 toast 错误，不白屏。
+     */
+    const handleApply = async () => {
+        try {
+            await commitTheme(
+                { brand, neutral: NEUTRAL, bg, _lock_version: versionRef.current },
+                depsRef.current,
+                onConflict,
+            );
+            // M1 闭环：应用成功 toast（persistence 静默成功，编排层独立反馈）
+            toast({ title: t('prompt'), variant: 'success', description: t('theme.applied') });
+        } catch {
+            // M3 最后防线：非法 hex / 派生异常兜底，不白屏
+            toast({ title: t('prompt'), variant: 'error', description: t('theme.applyFailed') });
         }
-        setTheme(newTheme);
-        window.ThemeStyle = { ...window.ThemeStyle, [mode]: newTheme };
-        const value = serializeThemeStyle();
-        if (options.debounce) {
-            // HSL 调色：debounce 合并连续输入，带 version 乐观锁
-            saveThemeDebounced(value, versionRef.current, (latest) => {
-                versionRef.current = latest;
-            });
-        } else {
-            // 恢复默认 / bg 切换：立即落库前先取消挂起的 debounce，防旧请求后到覆盖
-            // （原 C4 clearTimeout 语义，由 themePersistence.cancelPendingSave 替代）
-            cancelPendingSave();
-            saveThemeDebounced(value, versionRef.current, (latest) => {
-                versionRef.current = latest;
-            });
+    };
+
+    /**
+     * 还原默认（4.2）：resetTheme（撤预览）+ 回到 PRESETS[0] 默认预设并刷新派生。
+     * 不自动 commit——用户确认后点「应用」才落库。
+     */
+    const handleReset = () => {
+        resetTheme();
+        const def = { ...PRESETS[0].brand };
+        setBrand(def);
+        setDerived(previewTheme(def, NEUTRAL));
+    };
+
+    /**
+     * bg 切换（4.2 / M2 闭环点）：走 commitTheme 统一路径。
+     * bg 也经 commitTheme（不走老 serializeThemeStyle），versionRef 与 commitTheme 写的
+     * _lock_version 天然一致，消除老序列化路径。
+     */
+    const handleBgChange = async (val: string) => {
+        setBg(val);
+        try {
+            await commitTheme(
+                { brand, neutral: NEUTRAL, bg: val, _lock_version: versionRef.current },
+                depsRef.current,
+                onConflict,
+            );
+        } catch {
+            toast({ title: t('prompt'), variant: 'error', description: t('theme.applyFailed') });
         }
     };
 
-    const applyTheme = (newTheme: CompTheme) => {
-        applyThemeChange(newTheme, { debounce: false });
-    };
+    return (
+        <div className="flex justify-center border-t bg-accent">
+            {/* 左栏：编辑区 */}
+            <div className="w-[28rem] py-4 pr-8 border-r">
+                {/* v2 降级 banner（4.5）：检测到旧版手工调色配置时显示，可关闭 */}
+                {legacyBanner && (
+                    <div
+                        data-testid="legacy-v2-banner"
+                        className="mb-4 flex items-start justify-between gap-2 rounded border border-warning bg-warning/10 px-3 py-2 text-xs text-warning-foreground"
+                    >
+                        <span>{t('theme.legacyV2Notice')}</span>
+                        <button
+                            type="button"
+                            data-testid="legacy-v2-banner-close"
+                            aria-label={t('close')}
+                            onClick={() => setLegacyBanner(false)}
+                            className="shrink-0 opacity-70 hover:opacity-100"
+                        >
+                            <X className="size-3.5" />
+                        </button>
+                    </div>
+                )}
 
-    const handleHSLChange = (name: string, hsl: { h: number; s: number; l: number }) => {
-        const newTheme = { ...theme, [name]: hsl };
-        applyThemeChange(newTheme, { debounce: true });
-    };
+                <p className="flex justify-between items-center mb-4">
+                    <span className="text-lg">{t('theme.colorConfig')}</span>
+                    <Button className="right" variant="link" onClick={handleReset}>
+                        <RefreshCw className="mr-1 size-4" />{t('theme.restoreDefault')}
+                    </Button>
+                </p>
 
+                {/* 品牌色输入（light/dark + darkMode） */}
+                <BrandPicker value={brand} onChange={preview} />
 
-    return <div className="flex justify-center border-t bg-accent">
-        <div className="w-96 py-4 pr-8 border-r ">
-            <p className="flex justify-between items-center mb-4">
-                <span className="text-lg">{t('theme.colorConfig')}</span>
-                <Button className="right" variant="link" onClick={e => applyTheme({ ...(localStorage.getItem('theme') === 'dark' ? DEFAULT_DARK_THEME : DEFAULT_LIGHT_THEME) })}><RefreshCw className="mr-1 size-4" />{t('theme.restoreDefault')}</Button>
-            </p>
-            <div className="grid grid-cols-2 gap-2 gap-x-8 my-8">
-                {
-                    Object.keys(theme).map(key => {
-                        return <HSLitem key={key} label={t(themeKeys[key as ThemeVarKey])} name={key} value={theme[key]} onChange={handleHSLChange} />
-                    })
-                }
+                {/* 预设品牌色网格 */}
+                <p className="text-lg my-4">{t('theme.presetThemes')}</p>
+                <PresetThemes current={brand} onSelect={preview} />
+
+                {/* 工作流背景配置（bg 走 commitTheme 统一路径） */}
+                <p className="flex justify-between items-center mt-6 mb-4">
+                    <span className="text-lg">{t('theme.workflowBackgroundConfig')}</span>
+                </p>
+                <RadioGroup
+                    value={bg}
+                    onValueChange={handleBgChange}
+                    className="flex space-x-2 h-[20px] mb-6"
+                >
+                    <div>
+                        <Label className="flex justify-center">
+                            <RadioGroupItem className="mr-2" value="logo" />{t('theme.eagentLogo')}
+                        </Label>
+                    </div>
+                    <div>
+                        <Label className="flex justify-center">
+                            <RadioGroupItem className="mr-2" value="gradient" />{t('theme.themeColorGradientEffect')}
+                        </Label>
+                    </div>
+                </RadioGroup>
+
+                {/* 应用按钮（commit 落库） */}
+                <Button data-testid="theme-apply" onClick={handleApply}>
+                    {t('theme.apply')}
+                </Button>
             </div>
-            <p className="flex justify-between items-center mb-4">
-                <span className="text-lg">{t('theme.workflowBackgroundConfig')}</span>
-            </p>
-            <RadioGroup value={bg} onValueChange={(val) => {
-                window.ThemeStyle = { ...window.ThemeStyle, bg: val };
-                // bg 切换：立即落库（取消挂起 debounce 后直接 save）
-                cancelPendingSave();
-                saveThemeDebounced(serializeThemeStyle(), versionRef.current, (latest) => {
-                    versionRef.current = latest;
-                });
-                setBg(val)
-            }}
-                className="flex space-x-2 h-[20px] mt-4 mb-6">
-                <div>
-                    <Label className="flex justify-center">
-                        <RadioGroupItem className="mr-2" value="logo" />{t('theme.eagentLogo')}
-                    </Label>
+
+            {/* 右栏：预览区 */}
+            <div className="px-4 py-4 bg-card overflow-auto">
+                <p className="text-xl mb-4">{t('theme.componentPreview')}</p>
+                <div className="flex flex-col gap-8">
+                    <DerivedPreview light={derived.light} dark={derived.dark} />
+                    <ThemePreview light={derived.light} dark={derived.dark} />
                 </div>
-                <div>
-                    <Label className="flex justify-center">
-                        <RadioGroupItem className="mr-2" value="gradient" />{t('theme.themeColorGradientEffect')}
-                    </Label>
-                </div>
-            </RadioGroup>
-        </div>
-        <div className="px-4 py-4 bg-card">
-            <p className="text-xl mb-4">{t('theme.componentPreview')}</p>
-            <div>
-                {/* Component list */}
-                <Example />
             </div>
         </div>
-    </div>
+    );
 };

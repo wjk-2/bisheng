@@ -76,7 +76,53 @@
     "radius": "圆角半径",
     "warning": "警告色",
     "warningForeground": "警告前景色",
-    "blackButton": "黑按钮"
+    "blackButton": "黑按钮",
+    "apply": "应用",
+    "applied": "已应用",
+    "applyFailed": "应用失败",
+    "presetThemes": "预设主题",
+    "legacyV2Notice": "检测到旧版手工调色配置，已切换到品牌色驱动，应用后旧配置将被派生覆盖",
+    "brand": {
+      "light": "浅色品牌色",
+      "dark": "深色品牌色",
+      "darkMode": "深色模式偏好",
+      "invalidHex": "请输入合法 HEX 颜色，如 #4747FF",
+      "pendingHex": "输入中…"
+    },
+    "derived": {
+      "light": "浅色派生",
+      "dark": "深色派生"
+    },
+    "preview": {
+      "button": "主按钮",
+      "outline": "描边按钮",
+      "secondary": "次按钮",
+      "badge": "徽章",
+      "badgeSecondary": "次徽章",
+      "cardTitle": "卡片标题",
+      "cardContent": "这是一段卡片内容示例",
+      "chatUser": "用户消息",
+      "chatAssistant": "助手回复",
+      "nodeStart": "开始",
+      "nodeProcess": "处理",
+      "nodeEnd": "结束",
+      "lightTitle": "浅色",
+      "darkTitle": "深色"
+    },
+    "semantic": {
+      "fixed": "固定语义色",
+      "fixedDesc": "以下颜色由系统语义决定，不随品牌色变化"
+    },
+    "preset": {
+      "academicBlue": "学术蓝",
+      "normalGreen": "师范绿",
+      "techPurple": "理工紫",
+      "medicalRed": "医学红",
+      "artsOrange": "文科橙",
+      "artPink": "艺术粉",
+      "comprehensiveCyan": "综合青",
+      "classicInk": "经典墨"
+    }
   },
   "login": {
     "slogen": "便捷、灵活、可靠的教育智能体应用开发平台",

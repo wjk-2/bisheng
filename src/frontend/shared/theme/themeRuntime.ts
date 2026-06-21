@@ -110,6 +110,21 @@ export function buildStyleContent(selector: string, comp: CompTheme): string {
 }
 
 /**
+ * 构造作用域化 CSS：`.scopeClass{formatCssRules(comp)}`。
+ *
+ * 用途：ThemePreview 同屏 split 场景。两套品牌色预览需要各自独立的 CSS 变量作用域，
+ * 不能依赖全局 html 的 .dark class（切 dark 模式会同时影响两套）。给每个预览容器
+ * 挂一个唯一 scopeClass，CSS 变量写在 `.scopeClass{...}` 下，作用域内覆盖全局。
+ *
+ * 与 buildStyleContent 的区别：buildStyleContent 用 :root 或 .dark 等全局选择器
+ * （走线上注入）；buildScopedCss 用传入的任意 scopeClass（走预览隔离）。
+ * 两者都复用 formatCssRules（含 KEY_RE 白名单 + hsl 校验），非法项静默跳过。
+ */
+export function buildScopedCss(scopeClass: string, comp: CompTheme): string {
+    return `.${scopeClass}{${formatCssRules(comp)}}`;
+}
+
+/**
  * 写入线上浅色主题：`<style id="theme-vars-light">:root{...}</style>`。
  * style 不存在则创建；已存在则 **diff 后**原位更新内容（C5：内容相同则跳过，不重写 innerHTML）。
  */

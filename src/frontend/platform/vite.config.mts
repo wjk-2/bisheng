@@ -145,6 +145,15 @@ export default defineConfig(() => {
       __APP_ENV__: JSON.stringify(app_env),
       PACKAGE_VERSION: JSON.stringify('browser'),
     },
+    // Vitest 配置。environment 不设（保持默认 node），现有 jsdom 测试继续靠
+    // 文件首行 `// @vitest-environment jsdom` 注释声明。setupFiles 注册 jest-dom
+    // 自定义匹配器，供 RTL 测试全局可用。globals:true 是 jest-dom v6 默认入口
+    // （import 时直接调 expect.extend）的必要条件，与现有测试显式 import vitest
+    // globals 共存无冲突（指向同一实例）。
+    test: {
+      globals: true,
+      setupFiles: ['./src/test/setup.ts'],
+    },
     server: {
       host: '0.0.0.0',
       port: 3001,

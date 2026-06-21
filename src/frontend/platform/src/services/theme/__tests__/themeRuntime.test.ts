@@ -14,6 +14,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
     formatCssRules,
     buildStyleContent,
+    buildScopedCss,
     applyLight,
     applyDark,
     applyPreview,
@@ -268,5 +269,41 @@ describe('setMode', () => {
         // setMode 绝不碰 style 标签
         expect(document.getElementById('theme-vars-light')).toBeNull();
         expect(document.getElementById('theme-vars-dark')).toBeNull();
+    });
+});
+
+describe('buildScopedCss', () => {
+    // 用途：ThemePreview 同屏 split，两容器各自 scope CSS 变量绕过全局 .dark。
+    // 复用 formatCssRules（已含 KEY_RE 白名单 + hsl 校验）。
+    it('返回 .scopeClass{formatCssRules(comp)} 形式', () => {
+        const css = buildScopedCss('brand-preview-a', { '--primary': { h: 240, s: 1, l: 0.64 } });
+        expect(css).toBe('.brand-preview-a{--primary:240 100% 64%;}');
+    });
+
+    it('结果含 scopeClass 选择器前缀', () => {
+        const css = buildScopedCss('my-scope', { '--background': { h: 0, s: 0, l: 1 } });
+        expect(css.startsWith('.my-scope{')).toBe(true);
+        expect(css.endsWith('}')).toBe(true);
+    });
+
+    it('空 comp → 仅 .scopeClass{}（formatCssRules 返空串）', () => {
+        expect(buildScopedCss('empty', {})).toBe('.empty{}');
+    });
+
+    it('非法 key 被白名单过滤（复用 formatCssRules 的 KEY_RE）', () => {
+        const css = buildScopedCss('s', {
+            'evil;}:root{--x': { h: 0, s: 0, l: 0 }, // 非法 key
+            '--primary': { h: 240, s: 1, l: 0.5 },
+        });
+        // 非法 key 被跳过，只保留合法项
+        expect(css).toBe('.s{--primary:240 100% 50%;}');
+    });
+
+    it('非法 hsl 数值被跳过（s>1）', () => {
+        const css = buildScopedCss('s', {
+            '--bad': { h: 0, s: 2, l: 0.5 }, // s 越界
+            '--ok': { h: 0, s: 1, l: 0.5 },
+        });
+        expect(css).toBe('.s{--ok:0 100% 50%;}');
     });
 });

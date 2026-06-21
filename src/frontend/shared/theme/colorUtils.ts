@@ -48,6 +48,20 @@ export function hexToRgb(hex: string): Rgb {
 }
 
 /**
+ * 轻量 hex 合法性校验，与 hexToRgb 互补：
+ *   - hexToRgb 非法输入抛 Error（用于内部派生，不容忍格式错误）
+ *   - isValidHex 返 bool（用于 presets 等校验场景，只判对错不中断流程）
+ *
+ * 规则与 hexToRgb 对齐：接受 `#rrggbb` / `rrggbb`（大小写皆可），
+ * 不接受 #rgb 短形式；不做 trim（保持轻量，调用方应自行清理空白）。
+ *
+ * 正则：`/^#?[0-9a-fA-F]{6}$/`
+ */
+export function isValidHex(s: string): boolean {
+    return /^#?[0-9a-fA-F]{6}$/.test(s);
+}
+
+/**
  * RGB → hex 字符串，返回 `#rrggbb` 小写。
  * 输入值会被 clamp 到 [0, 255] 并取整，避免浮点误差污染 hex（如 255.9999998）。
  */

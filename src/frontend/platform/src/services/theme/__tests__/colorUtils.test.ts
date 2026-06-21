@@ -13,6 +13,7 @@ import {
     relativeLuminance,
     contrastRatio,
     pickForeground,
+    isValidHex,
 } from '@shared/theme/colorUtils';
 
 describe('hexToRgb', () => {
@@ -151,5 +152,40 @@ describe('pickForeground', () => {
     });
     it('#ffffff 白底 → 黑字', () => {
         expect(pickForeground('#ffffff')).toBe('#000000');
+    });
+});
+
+describe('isValidHex', () => {
+    // 与 hexToRgb 互补：hexToRgb 非法抛 Error，isValidHex 返 bool（轻量校验不抛）。
+    // 接受 #rrggbb / rrggbb / 大小写；不接受 #rgb 短形式（与 hexToRgb 一致）。
+    it('#4747FF 大写带 # → true', () => {
+        expect(isValidHex('#4747FF')).toBe(true);
+    });
+    it('4747ff 小写无 # → true', () => {
+        expect(isValidHex('4747ff')).toBe(true);
+    });
+    it('#4747ff 大小写混合 → true', () => {
+        expect(isValidHex('#4747ff')).toBe(true);
+    });
+    it('#GGG 非法字符 → false', () => {
+        expect(isValidHex('#GGG')).toBe(false);
+    });
+    it('#12345 5 位 → false', () => {
+        expect(isValidHex('#12345')).toBe(false);
+    });
+    it('#123 短形式 → false（与 hexToRgb 一致，不接受 #rgb）', () => {
+        expect(isValidHex('#123')).toBe(false);
+    });
+    it('空字符串 → false', () => {
+        expect(isValidHex('')).toBe(false);
+    });
+    it('#1234567 7 位 → false', () => {
+        expect(isValidHex('#1234567')).toBe(false);
+    });
+    it('#2563EB 学术蓝 → true', () => {
+        expect(isValidHex('#2563EB')).toBe(true);
+    });
+    it('含空白不 trim → false（按字面匹配，与 hexToRgb 的 trim 行为不同，保持轻量）', () => {
+        expect(isValidHex(' #2563EB ')).toBe(false);
     });
 });
