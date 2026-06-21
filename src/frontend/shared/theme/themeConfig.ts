@@ -9,8 +9,8 @@
  *   - v1：{ comp, bg }（最早期，单套色板）
  *   - v2：{ light, dark, bg }（手工 22 令牌 × 2 模式）
  *   - v3：{ version:3, brand:{light,dark,darkMode}, neutral:{preset}, bg, _lock_version }
- *         品牌色驱动，brand → 21 令牌的派生算法在 3B.3 实现（colorUtils），
- *         本模块只做数据层解析/序列化/迁移，不实现派生。
+ *         品牌色驱动，parseWebConfig v3 分支调 deriveTheme（3B.3）派生 light/dark
+ *         填 CompTheme。serialize/migrate 仍只做数据层，不派生。
  *
  * v3 乐观锁版本号独立字段 _lock_version，与 schema 版本号 version（=3）解耦：
  *   - version：schema 版本（v1/v2/v3 区分用），由数据本身决定，不参与并发控制
@@ -22,7 +22,7 @@
  * 归一到 0-1 制。v3 的 brand 是 hex 字符串，不经 normLegacy。
  */
 
-import { hslToRgb, rgbToHex } from './colorUtils';
+import { hexToRgb, hslToRgb, pickForeground, rgbToHex, rgbToHsl } from './colorUtils';
 
 /**
  * Radix Colors slate 系列中性灰阶（官方 sRGB hex 值，静态查表）。
@@ -117,12 +117,12 @@ export type ThemeComp = Record<ThemeVarKey, { h: number; s: number; l: number }>
 /** 解析后的完整主题：light/dark 两套组件色 + 背景类型。
  *
  * v1/v2 数据：light/dark 为 CompTheme（22 令牌手工值），v3Schema=false。
- * v3 数据：light/dark 为 null（派生未实现，3B.3 完成派生后会填 CompTheme），
+ * v3 数据（3B.3 后）：light/dark 为 CompTheme（由 deriveTheme 从 brand 派生），
  *   brand/neutral/_lock_version 透传，v3Schema=true。
  *
- * light/dark 改为可空（CompTheme | null）：v3 在派生未完成时返回 null，
- * 调用方据 v3Schema===true && light===null 判定「需走 3B.3 派生路径」。
- * 已有 v1/v2 调用方读 light/dark 时仍拿到 CompTheme（v3Schema=false 分支必非 null）。
+ * light/dark 类型保留可空（CompTheme | null）：兼容历史分支（损坏回退默认、
+ * v1/v2 兜底）与未来可能的「派生延迟」场景。3B.3 起 v3 正常路径必返回派生后的
+ * CompTheme（非 null），调用方据 v3Schema===true 即可直接读 light/dark。
  */
 export type ThemeValue = {
     light: CompTheme | null;
@@ -237,8 +237,8 @@ export function normLegacy(comp: CompTheme): CompTheme {
  * - 空 / null / undefined → 默认主题
  * - 损坏 JSON → 默认主题（catch 兜底，不抛）
  * - v3（version===3 且 brand 完整）：返回 v3 结构（v3Schema=true，brand/neutral/bg/
- *   _lock_version 透传），**light/dark 占位 null**——派生算法（brand→21 令牌）是 3B.3
- *   的事，本函数不派生。调用方据 v3Schema===true && light===null 判定「需走派生路径」。
+ *   _lock_version 透传），**light/dark 由 deriveTheme（3B.3）派生填充**——22 令牌 ×
+ *   light/dark 两套 CompTheme。调用方据 v3Schema===true 直接读 light/dark 即可用。
  *   v3 缺 brand 视为损坏（version=3 但结构不完整），回退默认主题。
  * - v2（有 light 字段）：{ light, dark, bg }，light/dark 经 normLegacy 归一，
  *   缺失则兜底 DEFAULT（DEFAULT 本身已是 0-1 制，normLegacy 为幂等 passthrough）
@@ -259,21 +259,25 @@ export function parseWebConfig(raw: string): ThemeValue {
             && typeof parsed.brand.light === 'string'
             && typeof parsed.brand.dark === 'string'
             && typeof parsed.brand.darkMode === 'boolean') {
+            const brand = {
+                light: parsed.brand.light,
+                dark: parsed.brand.dark,
+                darkMode: parsed.brand.darkMode,
+            };
+            const neutral = parsed.neutral && typeof parsed.neutral.preset === 'string'
+                ? { preset: parsed.neutral.preset }
+                : { preset: 'slate' };
+            // 3B.3：调 deriveTheme 派生 light/dark（22 令牌 × 2 模式）填充 CompTheme。
+            // 派生是纯函数，parseWebConfig 调用其副作用为零，与「数据层解析」职责相容。
+            const { light: derivedLight, dark: derivedDark } = deriveTheme(brand, neutral);
             return {
                 v3Schema: true,
-                brand: {
-                    light: parsed.brand.light,
-                    dark: parsed.brand.dark,
-                    darkMode: parsed.brand.darkMode,
-                },
-                neutral: parsed.neutral && typeof parsed.neutral.preset === 'string'
-                    ? { preset: parsed.neutral.preset }
-                    : { preset: 'slate' },
+                brand,
+                neutral,
                 bg: typeof parsed.bg === 'string' ? parsed.bg : '',
                 _lock_version: typeof parsed._lock_version === 'number' ? parsed._lock_version : 0,
-                // 派生未实现（3B.3）：占位 null，调用方据此走派生路径
-                light: null,
-                dark: null,
+                light: derivedLight,
+                dark: derivedDark,
             };
         }
         // v2：{ light: CompTheme, dark: CompTheme, bg: string }
@@ -387,5 +391,202 @@ export function migrateV2ToV3(v2: { light: CompTheme; dark: CompTheme; bg: strin
         bg: v2.bg,
         legacy: { light: v2.light, dark: v2.dark },
         warning: 'v2 manual overrides preserved in legacy field; deriving v3 brand will overwrite. Confirm in UI before applying.',
+    };
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// 3B.3 品牌色派生算法（brand → 22 令牌 × light/dark 两套）
+// ─────────────────────────────────────────────────────────────────────────
+
+/**
+ * 中性灰阶预设 → Radix 12 步 hex 查表的映射。
+ *
+ * 当前仅支持 'slate'（Radix slate 系列，3B 阶段单一中性灰阶）。
+ * 未来扩展 'gray' / 'mauve' 等预设时，在此 map 补对应 12 步 hex 表即可，
+ * 派生算法本体无需改动（开放-封闭）。
+ *
+ * 未识别 preset 兜底为 slate（避免运行期抛错，派生应永不失败）。
+ */
+const NEUTRAL_PRESETS: Record<string, { light: Record<string, string>; dark: Record<string, string> }> = {
+    slate: { light: NEUTRAL_SCALE_LIGHT, dark: NEUTRAL_SCALE_DARK },
+};
+
+/**
+ * 中性灰阶 step → 令牌映射表（shadcn/ui 约定 + Radix 12 步明度梯度）。
+ *
+ * 设计依据：background/foreground 取明度两端（step1/step12），card/popover
+ * 在 light 同背景、dark 微抬一档（dark step2）以建立层次。border/input
+ * light 用 step5、dark 用 step6（dark 边框需更明显）。muted/secondary 用 step2
+ * （次级容器），accent 用 step3（比 muted 强一档做 hover 区分）。muted-foreground
+ * 用 step11（比 foreground step12 弱一档，做次级文字）。
+ *
+ * black-button：light 用 step12（最深黑）、dark 用 step1（dark step1 本就是
+ * 最深黑 #111113，作为「黑按钮」语义在 dark 下保持「黑」的视觉一致性）。
+ *
+ * foreground 系令牌（card-foreground / popover-foreground / secondary-foreground /
+ * accent-foreground）= foreground 同值，派生时统一赋值（不在此表，下面用代码处理）。
+ */
+const NEUTRAL_TOKEN_TO_STEP: Record<
+    /** 这些令牌的值来自中性灰阶（非品牌/语义色）。 */
+    | '--background' | '--foreground'
+    | '--card' | '--card-foreground'
+    | '--popover' | '--popover-foreground'
+    | '--muted' | '--muted-foreground'
+    | '--border' | '--input'
+    | '--secondary' | '--secondary-foreground'
+    | '--accent' | '--accent-foreground'
+    | '--black-button',
+    { light: string; dark: string }
+> = {
+    '--background':         { light: '1',  dark: '1'  },
+    '--foreground':         { light: '12', dark: '12' },
+    '--card':               { light: '1',  dark: '2'  },
+    '--card-foreground':    { light: '12', dark: '12' },
+    '--popover':            { light: '1',  dark: '2'  },
+    '--popover-foreground': { light: '12', dark: '12' },
+    '--muted':              { light: '2',  dark: '2'  },
+    '--muted-foreground':   { light: '11', dark: '11' },
+    '--border':             { light: '5',  dark: '6'  },
+    '--input':              { light: '5',  dark: '6'  },
+    '--secondary':          { light: '2',  dark: '2'  },
+    '--secondary-foreground': { light: '12', dark: '12' },
+    '--accent':             { light: '3',  dark: '3'  },
+    '--accent-foreground':  { light: '12', dark: '12' },
+    '--black-button':       { light: '12', dark: '1'  },
+};
+
+/**
+ * 固定语义色（不随品牌色变，保持功能语义稳定）。
+ *
+ * destructive：固定红，light 用 hsl(0,84%,60%)（≈Tailwind red-600 鲜明危险红）、
+ *              dark 用 hsl(0,72%,51%)（暗背景下饱和略降亮度更低，避免刺眼）。
+ * warning：固定琥珀，light hsl(38,92%,50%)、dark hsl(38,95%,62%)（暗背景提亮）。
+ *
+ * 这些是 CompTheme 0-1 制（s/l ∈ [0,1]），直接字面量。
+ */
+const SEMANTIC_FIXED: Record<'light' | 'dark', {
+    destructive: { h: number; s: number; l: number };
+    warning: { h: number; s: number; l: number };
+}> = {
+    light: {
+        destructive: { h: 0, s: 0.84, l: 0.60 },
+        warning:     { h: 38, s: 0.92, l: 0.50 },
+    },
+    dark: {
+        destructive: { h: 0, s: 0.72, l: 0.51 },
+        warning:     { h: 38, s: 0.95, l: 0.62 },
+    },
+};
+
+/**
+ * Radix hex（slate 系列）→ CompTheme 0-1 制 HSL。
+ *
+ * colorUtils.rgbToHsl 返回 0-100 制（s/l ∈ [0,100]），CompTheme 是 0-1 制，
+ * 故 s/l ÷100 转换。h 不变（0-360）。
+ */
+function radixHexToComp(hex: string): { h: number; s: number; l: number } {
+    const { r, g, b } = hexToRgb(hex);
+    const { h, s, l } = rgbToHsl(r, g, b);
+    return { h, s: s / 100, l: l / 100 };
+}
+
+/**
+ * 派生单套主题（light 或 dark）。
+ *
+ * @param modeKey       'light' | 'dark'，决定 Radix 灰阶表 + 语义色取值
+ * @param brandHex      该模式的品牌色 hex（light 传 brand.light、dark 传 brand.dark）
+ * @param neutralScale  Radix 12 步 hex 表（light/dark 各一份）
+ */
+function deriveOne(
+    modeKey: 'light' | 'dark',
+    brandHex: string,
+    neutralScale: Record<string, string>,
+): CompTheme {
+    const comp = {} as CompTheme;
+
+    // 1. 品牌色 + 派生前/背景
+    const brandHsl = (() => {
+        const { r, g, b } = hexToRgb(brandHex);
+        const { h, s, l } = rgbToHsl(r, g, b);
+        return { h, s: s / 100, l: l / 100 };
+    })();
+    comp['--primary'] = brandHsl;
+    const fgHex = pickForeground(brandHex);
+    const fgHsl = (() => {
+        const { r, g, b } = hexToRgb(fgHex);
+        const { h, s, l } = rgbToHsl(r, g, b);
+        return { h, s: s / 100, l: l / 100 };
+    })();
+    comp['--primary-foreground'] = fgHsl;
+
+    // ring 跟品牌色走（a11y：聚焦环沿 brand 色，用户视线易定位焦点）
+    comp['--ring'] = brandHsl;
+
+    // 2. 中性灰阶令牌（step → CompTheme）
+    for (const key of Object.keys(NEUTRAL_TOKEN_TO_STEP) as Array<keyof typeof NEUTRAL_TOKEN_TO_STEP>) {
+        const step = NEUTRAL_TOKEN_TO_STEP[key][modeKey];
+        const hex = neutralScale[step];
+        comp[key] = radixHexToComp(hex);
+    }
+
+    // 3. 固定语义色 + WCAG 派生前/背景
+    const sem = SEMANTIC_FIXED[modeKey];
+    comp['--destructive'] = sem.destructive;
+    const destructiveHex = (() => {
+        const { r, g, b } = hslToRgb(sem.destructive.h, sem.destructive.s * 100, sem.destructive.l * 100);
+        return rgbToHex(r, g, b);
+    })();
+    const destructiveFgHex = pickForeground(destructiveHex);
+    comp['--destructive-foreground'] = (() => {
+        const { r, g, b } = hexToRgb(destructiveFgHex);
+        const { h, s, l } = rgbToHsl(r, g, b);
+        return { h, s: s / 100, l: l / 100 };
+    })();
+
+    comp['--warning'] = sem.warning;
+    const warningHex = (() => {
+        const { r, g, b } = hslToRgb(sem.warning.h, sem.warning.s * 100, sem.warning.l * 100);
+        return rgbToHex(r, g, b);
+    })();
+    const warningFgHex = pickForeground(warningHex);
+    comp['--warning-foreground'] = (() => {
+        const { r, g, b } = hexToRgb(warningFgHex);
+        const { h, s, l } = rgbToHsl(r, g, b);
+        return { h, s: s / 100, l: l / 100 };
+    })();
+
+    return comp;
+}
+
+/**
+ * 3B.3 品牌色派生算法 —— 纯函数深模块（codebase-design）。
+ *
+ * 接口：小（brand hex + neutral preset 两入参，{light, dark} 两套 CompTheme 出参）。
+ * 实现：大（22 令牌 × 2 模式 = 44 个值的派生规则 + Radix 12 步灰阶映射 +
+ *       WCAG pickForeground 黑白选择 + 固定语义色保语义稳定）。
+ *
+ * 设计原则：
+ *   - 纯函数（无副作用、无 IO、无随机），同入参同出参，可快照可缓存
+ *   - 零第三方依赖（只用 colorUtils + NEUTRAL_SCALE_*，都在 shared 内）
+ *   - 派生永不抛错：preset 未识别兜底 slate，pickForeground 必返回黑白
+ *   - WCAG 硬性：primary-foreground 由 pickForeground 选，对比比必 ≥4.5
+ *     （极端 brand 灰色除外——brand 默认应是饱和色，3B.5 BrandPicker 会做校验）
+ *   - 制式：产出 CompTheme 0-1 制（s/l ∈ [0,1]），与 DEFAULT_*_THEME 对齐
+ *
+ * darkMode 语义：本函数始终派生 light + dark 两套，darkMode 开关不影响派生本身
+ *   （它决定应用层是否进 .dark class）。light 套总用 brand.light、dark 套总用
+ *   brand.dark，调用方据 darkMode 决定实际应用哪套。
+ *
+ * @param brand    品牌色 { light: hex, dark: hex, darkMode: bool }
+ * @param neutral  中性灰阶预设 { preset: 'slate' | ... }
+ */
+export function deriveTheme(
+    brand: { light: string; dark: string; darkMode: boolean },
+    neutral: { preset: string },
+): { light: CompTheme; dark: CompTheme } {
+    const preset = NEUTRAL_PRESETS[neutral.preset] || NEUTRAL_PRESETS.slate;
+    return {
+        light: deriveOne('light', brand.light, preset.light),
+        dark: deriveOne('dark', brand.dark, preset.dark),
     };
 }

@@ -28,7 +28,7 @@ import {
 import { hslToRgb, rgbToHex } from '@shared/theme/colorUtils';
 
 describe('parseWebConfig v3 分支', () => {
-    it('v3（version=3，brand 完整）→ 返回 v3 结构，light/dark 占位 null（待派生）', () => {
+    it('v3（version=3，brand 完整）→ 返回 v3 结构，light/dark 由 deriveTheme 派生填充', () => {
         const raw = JSON.stringify({
             version: 3,
             brand: { light: '#3b82f6', dark: '#60a5fa', darkMode: false },
@@ -47,9 +47,25 @@ describe('parseWebConfig v3 分支', () => {
         expect(result.neutral).toEqual({ preset: 'slate' });
         expect(result.bg).toBe('logo');
         expect(result._lock_version).toBe(7);
-        // light/dark 占位 null：派生未实现，调用方据此走 3B.3 派生路径
-        expect(result.light).toBeNull();
-        expect(result.dark).toBeNull();
+        // 3B.3 后：light/dark 不再是 null，而是 deriveTheme 派生的 CompTheme（22 令牌）
+        expect(result.light).not.toBeNull();
+        expect(result.dark).not.toBeNull();
+        // primary 来自 brand（light 用 brand.light、dark 用 brand.dark）
+        expect(result.light!['--primary']).toBeDefined();
+        expect(result.dark!['--primary']).toBeDefined();
+        // 22 个 ThemeVarKey 全覆盖（v3 派生产出与 v2 同结构）
+        const expectedKeys = [
+            '--primary', '--primary-foreground', '--background', '--foreground',
+            '--muted', '--muted-foreground', '--card', '--card-foreground',
+            '--popover', '--popover-foreground', '--border', '--input',
+            '--secondary', '--secondary-foreground', '--accent', '--accent-foreground',
+            '--destructive', '--destructive-foreground', '--ring',
+            '--warning', '--warning-foreground', '--black-button',
+        ];
+        for (const k of expectedKeys) {
+            expect(result.light![k], `light 缺 ${k}`).toBeDefined();
+            expect(result.dark![k], `dark 缺 ${k}`).toBeDefined();
+        }
     });
 
     it('v3 缺 _lock_version → _lock_version 兜底 0（兼容首次写入）', () => {
@@ -232,7 +248,7 @@ describe('v3 与 normLegacy 解耦（v3 不走 normLegacy）', () => {
  * 强制开发者审视是否破坏落库兼容（后端按 dict 校验，字段名/结构变动需同步后端）。
  */
 describe('v3 snapshot', () => {
-    it('parseWebConfig v3 完整产出快照', () => {
+    it('parseWebConfig v3 完整产出快照（light/dark 派生填充，体积大仅断言关键字段）', () => {
         const raw = JSON.stringify({
             version: 3,
             brand: { light: '#3b82f6', dark: '#60a5fa', darkMode: true },
@@ -241,7 +257,21 @@ describe('v3 snapshot', () => {
             _lock_version: 42,
         });
         const result = parseWebConfig(raw);
-        expect(result).toMatchInlineSnapshot(`
+        // 派生后 light/dark 是大对象（44 个 hsl 值），快照过宽难审。
+        // 关键契约：顶层结构 + 派生填充非 null + 22 令牌完整（数量）。
+        const lightKeys = Object.keys(result.light!);
+        const darkKeys = Object.keys(result.dark!);
+        expect({
+            v3Schema: result.v3Schema,
+            brand: result.brand,
+            neutral: result.neutral,
+            bg: result.bg,
+            _lock_version: result._lock_version,
+            lightTokenCount: lightKeys.length,
+            darkTokenCount: darkKeys.length,
+            lightHasPrimary: !!result.light!['--primary'],
+            darkHasPrimary: !!result.dark!['--primary'],
+        }).toMatchInlineSnapshot(`
           {
             "_lock_version": 42,
             "bg": "gradient",
@@ -250,8 +280,10 @@ describe('v3 snapshot', () => {
               "darkMode": true,
               "light": "#3b82f6",
             },
-            "dark": null,
-            "light": null,
+            "darkHasPrimary": true,
+            "darkTokenCount": 22,
+            "lightHasPrimary": true,
+            "lightTokenCount": 22,
             "neutral": {
               "preset": "slate",
             },
