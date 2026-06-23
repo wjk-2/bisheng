@@ -63,8 +63,18 @@ class RedisClient:
 
         else:
             # Singleplayer Mode
-            self.pool = ConnectionPool.from_url(redis_url, max_connections=max_connections)
-            self.async_pool = redis.asyncio.ConnectionPool.from_url(redis_url, max_connections=max_connections)
+            # P3(2026-06-23): 池加 health_check_interval/socket_keepalive/socket_connect_timeout，
+            # 剔除被 redis 关闭的 CLOSE_WAIT 僵尸连接，避免池耗尽导致永久 hang。
+            # 刻意不加 socket_timeout/retry —— 会与 ablpop(timeout=0) 阻塞读冲突（5s 强杀 blpop）。
+            # health_check 是治本主药（连接空闲>30s 下次用前 PING，发现死了就剔除），不波及 blpop。
+            pool_kw = dict(
+                max_connections=max_connections,
+                socket_connect_timeout=5,   # 建连阶段超时（不影响命令 read / blpop）
+                health_check_interval=30,   # 治本主药：30s 健康检查，剔除 CLOSE_WAIT 僵尸
+                socket_keepalive=True,      # OS 层 TCP keepalive
+            )
+            self.pool = ConnectionPool.from_url(redis_url, **pool_kw)
+            self.async_pool = redis.asyncio.ConnectionPool.from_url(redis_url, **pool_kw)
             self.connection = redis.StrictRedis(connection_pool=self.pool)
             self.async_connection: AsyncRedis = redis.asyncio.Redis.from_pool(self.async_pool)
 
