@@ -214,13 +214,14 @@ class MinioStorage(BaseStorage, ABC):
         response = await self.minio_client.get_object(bucket_name, object_name)
 
         try:
-            data = await response.read()
-            return data
+            # P1(2026-06-23): async with 确保 aiohttp 连接归还 connector 池，
+            # 替代只 response.close()（close 不归还池，致 CLOSE_WAIT 堆积）。
+            # 注：async response 是 aiohttp ClientResponse，没有 urllib3 的 release_conn()。
+            async with response:
+                data = await response.read()
+                return data
         except Exception:
             raise
-
-        finally:
-            response.close()
 
     def get_object_sync(self, bucket_name: Optional[str] = None, object_name: str = None) -> bytes | None:
 

@@ -54,7 +54,15 @@ class AsyncHttpClient(object):
 
         if self._aiohttp_client is None:
             timeout = ClientTimeout(total=self.timeout)
-            connector = TCPConnector(keepalive_timeout=self.timeout, limit_per_host=self.limit_per_host, loop=loop)
+            # P2(2026-06-23): 加 enable_cleanup_closed 定期清理 CLOSE_WAIT 半开连接，
+            # 显式 limit 全局上限（原仅 limit_per_host，全局依赖 aiohttp 默认 100）
+            connector = TCPConnector(
+                keepalive_timeout=self.timeout,
+                limit_per_host=self.limit_per_host,
+                limit=self.limit_per_host,
+                enable_cleanup_closed=True,
+                loop=loop,
+            )
             self._aiohttp_client = ClientSession(timeout=timeout, connector=connector,
                                                  headers=self.headers, loop=loop)
         return self._aiohttp_client

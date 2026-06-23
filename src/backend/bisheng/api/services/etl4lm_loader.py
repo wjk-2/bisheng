@@ -20,6 +20,11 @@ from bisheng.core.storage.minio.minio_manager import get_minio_storage_sync
 
 logger = logging.getLogger(__name__)
 
+# P4(2026-06-23): 模块级 Session 复用 HTTP 连接（原每次 requests.post 新建短连接，FD 开销）。
+# 注意：requests.Session 非线程安全，celery worker 多线程下靠 GIL + 低并发（文件解析不密集）可接受；
+# 若后续高并发需严谨，改 threading.local 或迁移到 get_http_client()。
+_etl4llm_session = requests.Session()
+
 
 def get_image_tag(results, part):
     element_id = part.get("element_id", None)
@@ -210,7 +215,8 @@ class Etl4lmLoader(BasePDFLoader):
             parameters=parameters,
         )
         try:
-            resp = requests.post(
+            # P4(2026-06-23): 用模块级 Session 复用连接
+            resp = _etl4llm_session.post(
                 self.unstructured_api_url, headers=self.headers, json=payload, timeout=self.timemout
             )
         except requests.Timeout as e:
