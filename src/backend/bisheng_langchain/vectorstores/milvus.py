@@ -304,6 +304,14 @@ class Milvus(MilvusLangchain):
         )
         from pymilvus.orm.types import infer_dtype_bydata
 
+        # 并发兜底（主路径）：collection 已存在则直接 load，跳过 create。
+        # 避免 knowledge worker 并发批量入库时多 worker 同时 create_collection
+        # 触发 SchemaNotReadyException 竞争。
+        from pymilvus import utility
+        if utility.has_collection(self.collection_name, using=self.alias):
+            self.col = Collection(self.collection_name, using=self.alias)
+            return
+
         # Determine embedding dim
         dim = len(embeddings[0])
         fields = []
@@ -356,6 +364,16 @@ class Milvus(MilvusLangchain):
                 using=self.alias,
             )
         except MilvusException as e:
+            # 并发兜底（异常路径）：极窄窗口下多个 worker 同时 past 主路径的 has_collection
+            # 检查并同时 create，失败的兜底 load 已被别 worker 建好的表。
+            # 若确实没建成（真异常），原样抛出不吞。
+            if utility.has_collection(self.collection_name, using=self.alias):
+                logger.warning(
+                    'concurrent create_collection race on %s, load existing: %s',
+                    self.collection_name, e,
+                )
+                self.col = Collection(self.collection_name, using=self.alias)
+                return
             logger.error('Failed to create collection: %s error: %s', self.collection_name, e)
             raise e
 
