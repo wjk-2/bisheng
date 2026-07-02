@@ -13,7 +13,7 @@ class RecallBase(SQLModelSerializable):
     keywords: str = Field(sa_column=Column(Text))
     chunk: Optional[str] = Field(default=None, sa_column=Column(Text))
     meta_data: Optional[str] = Field(default=None, sa_column=Column(Text))
-    file_id: Optional[int] = Field(default=None, index=False)
+    file_id: Optional[int] = Field(default=None, index=True)
     create_time: Optional[datetime] = Field(default=None, sa_column=Column(
         DateTime, nullable=False, server_default=text('CURRENT_TIMESTAMP')))
     update_time: Optional[datetime] = Field(default=None, sa_column=Column(
