@@ -62,6 +62,7 @@ class Workflow:
             self.graph_engine.run()
         while self.graph_engine.status == WorkflowStatus.RUNNING.value:
             self.graph_engine.continue_run()
+        self._cleanup_nodes_tmp_collections()
         return self.graph_engine.status, self.graph_engine.reason
 
     async def arun(self, input_data: dict = None) -> (str, str):
@@ -79,7 +80,23 @@ class Workflow:
             await self.graph_engine.arun()
         while self.graph_engine.status == WorkflowStatus.RUNNING.value:
             await self.graph_engine.acontinue_run()
+        self._cleanup_nodes_tmp_collections()
         return self.graph_engine.status, self.graph_engine.reason
+
+    def _cleanup_nodes_tmp_collections(self):
+        """C4 workflow 结束清理各节点创建的 tmp collection（Milvus + ES），避免换 embedding 后残留"""
+        from loguru import logger
+        nodes = getattr(self.graph_engine, 'nodes', None)
+        if nodes is None:
+            return
+        node_iter = nodes.values() if isinstance(nodes, dict) else nodes
+        for node in node_iter:
+            cleanup = getattr(node, '_cleanup_tmp_collections', None)
+            if callable(cleanup):
+                try:
+                    cleanup()
+                except Exception as e:
+                    logger.warning(f"C4 cleanup tmp collections for node {getattr(node, 'id', '?')} failed: {e}")
 
     def stop(self):
         self.graph_engine.stop()

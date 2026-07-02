@@ -53,7 +53,10 @@ class BaseNode(ABC):
 
         # Storing Temporary Data milvus Collection Name And es Collection Name workflow_id As partition key
         # samecollectionMedium vector data must be the sameembedding_modelGenerated, so the collection name needs to containembedding_model_id
+        # C4: 加 exec_unique_id 后缀按 workflow 隔离，结束统一 drop（get_milvus_collection_name/get_es_index_name 同步）
         self.tmp_collection_name = 'tmp_workflow_data_new'
+        # 创建即注册：创建的 tmp collection 记录于此，workflow 结束 _cleanup_tmp_collections 统一 drop
+        self._tmp_collections_created: list = []
 
         self.stop_flag = False
 
@@ -119,7 +122,40 @@ class BaseNode(ABC):
         return self.node_data.type == NodeType.CONDITION.value
 
     def get_milvus_collection_name(self, embedding_model_id: str) -> str:
-        return f"{self.tmp_collection_name}_{embedding_model_id}"
+        # C4: 加 exec_unique_id 后缀按 workflow 隔离，避免多 workflow 共享 tmp collection 串扰；
+        # 结束由 _cleanup_tmp_collections 统一 drop（注册见 register_tmp_collection）
+        suffix = self.exec_unique_id or ''
+        base = f"{self.tmp_collection_name}_{embedding_model_id}"
+        return f"{base}_{suffix}" if suffix else base
+
+    def get_es_index_name(self, embedding_model_id: str) -> str:
+        # C4: ES 侧 index_name 与 Milvus collection 同步加后缀（原 ES 用裸常量，与 Milvus 错位）
+        return self.get_milvus_collection_name(embedding_model_id)
+
+    def register_tmp_collection(self, embedding_model_id: str, milvus_name: str, es_name: str):
+        """C4 创建即注册：创建 tmp collection 时调用，记录待清理名，结束统一 drop"""
+        self._tmp_collections_created.append((embedding_model_id, milvus_name, es_name))
+
+    def _cleanup_tmp_collections(self):
+        """C4 workflow 结束钩子：drop 本 workflow 创建的 tmp collection（Milvus + ES）"""
+        from loguru import logger
+        from bisheng.api.services.knowledge_imp import decide_vectorstores, FakeEmbedding
+        for emb_id, milvus_name, es_name in getattr(self, '_tmp_collections_created', []):
+            try:
+                embeddings = FakeEmbedding()
+                vector_client = decide_vectorstores(milvus_name, "Milvus", embeddings)
+                if vector_client.col is not None:
+                    vector_client.col.drop()
+            except Exception as e:
+                logger.warning(f"C4 drop tmp milvus collection {milvus_name} failed: {e}")
+            try:
+                embeddings = FakeEmbedding()
+                es_client = decide_vectorstores(es_name, "ElasticKeywordsSearch", embeddings)
+                if es_client.client.indices.exists(index=es_name):
+                    es_client.client.indices.delete(index=es_name, ignore=[400, 404])
+            except Exception as e:
+                logger.warning(f"C4 drop tmp es index {es_name} failed: {e}")
+        self._tmp_collections_created = []
 
     def handle_input(self, user_input: dict) -> Any:
         # Update the data entered by the user to the number of nodes

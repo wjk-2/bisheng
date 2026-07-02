@@ -186,10 +186,13 @@ class InputNode(BaseNode):
         if self._vector_client is None:
             # 2InisialisasimilvusAndesInstances
             milvus_collection_name = self.get_milvus_collection_name(getattr(self._embedding, 'model_id'))
+            es_index_name = self.get_es_index_name(getattr(self._embedding, 'model_id'))
             self._vector_client = KnowledgeRag.init_milvus_vectorstore(milvus_collection_name, self._embedding,
                                                                        metadata_schemas=InputFileMetadata)
-            self._es_client = KnowledgeRag.init_es_vectorstore_sync(self.tmp_collection_name,
+            self._es_client = KnowledgeRag.init_es_vectorstore_sync(es_index_name,
                                                                     metadata_schemas=InputFileMetadata)
+            # C4 创建即注册，结束统一 drop
+            self.register_tmp_collection(getattr(self._embedding, 'model_id'), milvus_collection_name, es_index_name)
 
         if 'file_content' not in key_info:
             raise IgnoreException(f'{self.name} -- workflow node is update')

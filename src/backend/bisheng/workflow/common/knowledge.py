@@ -12,8 +12,12 @@ from bisheng.knowledge.domain.knowledge_rag import KnowledgeRag
 from bisheng.knowledge.domain.models.knowledge import Knowledge, MetadataFieldType
 from bisheng.knowledge.domain.models.knowledge_file import KnowledgeFileDao
 from bisheng.llm.domain import LLMService
+from bisheng.llm.domain.const import LLMModelType
+from bisheng.llm.domain.models import LLMModel
 from bisheng.tool.domain.langchain.knowledge import KnowledgeRetrieverTool
 from bisheng.workflow.common.condition import ComparisonType
+from bisheng.workflow.common.query_rewrite import rewrite_query_with_history
+from bisheng.workflow.common.rerank_default import resolve_rerank_config
 from bisheng.workflow.nodes.base import BaseNode
 
 
@@ -184,21 +188,31 @@ class RagUtils(BaseNode):
 
         self._advance_kwargs = self.node_params.get('advanced_retrieval_switch', {})
         self._metadata_filter = ConditionCases(**self.node_params.get('metadata_filter', {}))
+        # A3 + G2-b: rerank 默认决策统一归后端。查一次 DB 默认 rerank 模型，
+        # 两种入口（有/无 advanced_retrieval_switch 块）共用 resolve_rerank_config：
+        # 老 flow（无块）按默认模型决定；新 flow（有块）尊重用户显式选择，
+        # 仅在「开但没选模型」时补默认模型，手动关一律尊重。
+        default_rerank = LLMModel.get_model_by_type(LLMModelType.RERANK)
+        default_rerank_id = default_rerank.id if default_rerank else None
         if self._advance_kwargs:
             self._advance_kwargs = self.node_params.get('advanced_retrieval_switch', {})
             self._knowledge_auth = self._advance_kwargs['user_auth']
             self._max_chunk_size = int(self._advance_kwargs['max_chunk_size'])
             self._keyword_weight = float(self._advance_kwargs['keyword_weight'])
             self._vector_weight = float(self._advance_kwargs['vector_weight'])
-            self._rerank_flag = self._advance_kwargs['rerank_flag']
-            self._rerank_model_id = self._advance_kwargs['rerank_model']
+            self._rerank_flag, self._rerank_model_id = resolve_rerank_config(
+                self._advance_kwargs.get('rerank_flag'),
+                self._advance_kwargs.get('rerank_model', ''),
+                default_rerank_id,
+            )
         else:
             self._knowledge_auth = self.node_params.get('user_auth', False)
             self._max_chunk_size = int(self.node_params.get('max_chunk_size', 15000))
             self._keyword_weight = 0.5
             self._vector_weight = 0.5
-            self._rerank_flag = False
-            self._rerank_model_id = ''
+            self._rerank_flag, self._rerank_model_id = resolve_rerank_config(
+                None, '', default_rerank_id,
+            )
 
         self._multi_milvus_retriever = None
         self._multi_es_retriever = None
@@ -219,6 +233,9 @@ class RagUtils(BaseNode):
             return str(timestamp)
 
     def retrieve_question(self, question: str) -> List[Document]:
+        # 方向3: 检索前历史感知 query 改写（指代消解）。两节点（RagNode/KnowledgeRetriever）
+        # 共用此入口，故改写在基类一处生效。无 LLM 或无历史的节点安全降级为原 question。
+        question = self._maybe_rewrite_query(question)
         # 1: retrieve documents from multi retrievers
         knowledge_retriever_tool = KnowledgeRetrieverTool(
             vector_retriever=self._multi_milvus_retriever,
@@ -249,6 +266,26 @@ class RagUtils(BaseNode):
                             one.metadata["user_metadata"][user_key] = self.format_timestamp(user_value)
         return finally_docs
 
+    def _maybe_rewrite_query(self, question: str) -> str:
+        """检索前历史感知 query 改写。开关默认关（部署态坐实 output 慢后开），
+        无 LLM / 无历史 / 开关关时安全降级为原 question。"""
+        from bisheng.common.services.config_service import settings
+        if not settings.workflow_conf.query_rewrite_enabled:
+            return question
+        llm = getattr(self, '_llm', None)
+        if llm is None:
+            return question
+        history_memory = getattr(self.graph_state, 'history_memory', None)
+        if history_memory is None:
+            return question
+        try:
+            history_text = self.graph_state.get_history_memory(0)
+        except Exception:
+            return question
+        return rewrite_query_with_history(
+            question, history_text, llm, timeout=settings.workflow_conf.query_rewrite_timeout
+        )
+
     def init_user_question(self) -> List[str]:
         # Convert all user questions to strings by default
         ret = []
@@ -261,11 +298,18 @@ class RagUtils(BaseNode):
             return
         if self._rerank_model:
             return
-        self._rerank_model = LLMService.get_bisheng_rerank_sync(model_id=self._rerank_model_id,
-                                                                app_id=self.workflow_id,
-                                                                app_name=self.workflow_name,
-                                                                app_type=ApplicationTypeEnum.WORKFLOW,
-                                                                user_id=self.user_id)
+        # 模型被删/model_id 无效时 get_bisheng_rerank_sync 抛异常，降级为无 rerank
+        # 而非让整条检索静默失败（rerank 是增益项，缺则走纯向量+BM25 召回）。
+        try:
+            self._rerank_model = LLMService.get_bisheng_rerank_sync(model_id=self._rerank_model_id,
+                                                                    app_id=self.workflow_id,
+                                                                    app_name=self.workflow_name,
+                                                                    app_type=ApplicationTypeEnum.WORKFLOW,
+                                                                    user_id=self.user_id)
+        except Exception as e:
+            logger.warning(f"init_rerank_model failed (model_id={self._rerank_model_id}), "
+                           f"degrade to no rerank: {e}")
+            self._rerank_model = None
 
     def init_multi_retriever(self):
         if self._knowledge_type == "knowledge":
@@ -340,10 +384,13 @@ class RagUtils(BaseNode):
 
         # vectorstore use different collection_name for different embedding model
         tmp_collection_name = self.get_milvus_collection_name(getattr(embeddings, 'model_id'))
+        es_index_name = self.get_es_index_name(getattr(embeddings, 'model_id'))
+        # C4 创建即注册，结束统一 drop
+        self.register_tmp_collection(getattr(embeddings, 'model_id'), tmp_collection_name, es_index_name)
         milvus_vector = KnowledgeRag.init_milvus_vectorstore(collection_name=tmp_collection_name, embeddings=embeddings)
         milvus_extra = {"expr": f"document_id in {file_ids}"}
         self._multi_milvus_retriever = milvus_vector.as_retriever(search_kwargs=self._retriever_kwargs | milvus_extra)
 
         es_extra = {"filter": [{"terms": {"metadata.document_id": file_ids}}]}
-        es_vector = KnowledgeRag.init_es_vectorstore_sync(index_name=self.tmp_collection_name)
+        es_vector = KnowledgeRag.init_es_vectorstore_sync(index_name=es_index_name)
         self._multi_es_retriever = es_vector.as_retriever(search_kwargs=self._retriever_kwargs | es_extra)

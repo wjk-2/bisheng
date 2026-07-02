@@ -194,12 +194,16 @@ class AgentNode(BaseNode):
             raise Exception('No default configuredembeddingModels')
         file_ids = [file_metadata['document_id']]
         collection_name = self.get_milvus_collection_name(getattr(embeddings, 'model_id'))
+        es_index_name = self.get_es_index_name(getattr(embeddings, 'model_id'))
+        # C4 创建即注册，结束统一 drop
+        self.register_tmp_collection(getattr(embeddings, 'model_id'), collection_name, es_index_name)
         vector_client = KnowledgeRag.init_milvus_vectorstore(collection_name=collection_name, embeddings=embeddings)
         return vector_client.as_retriever(
             search_kwargs={"expr": f'document_id in {file_ids}'})
 
     def init_file_es(self, file_metadata: Dict):
-        es_client = KnowledgeRag.init_es_vectorstore_sync(index_name=self.tmp_collection_name)
+        es_index_name = self.get_es_index_name(getattr(LLMService.get_knowledge_default_embedding(self.user_id), 'model_id'))
+        es_client = KnowledgeRag.init_es_vectorstore_sync(index_name=es_index_name)
         return es_client.as_retriever(
             search_kwargs={"filter": [{"term": {"metadata.document_id": file_metadata['document_id']}}]})
 
