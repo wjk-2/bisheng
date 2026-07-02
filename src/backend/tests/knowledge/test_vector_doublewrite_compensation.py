@@ -11,7 +11,7 @@ import os
 
 def _read_knowledge_imp_src():
     base = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-    path = os.path.join(base, "bisheng", "api", "services", "knowledge_imp.py")
+    path = os.path.join(base, "bisheng", "api", "services", "knowledge_imp_legacy.py")
     with open(path, encoding="utf-8") as f:
         return f.read()
 
