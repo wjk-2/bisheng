@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import { ChevronDown, CircleQuestionMark, Clock3, Hash, RefreshCcw, Search, Trash2, Type } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { DEFAULT_FILTER_METADATA_FIELDS } from "@/pages/KnowledgePage/components/MetadataBuiltInFields";
 import NumberInput from "./NumberInput";
 import SelectVar from "./SelectVar";
 
@@ -135,14 +136,11 @@ const MetadataFilter = ({
         const knowledgeDetails = await getKnowledgeDetailApi(knowledgeIds);
         knowledgeDetails.forEach((detail: any) => {
           const kbLabel = detail.name || detail.label || t('unknownKnowledgeBase');
-          const defaultFields = [
-            { name: "document_id", type: "Number", icon: <Hash size={14} /> },
-            { name: "document_name", type: "String", icon: <Type size={14} /> },
-            { name: "upload_time", type: "Time", icon: <Clock3 size={14} /> },
-            { name: "update_time", type: "Time", icon: <Clock3 size={14} /> },
-            { name: "uploader", type: "String", icon: <Type size={14} /> },
-            { name: "updater", type: "String", icon: <Type size={14} /> }
-          ];
+          const defaultFields = DEFAULT_FILTER_METADATA_FIELDS.map((field) => ({
+            name: field.name,
+            type: field.type,
+            icon: field.type === "Number" ? <Hash size={14} /> : field.type === "Time" ? <Clock3 size={14} /> : <Type size={14} />
+          }));
           const defaultMetadataFields = defaultFields.map(field => ({
             id: `${detail.id}-${field.name}`,
             name: field.name,

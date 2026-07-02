@@ -11,6 +11,8 @@ import { cname } from "@/components/bs-ui/utils"
 import { addMetadata, updateMetadataFields, deleteMetadataFields } from "@/controllers/API"
 import { QuestionTooltip, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/bs-ui/tooltip"
 import { useTranslation } from "react-i18next"
+import { formatFieldType } from '../utils'
+import { BUILT_IN_METADATA_FIELDS } from './MetadataBuiltInFields'
 
 type MetadataType = "String" | "Number" | "Time"
 
@@ -28,20 +30,7 @@ interface BuiltInMetadata {
 
 }
 
-const BUILT_IN_METADATA: BuiltInMetadata[] = [
-    { name: "document_id", type: "Number" },
-    { name: "document_name", type: "String" },
-    { name: "upload_time", type: "Time" },
-    { name: "update_time", type: "Time" },
-    { name: "uploader", type: "String" },
-    { name: "updater", type: "String" },
-    { name: "abstract", type: "String" },
-    { name: "chunk_index", type: "Number" },
-    { name: "bbox", type: "String" },
-    { name: "page", type: "Number" },
-    { name: "knowledge_id", type: "Number" },
-    { name: "user_metadata", type: "String" },
-]
+const BUILT_IN_METADATA: BuiltInMetadata[] = BUILT_IN_METADATA_FIELDS
 
 const TYPE_ICONS = {
     String: <Type />,
@@ -86,7 +75,6 @@ const TypeSelector = memo(({
 interface MetadataManagementDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSave?: (metadata: Metadata[]) => void;
     hasManagePermission?: boolean;
     id: string;
     initialMetadata?: Array<{ field_name: string; field_type: string; updated_at?: number }>;
@@ -95,7 +83,6 @@ interface MetadataManagementDialogProps {
 export function MetadataManagementDialog({
     open,
     onOpenChange,
-    onSave,
     hasManagePermission = true,
     id,
     initialMetadata,
@@ -126,7 +113,7 @@ export function MetadataManagementDialog({
             const formattedMetadata = initialMetadata.map((item) => ({
                 id: `meta_${item.field_name}`,
                 name: item.field_name,
-                type: (item.field_type.charAt(0).toUpperCase() + item.field_type.slice(1)) as MetadataType,
+                type: formatFieldType(item.field_type) as MetadataType,
                 createdAt: new Date(),
                 updatedAt: item.updated_at ? new Date(item.updated_at * 1000) : new Date(),
             }));
@@ -233,14 +220,13 @@ export function MetadataManagementDialog({
             const newMetadata: Metadata = { id: `meta_${newName}`, name: newName, type: newType, createdAt: new Date(), updatedAt: new Date() };
             setMetadataList((prev) => [newMetadata, ...prev]);
             closeSideDialog();
-            if (onSave) onSave(metadataList);
         } catch (err: any) {
             setError(err.message || t('createFailed'));
             console.error("创建失败:", err);
         } finally {
             setIsLoading(false);
         }
-    }, [newName, newType, id, closeSideDialog, validateName, metadataList, onSave, t]);
+    }, [newName, newType, id, closeSideDialog, validateName, metadataList, t]);
 
     const handleRenameSave = useCallback(async () => {
         if (!id || !selectedMetadata) { setError(t('operationFailed')); return; }
@@ -253,14 +239,13 @@ export function MetadataManagementDialog({
             await updateMetadataFields(id, [{ old_field_name: selectedMetadata.name, new_field_name: newName }]);
             setMetadataList((prev) => prev.map((m) => m.id === selectedMetadata.id ? { ...m, name: newName, updatedAt: new Date() } : m));
             closeSideDialog();
-            if (onSave) onSave(metadataList);
         } catch (err: any) {
             setError(err.message || t('renameFailed'));
             console.error("重命名失败:", err);
         } finally {
             setIsLoading(false);
         }
-    }, [newName, selectedMetadata, id, closeSideDialog, validateName, metadataList, onSave, t]);
+    }, [newName, selectedMetadata, id, closeSideDialog, validateName, metadataList, t]);
 
     const handleDelete = useCallback(async (metadata: Metadata) => {
         if (!id) {
@@ -272,14 +257,13 @@ export function MetadataManagementDialog({
         try {
             await deleteMetadataFields(id, [metadata.name]);
             setMetadataList((prev) => prev.filter((m) => m.id !== metadata.id));
-            if (onSave) onSave(metadataList);
         } catch (err: any) {
             setError(err.message || t('deleteFailed'));
             console.error("删除失败:", err);
         } finally {
             setIsLoading(false);
         }
-    }, [id, metadataList, onSave, t]);
+    }, [id, metadataList, t]);
 
     const sortedMetadata = [...metadataList].sort((a, b) => a.updatedAt.getTime() - b.updatedAt.getTime());
 
