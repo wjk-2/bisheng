@@ -15,7 +15,7 @@ from typing import List
 
 from bisheng.api.services.knowledge_imp import decide_vectorstores
 from bisheng.common.constants.vectorstore_metadata import KNOWLEDGE_RAG_METADATA_SCHEMA
-from bisheng.core.ai.rag import KnowledgeRag
+from bisheng.knowledge.domain.knowledge_rag import KnowledgeRag
 from bisheng.database.models.knowledge import Knowledge
 from pymilvus import Collection
 

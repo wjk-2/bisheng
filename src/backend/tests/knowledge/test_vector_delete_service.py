@@ -35,3 +35,12 @@ def test_service_not_use_file_id_key():
     src = _read_service_src()
     # delete_by_file_ids 内不应有 file_id in {...} 的 Milvus expr（错配键）
     assert 'expr=f"file_id in' not in src, "统一服务不应使用 file_id in 错配键"
+
+
+def test_service_imports_knowledge_rag_from_correct_path():
+    """KnowledgeRag 必须从 knowledge.domain.knowledge_rag import（core.ai.rag 不存在）"""
+    src = _read_service_src()
+    assert "from bisheng.knowledge.domain.knowledge_rag import KnowledgeRag" in src, \
+        "KnowledgeRag import 路径错（应为 bisheng.knowledge.domain.knowledge_rag，非 core.ai.rag）"
+    assert "from bisheng.core.ai.rag import" not in src, \
+        "core.ai.rag 路径不存在，会导致 ImportError"
