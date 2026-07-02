@@ -324,8 +324,10 @@ def _parse_knowledge_file(file_id: int, preview_cache_key: str = None, callback_
         db_file.status = KnowledgeFileStatus.PROCESSING.value
         KnowledgeFileDao.update_file_status([db_file.id], KnowledgeFileStatus.PROCESSING)
 
-    # Get Splitting Rules
-    file_rule = FileProcessBase(**json.loads(db_file.split_rule))
+    # Get Splitting Rules（E1: split_rule 改 JSON 列为 dict；兼容存量 str）
+    _sr = db_file.split_rule
+    _sr_dict = json.loads(_sr) if isinstance(_sr, str) else _sr
+    file_rule = FileProcessBase(**_sr_dict)
     logger.debug("parse_knowledge_file_celery_start", file_id)
     process_file_task(db_knowledge,
                       db_files=[db_file],

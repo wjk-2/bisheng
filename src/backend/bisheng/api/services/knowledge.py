@@ -650,7 +650,7 @@ class KnowledgeService(KnowledgeUtils):
         split_rule_dict = req_data.model_dump(include=set(list(FileProcessBase.model_fields.keys())))
         if req_data.excel_rule is not None:
             split_rule_dict["excel_rule"] = req_data.excel_rule.model_dump()
-        db_file.split_rule = json.dumps(split_rule_dict)
+        db_file.split_rule = split_rule_dict  # E1: JSON 列直接赋 dict（不再 json.dumps）
         db_file.status = KnowledgeFileStatus.WAITING.value  # Parsing
         db_file.updater_id = login_user.user_id
         db_file.updater_name = login_user.user_name
@@ -774,7 +774,8 @@ class KnowledgeService(KnowledgeUtils):
         if not file_info.excel_rule:
             file_info.excel_rule = ExcelRule()
         split_rule["excel_rule"] = file_info.excel_rule.model_dump()
-        str_split_rule = json.dumps(split_rule)
+        # E1: JSON 列直接赋 dict（不再 json.dumps，避免双重编码）
+        str_split_rule = split_rule
         minio_client = get_minio_storage_sync()
 
         if content_repeat or name_repeat:

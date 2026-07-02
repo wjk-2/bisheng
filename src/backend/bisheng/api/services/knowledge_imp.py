@@ -567,11 +567,11 @@ def add_file_embedding(
     filepath, _ = file_download(file_url)
     file_ext = Path(db_file.file_name).suffix.lower()
 
-    # Convert split_rule string to dict if needed
+    # E1: split_rule 改 JSON 列后为 dict；兼容存量 str（迁移前/未迁移）
     excel_rule = ExcelRule()
-    if db_file.split_rule and isinstance(db_file.split_rule, str):
-        split_rule = json.loads(db_file.split_rule)
-        if "excel_rule" in split_rule:
+    if db_file.split_rule:
+        split_rule = json.loads(db_file.split_rule) if isinstance(db_file.split_rule, str) else db_file.split_rule
+        if isinstance(split_rule, dict) and "excel_rule" in split_rule:
             excel_rule = ExcelRule(**split_rule["excel_rule"])
     # # extract text from file
     try:

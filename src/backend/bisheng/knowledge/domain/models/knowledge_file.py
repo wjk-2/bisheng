@@ -48,7 +48,7 @@ class KnowledgeFileBase(SQLModelSerializable):
     parse_type: Optional[str] = Field(default=ParseType.LOCAL.value,
                                       index=False,
                                       description='Files parsed in what mode')
-    split_rule: Optional[str] = Field(default=None, sa_column=Column(Text), description='Files parsed in what mode')
+    split_rule: Optional[Dict[str, Any]] = Field(default=None, sa_column=Column(JSON, nullable=True), description='Files parsed in what mode')
     bbox_object_name: Optional[str] = Field(default='', description='bboxFiles inminioStored object name')
     status: Optional[int] = Field(default=KnowledgeFileStatus.WAITING.value,
                                   index=False,
