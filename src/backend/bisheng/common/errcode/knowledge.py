@@ -144,3 +144,9 @@ class KnowledgeMetadataFieldImmutableError(BaseErrorCode):
 class KnowledgeMetadataValueTypeConvertError(BaseErrorCode):
     Code: int = 10984
     Msg: str = 'Meta data fields {field_name} Value type conversion error: {error_msg}'
+
+
+# 知识库索引创建失败（Milvus/ES 初始化失败，已回滚 DB 记录与已建向量孤儿）
+class KnowledgeIndexCreateError(BaseErrorCode):
+    Code: int = 10990
+    Msg: str = 'Knowledge base index creation failed, rolled back: {exception}'

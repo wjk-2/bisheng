@@ -204,7 +204,7 @@ class KnowledgeService(KnowledgeUtils):
                 logger.error(f"rollback milvus collection failed: {ee}")
             try:
                 if es_client is not None:
-                    es_client._store._delete_index_if_exists()
+                    es_client._store.client.indices.delete(index=db_knowledge.index_name, ignore=[400, 404])
             except Exception as ee:
                 logger.error(f"rollback es index failed: {ee}")
             # 回滚 DB 记录（KnowledgeDao.delete_by_id 不存在，用 delete_knowledge 等价——此时无 KnowledgeFile）
