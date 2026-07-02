@@ -16,6 +16,7 @@ from bisheng.llm.domain.services import LLMService
 from bisheng.workflow.callback.event import OutputMsgData, StreamMsgOverData
 from bisheng.workflow.callback.llm_callback import LLMNodeCallbackHandler
 from bisheng.workflow.common.knowledge import RagUtils
+from bisheng.workflow.common.retrieval_fallback import on_retrieval_failure
 from bisheng.workflow.nodes.prompt_template import PromptTemplateParser
 
 
@@ -78,8 +79,8 @@ class RagNode(RagUtils):
             self.init_rerank_model()
             source_documents = self.retrieve_question(question)
         except Exception as e:
-            logger.exception(f'RagNode retrieve_question error: ')
-            source_documents = [Document(page_content=str(e), metadata={})]
+            # 检索失败降级为空 context，绝不把 str(e) 当结果喂 LLM
+            source_documents, _ = on_retrieval_failure(e, logger=logger)
 
         qa_chain = create_stuff_documents_chain(llm=self._llm, prompt=self._qa_prompt)
         inputs = {

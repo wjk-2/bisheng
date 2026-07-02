@@ -3,6 +3,7 @@ from typing import Any
 from loguru import logger
 
 from bisheng.workflow.common.knowledge import RagUtils
+from bisheng.workflow.common.retrieval_fallback import on_retrieval_failure
 
 
 class KnowledgeRetriever(RagUtils):
@@ -38,13 +39,15 @@ class KnowledgeRetriever(RagUtils):
                         }
                     } for one in question_answer]
                 except Exception as e:
-                    question_answer = str(e)
+                    # 检索失败降级为空列表 + error 标记，绝不把 str(e) 当输出喂下游
+                    question_answer, err = on_retrieval_failure(e, logger=logger)
+                    ret.setdefault("_errors", []).append(err)
                 ret[output_key] = question_answer
         except Exception as e:
             logger.exception(f"KnowledgeRetriever node run error: {e}")
-            ret = {
-                one: str(e) for one in self._output_keys
-            }
+            # 外层失败也降级为空列表，不把 str(e) 喂输出
+            ret = {one: [] for one in self._output_keys}
+            ret.setdefault("_errors", []).append("retrieval_failed")
         return ret
 
     def parse_log(self, unique_id: str, result: dict) -> Any:
