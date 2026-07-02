@@ -3,6 +3,7 @@
 import base64
 import logging
 import os
+import time
 from typing import List
 from uuid import uuid4
 
@@ -24,6 +25,33 @@ logger = logging.getLogger(__name__)
 # 注意：requests.Session 非线程安全，celery worker 多线程下靠 GIL + 低并发（文件解析不密集）可接受；
 # 若后续高并发需严谨，改 threading.local 或迁移到 get_http_client()。
 _etl4llm_session = requests.Session()
+
+# D3: OCR 重试（超时/非 200 重试 3 次，线性 backoff），避免单次抖动即 FAILED
+OCR_MAX_RETRIES = 3
+OCR_RETRY_BACKOFF = 2  # 秒，线性递增
+
+
+def _etl4llm_post_with_retry(url, headers, payload, timeout):
+    """同步 etl4llm 调用，失败重试 OCR_MAX_RETRIES 次。"""
+    last_exc = None
+    for attempt in range(1, OCR_MAX_RETRIES + 1):
+        try:
+            resp = _etl4llm_session.post(url, headers=headers, json=payload, timeout=timeout)
+            if resp.status_code == 200:
+                return resp
+            last_exc = Exception(f"file partition failed status={resp.status_code} resp={resp.text}")
+        except requests.Timeout as e:
+            last_exc = e
+            logger.error(f"Request to etl4lm API timed out (attempt {attempt}/{OCR_MAX_RETRIES}): {e}")
+        except Exception as e:
+            if str(e).find("Timeout") != -1:
+                last_exc = e
+                logger.error(f"Request to etl4lm API timed out (attempt {attempt}/{OCR_MAX_RETRIES}): {e}")
+            else:
+                raise
+        if attempt < OCR_MAX_RETRIES:
+            time.sleep(OCR_RETRY_BACKOFF * attempt)
+    raise Exception(f"etl4lm OCR failed after {OCR_MAX_RETRIES} retries: {last_exc}")
 
 
 def get_image_tag(results, part):
@@ -191,7 +219,7 @@ class Etl4lmLoader(BasePDFLoader):
         self.ocr_sdk_url = ocr_sdk_url
         self.headers = {"Content-Type": "application/json"}
         self.file_name = file_name
-        self.timemout = timeout
+        self.timeout = timeout
         self.start = start
         self.n = n
         self.extra_kwargs = kwargs
@@ -215,17 +243,11 @@ class Etl4lmLoader(BasePDFLoader):
             filter_page_header_footer=bool(self.filter_page_header_footer),
         )
         try:
-            # P4(2026-06-23): 用模块级 Session 复用连接
-            resp = _etl4llm_session.post(
-                self.unstructured_api_url, headers=self.headers, json=payload, timeout=self.timemout
+            # D3: 同步调用带重试（OCR_MAX_RETRIES 次），修 timemout→timeout 拼写
+            resp = _etl4llm_post_with_retry(
+                self.unstructured_api_url, self.headers, payload, self.timeout
             )
-        except requests.Timeout as e:
-            logger.error(f"Request to etl4lm API timed out: {e}")
-            raise Exception("etl4lm server timeout")
         except Exception as e:
-            if str(e).find("Timeout") != -1:
-                logger.error(f"Request to etl4lm API timed out: {e}")
-                raise Exception("etl4lm server timeout")
             raise e
         if resp.status_code != 200:
             raise Exception(
@@ -294,7 +316,7 @@ class Etl4lmLoader(BasePDFLoader):
 
             resp = await http_client.post(
                 url=self.unstructured_api_url, headers=self.headers, body=payload,
-                timeout=ClientTimeout(total=self.timemout)
+                timeout=ClientTimeout(total=self.timeout)
             )
         except Exception as e:
             if str(e).find("Timeout") != -1:
