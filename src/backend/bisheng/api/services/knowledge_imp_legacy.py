@@ -1034,9 +1034,7 @@ async def async_read_chunk_text(
             knowledge_llm = await LLMService.aget_knowledge_llm()
         except Exception as e:
             logger.exception("knowledge_llm_error:")
-            raise Exception(
-                f"Documentation Knowledge Base Summary Model is no longer valid, please go to Model Management-Configure in System Model Settings.{str(e)}"
-            )
+            raise KnowledgeLLMError(exception=e)
 
     text_splitter = ElemCharacterTextSplitter(
         separators=separator,
@@ -1127,7 +1125,7 @@ async def async_read_chunk_text(
             if file_extension_name in ["pdf"]:
                 # Determine if the document is damaged
                 if is_pdf_damaged(input_file):
-                    raise Exception('The file is damaged.')
+                    raise KnowledgeFileDamagedError()
             etl4lm_settings = (await settings.async_get_knowledge()).etl4lm
             loader = Etl4lmLoader(
                 file_name,
@@ -1166,7 +1164,7 @@ async def async_read_chunk_text(
                 documents = await loader.aload()
             else:
                 if file_extension_name not in filetype_load_map:
-                    raise Exception("Type not supported")
+                    raise KnowledgeFileNotSupportedError()
                 loader = filetype_load_map[file_extension_name](file_path=input_file)
                 documents = await loader.aload()
 
