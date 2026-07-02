@@ -1,9 +1,12 @@
 import json
+import logging
 
 from fastapi import WebSocket
 from fastapi.exceptions import HTTPException
 
 from bisheng.common.schemas.api import UnifiedResponseModel
+
+logger = logging.getLogger(__name__)
 
 
 class BaseErrorCode(Exception):
@@ -13,9 +16,24 @@ class BaseErrorCode(Exception):
 
     def __init__(self, exception: Exception = None, msg: str = None, code: int = None, **kwargs):
         self.exception = exception
-        self.message = msg or self.Msg
+        raw_msg = msg or self.Msg
+        # Format the message template with kwargs so placeholder-bearing Msg
+        # (e.g. 'Meta data fields {field_name} ...') is filled when callers pass
+        # the matching kwargs. Fall back to the raw template when a placeholder
+        # has no matching kwarg, so callers that pass no kwargs (or pass exception
+        # as the first positional param) are not broken by KeyError.
+        if kwargs:
+            try:
+                self.message = raw_msg.format(**kwargs)
+            except (KeyError, IndexError):
+                self.message = raw_msg
+        else:
+            self.message = raw_msg
         self.code = code or self.Code
         self.kwargs = kwargs
+        # I3: errcode 进日志——异常抛出时记 warning 含 code/message，助排障
+        # （此前 errcode 只进 HTTP/SSE 响应体，日志无 code，排障难关联）
+        logger.warning(f"errcode={self.code} msg={self.message} exc={exception}")
         super().__init__(exception)
 
     def __str__(self):
