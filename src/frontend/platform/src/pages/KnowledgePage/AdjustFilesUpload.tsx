@@ -10,6 +10,7 @@ import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import DialogWithRepeatFiles from "./components/DuplicateFileDialog";
 import FileUploadStep2 from "./components/FileUploadStep2";
+import { buildFileProcessPayload } from "./components/splitRulePayload";
 import FileUploadStep4 from "./components/FileUploadStep4";
 import PreviewResult from "./components/PreviewResult";
 
@@ -210,14 +211,16 @@ export default function AdjustFilesUpload() {
       knowledge_id: Number(_config.rules.knowledgeId || initFileData.knowledgeId || knowledgeId),
       separator: normalizeSeparators(_config.rules.separator),
       separator_rule: _config.rules.separatorRule,
-      chunk_size: _config.rules.chunkSize,
-      chunk_overlap: _config.rules.chunkOverlap,
       excel_rule: _config.cellGeneralConfig,
       kb_file_id: _config.rules.fileList[0].id,
-      retain_images: _config.rules.retainImages,
-      enable_formula: _config.rules.enableFormula,
-      force_ocr: _config.rules.forceOcr,
-      filter_page_header_footer: _config.rules.pageHeaderFooter,
+      ...buildFileProcessPayload({
+        chunkSize: _config.rules.chunkSize,
+        chunkOverlap: _config.rules.chunkOverlap,
+        retainImages: _config.rules.retainImages,
+        enableFormula: _config.rules.enableFormula,
+        forceOcr: _config.rules.forceOcr,
+        pageHeaderFooter: _config.rules.pageHeaderFooter,
+      }),
       file_path: _config.rules.fileList[0].filePath
     };
 

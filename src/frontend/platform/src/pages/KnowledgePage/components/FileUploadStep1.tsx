@@ -46,10 +46,10 @@ export default function FileUploadStep1({ hidden, onNext, onSave, initialFiles }
             separator_rule: ["after", "after", "after", "after", "after", "after"],
             chunk_size: 1000,
             chunk_overlap: 100,
-            retain_images: true,
-            enable_formula: true,
-            force_ocr: true,
-            filter_page_header_footer: true
+            retain_images: 1,
+            enable_formula: 1,
+            force_ocr: 1,
+            filter_page_header_footer: 1
         }
 
         setLoading(true)

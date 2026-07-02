@@ -12,6 +12,7 @@ import useKnowledgeStore from "../useKnowledgeStore";
 import PreviewResult from "./PreviewResult";
 import RuleFile from "./RuleFile";
 import RuleTable from "./RuleTable";
+import { buildFileProcessPayload } from "./splitRulePayload";
 
 // 原有类型定义不变
 export interface FileItem {
@@ -185,12 +186,7 @@ const FileUploadStep2 = forwardRef(({
             })),
             separator,
             separator_rule: separatorRule,
-            chunk_size: chunkSize,
-            chunk_overlap: chunkOverlap,
-            retain_images: retainImages,
-            enable_formula: enableFormula,
-            force_ocr: forceOcr,
-            filter_page_header_footer: pageHeaderFooter
+            ...buildFileProcessPayload({ chunkSize, chunkOverlap, retainImages, enableFormula, forceOcr, pageHeaderFooter }),
         };
 
         onNext(nextStep, params);
@@ -364,7 +360,7 @@ const useFileProcessingRules = (
             ),
             separatorRule: parsedSplitRule?.separator_rule || ['after', 'after', 'after', 'after', 'after', 'after'],
             chunkSize: parsedSplitRule?.chunk_size?.toString() || "1000",
-            chunkOverlap: parsedSplitRule?.chunk_overlap?.toString() || "0",
+            chunkOverlap: parsedSplitRule?.chunk_overlap?.toString() || "100",
             retainImages: parsedSplitRule?.retain_images ?? true,
             enableFormula: parsedSplitRule?.enable_formula ?? true,
             forceOcr: parsedSplitRule?.force_ocr ?? true,
