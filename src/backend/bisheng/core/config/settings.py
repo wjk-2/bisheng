@@ -148,9 +148,11 @@ class WorkflowConf(BaseModel):
     """ Workflow Configuration """
     max_steps: int = Field(default=50, description="Maximum number of steps a node can run")
     timeout: int = Field(default=720, description="Node timeout (min）")
-    # 方向3 query 改写：默认关，部署态坐实 output 慢后开（避免叠加查询侧 LLM 调用）。
-    query_rewrite_enabled: bool = Field(default=False, description="Enable history-aware query rewrite before retrieval")
+    # 方向3 query 改写：G1 默认开（多轮指代消解提升召回），超时降级原 query 不阻断。
+    query_rewrite_enabled: bool = Field(default=True, description="Enable history-aware query rewrite before retrieval")
     query_rewrite_timeout: int = Field(default=5, description="Query rewrite LLM call timeout (seconds), fallback to original on timeout")
+    # G1 HyDE：用 LLM 生成假设答案做向量检索（学术术语/模糊 query 提升召回），默认关（增一次 LLM 调用）。
+    hyde_enabled: bool = Field(default=False, description="Enable HyDE (hypothetical document embeddings) for vector retrieval")
 
 
 class CeleryConf(BaseModel):
