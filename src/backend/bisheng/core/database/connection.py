@@ -13,6 +13,9 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 logger = logging.getLogger(__name__)
 
+# E3: 注册软删除全局过滤 event（import 即注册 do_orm_execute listener）
+from bisheng.core.database import soft_delete_filter  # noqa: E402,F401
+
 
 class DatabaseConnectionManager:
     """Database Connection Manager

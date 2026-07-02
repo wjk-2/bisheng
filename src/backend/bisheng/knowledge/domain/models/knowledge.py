@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Any, List, Optional, Union, Dict
 
 from pydantic import BaseModel, field_validator
-from sqlalchemy import JSON
+from sqlalchemy import JSON, Boolean
 from sqlmodel import Column, DateTime, Field, delete, func, or_, select, text, update
 from sqlmodel.sql.expression import Select, SelectOfScalar, col
 
@@ -62,6 +62,9 @@ class KnowledgeBase(SQLModelSerializable):
         DateTime, nullable=False, server_default=text('CURRENT_TIMESTAMP')))
     update_time: Optional[datetime] = Field(default=None, sa_column=Column(
         DateTime, nullable=False, index=True, server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')))
+    # E3: 软删除（True=已删，查询层 do_orm_execute event 全局过滤）
+    is_deleted: Optional[bool] = Field(default=False, sa_column=Column(Boolean, nullable=False, server_default=text('0'), index=True))
+    deleted_at: Optional[datetime] = Field(default=None, sa_column=Column(DateTime, nullable=True))
 
     @field_validator('model', mode='before')
     @classmethod
@@ -497,16 +500,39 @@ class KnowledgeDao(KnowledgeBase):
             return session.exec(statement).first()
 
     @classmethod
-    def delete_knowledge(cls, knowledge_id: int, only_clear: bool = False):
+    def delete_knowledge(cls, knowledge_id: int, only_clear: bool = False, purge: bool = False):
+        """Delete or empty the knowledge base.
+
+        E3 软删除：默认软删（is_deleted=True），误删可从回收站恢复；
+        purge=True 时硬删（DROP，回收站清空时用）。
+        only_clear=True 时清空文件但保留知识库记录（向量重建场景）。
         """
-        Delete or empty the knowledge base
-        """
-        # <g id="Bold">Medical Treatment:</g>knowledge file
+        from datetime import datetime
         with get_sync_db_session() as session:
-            session.exec(delete(KnowledgeFile).where(KnowledgeFile.knowledge_id == knowledge_id))
-            # Do not delete knowledge base records when clearing the knowledge base
-            if not only_clear:
+            if only_clear:
+                # 清空文件（向量重建），保留知识库记录——文件也软删
+                session.exec(
+                    update(KnowledgeFile)
+                    .where(KnowledgeFile.knowledge_id == knowledge_id)
+                    .values(is_deleted=True, deleted_at=datetime.now())
+                )
+                return
+            if purge:
+                # 硬删（回收站清空）：连向量孤儿一起删由调用方处理，DB 直接 delete
+                session.exec(delete(KnowledgeFile).where(KnowledgeFile.knowledge_id == knowledge_id))
                 session.exec(delete(Knowledge).where(Knowledge.id == knowledge_id))
+            else:
+                # 软删：知识库 + 文件标 is_deleted=True（do_orm_execute event 全局过滤）
+                session.exec(
+                    update(KnowledgeFile)
+                    .where(KnowledgeFile.knowledge_id == knowledge_id)
+                    .values(is_deleted=True, deleted_at=datetime.now())
+                )
+                session.exec(
+                    update(Knowledge)
+                    .where(Knowledge.id == knowledge_id)
+                    .values(is_deleted=True, deleted_at=datetime.now())
+                )
             session.commit()
 
     @classmethod
