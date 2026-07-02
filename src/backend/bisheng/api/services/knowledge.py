@@ -31,6 +31,7 @@ from bisheng.common.errcode.http_error import NotFoundError, UnAuthorizedError, 
 from bisheng.common.errcode.knowledge import (
     KnowledgeChunkError,
     KnowledgeExistError,
+    KnowledgeIndexCreateError,
     KnowledgeNoEmbeddingError, KnowledgeNotQAError, KnowledgeFileFailedError,
 )
 from bisheng.common.schemas.telemetry.event_data_schema import NewKnowledgeBaseEventData
@@ -184,6 +185,8 @@ class KnowledgeService(KnowledgeUtils):
         db_knowledge.user_id = login_user.user_id
         db_knowledge = KnowledgeDao.insert_one(db_knowledge)
 
+        vector_client = None
+        es_client = None
         try:
             vector_client = KnowledgeRag.init_knowledge_milvus_vectorstore_sync(login_user.user_id,
                                                                                 knowledge=db_knowledge,
@@ -192,7 +195,21 @@ class KnowledgeService(KnowledgeUtils):
                                                                         metadata_schemas=KNOWLEDGE_RAG_METADATA_SCHEMA)
             es_client._store._create_index_if_not_exists()
         except Exception as e:
-            logger.exception("create knowledge index name error")
+            logger.exception("create knowledge index failed, rolling back DB record and vector orphans")
+            # 回滚已建向量孤儿，避免仅删 DB 留 Milvus collection / ES index 残留
+            try:
+                if vector_client is not None and hasattr(vector_client, 'col') and vector_client.col is not None:
+                    vector_client.col.drop()
+            except Exception as ee:
+                logger.error(f"rollback milvus collection failed: {ee}")
+            try:
+                if es_client is not None:
+                    es_client._store._delete_index_if_exists()
+            except Exception as ee:
+                logger.error(f"rollback es index failed: {ee}")
+            # 回滚 DB 记录（KnowledgeDao.delete_by_id 不存在，用 delete_knowledge 等价——此时无 KnowledgeFile）
+            KnowledgeDao.delete_knowledge(db_knowledge.id)
+            raise KnowledgeIndexCreateError(exception=str(e))
 
         # Handling the next steps in creating a Knowledge Base
         cls.create_knowledge_hook(request, login_user, db_knowledge)
