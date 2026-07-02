@@ -190,7 +190,7 @@ const FileUploadStep2 = forwardRef(({
             retain_images: retainImages,
             enable_formula: enableFormula,
             force_ocr: forceOcr,
-            fileter_page_header_footer: pageHeaderFooter
+            filter_page_header_footer: pageHeaderFooter
         };
 
         onNext(nextStep, params);

@@ -204,7 +204,6 @@ class Etl4lmLoader(BasePDFLoader):
         b64_data = base64.b64encode(open(self.file_path, "rb").read()).decode()
         parameters = {"start": self.start, "n": self.n}
         parameters.update(self.extra_kwargs)
-        # TODO: add filter_page_header_footer into payload when elt4llm is ready.
         payload = dict(
             filename=os.path.basename(self.file_name),
             b64_data=[b64_data],
@@ -213,6 +212,7 @@ class Etl4lmLoader(BasePDFLoader):
             enable_formula=self.enable_formular,
             ocr_sdk_url=self.ocr_sdk_url,
             parameters=parameters,
+            filter_page_header_footer=bool(self.filter_page_header_footer),
         )
         try:
             # P4(2026-06-23): 用模块级 Session 复用连接
@@ -278,7 +278,6 @@ class Etl4lmLoader(BasePDFLoader):
         b64_data = base64.b64encode(file_data).decode()
         parameters = {"start": self.start, "n": self.n}
         parameters.update(self.extra_kwargs)
-        # TODO: add filter_page_header_footer into payload when elt4llm is ready.
         payload = dict(
             filename=os.path.basename(self.file_name),
             b64_data=[b64_data],
@@ -287,6 +286,7 @@ class Etl4lmLoader(BasePDFLoader):
             enable_formula=self.enable_formular,
             ocr_sdk_url=self.ocr_sdk_url,
             parameters=parameters,
+            filter_page_header_footer=bool(self.filter_page_header_footer),
         )
         try:
 

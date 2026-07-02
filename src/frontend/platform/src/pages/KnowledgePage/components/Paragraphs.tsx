@@ -15,6 +15,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import useKnowledgeStore from '../useKnowledgeStore';
+import { formatFieldType } from '../utils';
 import FileSelector from "./FileSelector";
 import ParagraphEdit from './ParagraphEdit';
 import PreviewFile from './PreviewFile';
@@ -418,11 +419,11 @@ export default function Paragraphs({ fileId, onBack }) {
             const knowledgeDetail = knowledgeDetails[0];
 
             if (knowledgeDetail && knowledgeDetail.metadata_fields) {
-                const formattedFields = Object.entries(knowledgeDetail.metadata_fields).map(([fieldName, fieldData]) => ({
-                    id: `meta_${fieldName}`,
-                    name: fieldData.field_name || fieldName,
-                    type: fieldData.field_type.charAt(0).toUpperCase() + fieldData.field_type.slice(1),
-                    updated: fieldData.updated_at
+                const formattedFields = knowledgeDetail.metadata_fields.map((field) => ({
+                    id: `meta_${field.field_name}`,
+                    name: field.field_name,
+                    type: formatFieldType(field.field_type),
+                    updated: field.updated_at
                 }));
                 setPredefinedMetadata(formattedFields);
             }
@@ -443,11 +444,11 @@ export default function Paragraphs({ fileId, onBack }) {
             const knowledgeDetail = knowledgeDetails[0];
 
             if (knowledgeDetail && knowledgeDetail.metadata_fields) {
-                const formattedFields = Object.entries(knowledgeDetail.metadata_fields).map(([fieldName, fieldData]) => ({
-                    id: `meta_${fieldName}`,
-                    name: fieldData.field_name || fieldName,
-                    type: fieldData.field_type.charAt(0).toUpperCase() + fieldData.field_type.slice(1),
-                    updated: fieldData.updated_at
+                const formattedFields = knowledgeDetail.metadata_fields.map((field) => ({
+                    id: `meta_${field.field_name}`,
+                    name: field.field_name,
+                    type: formatFieldType(field.field_type),
+                    updated: field.updated_at
                 }));
                 setPredefinedMetadata(formattedFields);
             } else {
@@ -499,10 +500,8 @@ export default function Paragraphs({ fileId, onBack }) {
                 const fetchedMetadata = res.user_metadata || [];
                 const metadataArray = Object.entries(fetchedMetadata).map(([fieldName, fieldData]) => ({
                     id: `meta_${fieldName}`,
-                    name: fieldData.field_name || fieldName,
-                    type: fieldData.field_type ?
-                        fieldData.field_type.charAt(0).toUpperCase() + fieldData.field_type.slice(1).toLowerCase() :
-                        'String',
+                    name: fieldName,
+                    type: fieldData.field_type ? formatFieldType(fieldData.field_type) : 'String',
                     value: fieldData.field_value || '',
                     originalValue: fieldData.field_value || '',
                     updated_at: fieldData.updated_at || 0,
@@ -658,7 +657,7 @@ export default function Paragraphs({ fileId, onBack }) {
             fileType: currentFile.fileType,
             excelRule: {} // Add excel rules as needed
         }] : [],
-        pageHeaderFooter: false, // Page header/footer processing
+        pageHeaderFooter: true, // Page header/footer processing
         chunkOverlap: 200, // Chunk overlap size
         chunkSize: 1000, // Chunk size
         enableFormula: false, // Whether to enable formulas
@@ -752,7 +751,7 @@ export default function Paragraphs({ fileId, onBack }) {
     }
 
     const handleSaveUserMetadata = useCallback(async () => {
-        const knowledge_id = selectedFileId
+        const knowledge_file_id = selectedFileId
         const user_metadata_list = mainMetadataList.map(item => {
             if (!item.id.startsWith('temp_') && item.updated_at !== undefined) {
                 return {
@@ -768,7 +767,7 @@ export default function Paragraphs({ fileId, onBack }) {
             };
         });
         try {
-            await saveUserMetadataApi(knowledge_id, user_metadata_list);
+            await saveUserMetadataApi(knowledge_file_id, user_metadata_list);
 
             toast({
                 title: t('common.success'),
@@ -779,10 +778,11 @@ export default function Paragraphs({ fileId, onBack }) {
         } catch (error) {
             toast({
                 variant: 'error',
-                description: error,
+                title: t('metadialog.saveFailed'),
+                description: typeof error === 'string' ? error : '',
             });
             console.error('Failed to save metadata:', error);
-            setMetadataError(t('metadialog.saveFailed'));
+            setMetadataError(typeof error === 'string' ? error : t('metadialog.saveFailed'));
         }
     }, [mainMetadataList, selectedFileId, t]);
 

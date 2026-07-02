@@ -107,7 +107,7 @@ export default function PreviewResult({
         retain_images: retainImages,
         enable_formula: enableFormula,
         force_ocr: forceOcr,
-        fileter_page_header_footer: pageHeaderFooter
+        filter_page_header_footer: pageHeaderFooter
       },
       (eventType, data) => {
         switch (eventType) {

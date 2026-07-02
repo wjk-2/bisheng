@@ -49,7 +49,7 @@ export default function FileUploadStep1({ hidden, onNext, onSave, initialFiles }
             retain_images: true,
             enable_formula: true,
             force_ocr: true,
-            fileter_page_header_footer: true
+            filter_page_header_footer: true
         }
 
         setLoading(true)

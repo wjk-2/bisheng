@@ -92,14 +92,14 @@ class ElemUnstructuredLoader(BasePDFLoader):
         b64_data = base64.b64encode(open(self.file_path, 'rb').read()).decode()
         parameters = {'start': self.start, 'n': self.n}
         parameters.update(self.extra_kwargs)
-        # TODO: add filter_page_header_footer into payload when elt4llm is ready.
         payload = dict(filename=os.path.basename(self.file_name),
                        b64_data=[b64_data],
                        mode='partition',
                        force_ocr=self.force_ocr,
                        enable_formula=self.enable_formular,
                        ocr_sdk_url=self.ocr_sdk_url,
-                       parameters=parameters)
+                       parameters=parameters,
+                       filter_page_header_footer=bool(self.filter_page_header_footer))
 
         resp = requests.post(self.unstructured_api_url, headers=self.headers, json=payload)
         if resp.status_code != 200:

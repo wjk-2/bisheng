@@ -429,7 +429,7 @@ class FileProcessBase(BaseModel):
     retain_images: Optional[int] = Field(default=1, description='Keep document image')
     force_ocr: Optional[int] = Field(default=0, description='EnableOCR')
     enable_formula: Optional[int] = Field(default=1, description='latexFormula Recognition')
-    filter_page_header_footer: Optional[int] = Field(default=0, description='Filter Header Footer')
+    filter_page_header_footer: Optional[int] = Field(default=1, description='Filter Header Footer')
     excel_rule: Optional[ExcelRule] = Field(default=None, description="excel rule")
     cache: Optional[bool] = Field(default=True, description='Whether to fetch data from the cache when previewing the document')
 
@@ -446,7 +446,7 @@ class FileProcessBase(BaseModel):
         if values.get('chunk_overlap') is None:
             values['chunk_overlap'] = 100
         if values.get('filter_page_header_footer') is None:
-            values['filter_page_header_footer'] = 0
+            values['filter_page_header_footer'] = 1
         if values.get('force_ocr') is None:
             values['force_ocr'] = 1
         if values.get('enable_formula') is None:
