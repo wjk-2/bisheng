@@ -81,10 +81,11 @@ export default function RuleFile({
 
     return {
       chunkSize: String(baseRules.chunk_size ?? baseRules.chunkSize ?? "1000"),
-      chunkOverlap: String(baseRules.chunk_overlap ?? baseRules.chunkOverlap ?? "0"),
+      chunkOverlap: String(baseRules.chunk_overlap ?? baseRules.chunkOverlap ?? "100"),
       retainImages: toBoolean(baseRules.retain_images ?? baseRules.retainImages),
       forceOcr: toBoolean(baseRules.force_ocr ?? baseRules.forceOcr),
       enableFormula: toBoolean(baseRules.enable_formula ?? baseRules.enableFormula),
+      pageHeaderFooter: toBoolean(baseRules.filter_page_header_footer ?? baseRules.pageHeaderFooter ?? true),
     };
   }, [isAdjustMode, parsedOriginalSplitRule, rules]);
 
@@ -310,6 +311,22 @@ export default function RuleFile({
                 onCheckedChange={(e) => handleSettingChange('enableFormula', e)}
               />
               <Label htmlFor="enableFormula" className="text-sm text-gray-700">{t('enableRec')}</Label>
+              <Checkbox
+                id="pageHeaderFooter"
+                checked={internalValues.pageHeaderFooter}
+                onCheckedChange={(e) => handleSettingChange('pageHeaderFooter', e)}
+              />
+              <Label htmlFor="pageHeaderFooter" className="text-sm text-gray-700 flex items-center gap-1">
+                {t('hfFilter')}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <CircleHelp className="w-3.5 h-3.5 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <div className="max-w-96 text-left break-all whitespace-normal">{t('hfFilterTip')}</div>
+                  </TooltipContent>
+                </Tooltip>
+              </Label>
             </div>
           </div>
         )}

@@ -37,6 +37,8 @@
             "desc": "中文分号后切分"
         }
     },
+    "filterPageHeaderFooter": "过滤页眉页脚",
+    "filterPageHeaderFooterTooltip": "解析 PDF 时剥离页眉页脚（页码、期刊名、作者等），避免污染切片。需 etl4llm 服务支持，当前为接缝占位，完整剥离待后续。",
     "confirm1": "确定",
     "unavailable": "播放功能不可用，请联系管理员",
     "now": "此刻",
@@ -265,6 +267,7 @@
     "ocrForceTip": "启用后将支持识别扫描件、图片中的文字，以及结构化提取表格内容",
     "enableRec": "开启公式识别",
     "hfFilter": "过滤页眉页脚",
+    "hfFilterTip": "解析时剥离 PDF 页眉页脚（页码、期刊名、作者等），避免污染切分块。需 etl4llm 服务支持，首版为接缝占位。",
     "splitSizePlaceholder": "请输入切分长度",
     "chunkOverlap": "重叠区长度",
     "chunkOverlapPlaceholder": "请输入重叠区长度",
