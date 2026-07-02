@@ -144,7 +144,9 @@ class KnowledgeFileDao(KnowledgeFileBase):
     def get_file_simple_by_knowledge_id(cls, knowledge_id: int, page: int, page_size: int):
         offset = (page - 1) * page_size
         with get_sync_db_session() as session:
-            return session.query(KnowledgeFile.id, KnowledgeFile.object_name).filter(
+            # D4: 补 bbox_object_name + file_name，供知识库级删除清理 bbox 与预览对象（避免孤儿泄漏）
+            return session.query(KnowledgeFile.id, KnowledgeFile.object_name,
+                                 KnowledgeFile.bbox_object_name, KnowledgeFile.file_name).filter(
                 KnowledgeFile.knowledge_id == knowledge_id).order_by(
                 KnowledgeFile.id.asc()).offset(offset).limit(page_size).all()
 

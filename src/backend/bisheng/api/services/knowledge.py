@@ -375,10 +375,24 @@ class KnowledgeService(KnowledgeUtils):
             file_list = KnowledgeFileDao.get_file_simple_by_knowledge_id(
                 knowledge_id, i + 1, page_size
             )
+            # D4: 删 4 类对象（源文件/bbox/转换pdf/预览），消除孤儿泄漏
+            # file tuple: (id, object_name, bbox_object_name, file_name)
             for file in file_list:
-                minio_client.remove_object_sync(object_name=str(file[0]))
-                if file[1]:
-                    minio_client.remove_object_sync(object_name=file[1])
+                file_id, object_name, bbox_object_name, file_name = file[0], file[1], file[2], file[3]
+                # 源文件
+                if object_name:
+                    minio_client.remove_object_sync(object_name=object_name)
+                # bbox 对象（partitions/{file_id}.json）
+                if bbox_object_name:
+                    minio_client.remove_object_sync(object_name=bbox_object_name)
+                # 转换 PDF
+                minio_client.remove_object_sync(object_name=str(file_id))
+                # 预览对象
+                preview_object_name = KnowledgeUtils.get_knowledge_preview_file_object_name(
+                    file_id, file_name
+                )
+                if preview_object_name:
+                    minio_client.remove_object_sync(object_name=preview_object_name)
 
     @classmethod
     def get_upload_file_original_name(cls, file_name: str) -> str:
