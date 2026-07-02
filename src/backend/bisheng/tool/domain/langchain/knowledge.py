@@ -102,19 +102,14 @@ class KnowledgeRetrieverTool(BaseTool):
         # documents 顺序必须与 retrievers/weights 一致：向量(milvus)在前，关键词(es)在后
         finally_docs = rrf_rerank.compress_documents(documents=[milvus_docs, es_docs], query=query)
 
-        # limit by max_chunk_size
-        doc_num, doc_content_sum = 0, 0
-        same_file_id = set()
-
-        for doc in finally_docs:
-            if doc_content_sum > self.max_content:
-                break
-            doc_content_sum += len(doc.page_content)
-            same_file_id.add((doc.metadata.get('document_id'), doc.metadata.get('document_name')))
-            doc_num += 1
-        finally_docs = finally_docs[:doc_num]
+        # G3: 按 token 裁剪（防中文超窗口），替代原字符数裁剪
+        from bisheng.workflow.common.context_trimming import trim_by_token
+        finally_docs = trim_by_token(finally_docs, self.max_content)
 
         # sort by source and index if only one file
+        same_file_id = set()
+        for doc in finally_docs:
+            same_file_id.add((doc.metadata.get('document_id'), doc.metadata.get('document_name')))
         if self.sort_by_source_and_index and len(same_file_id) == 1:
             finally_docs = sorted(finally_docs,
                                   key=lambda x: (x.metadata.get('document_name', ""), x.metadata.get('chunk_index', 0)))
