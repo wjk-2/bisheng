@@ -10,7 +10,6 @@ import { Button } from "../../../components/bs-ui/button";
 import ShadTooltip from "../../../components/ShadTooltipComponent";
 import KnowledgeBaseSettingsDialog from "./EditKnowledgeDialog";
 import Tip from "@/components/bs-ui/tooltip/tip";
-import useKnowledgeStore from "../useKnowledgeStore";
 
 interface HeaderProps {
     fileTitle: boolean;
@@ -64,8 +63,6 @@ export default function Header({ fileTitle, onBack, showBackButton = true }: Hea
         })
     }
 
-    const { isEditable } = useKnowledgeStore();
-
     return (
         <div className="flex items-start h-14 z-30">
             {/* 回退按钮 - 根据 showBackButton 控制显示 */}
@@ -88,21 +85,6 @@ export default function Header({ fileTitle, onBack, showBackButton = true }: Hea
                         </span>
                     )}
                     <div className="h-10"></div>
-                    {/* edit dialog */}
-                    {/* {isEditable ? <Dialog open={open} onOpenChange={setOpen}>
-                        <DialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="group-hover:visible invisible disabled:pointer-events-auto">
-                                <SquarePen className="w-4 h-4" />
-                            </Button>
-                        </DialogTrigger>
-                        {
-                            open && <KnowledgeBaseSettingsDialog
-                                initialName={libInfo.name}
-                                initialDesc={libInfo.desc}
-                                onSave={handleSave}
-                            />
-                        }
-                    </Dialog> : <div className="h-10"></div>} */}
                 </div>
             </div>
         </div>

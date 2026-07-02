@@ -12,6 +12,7 @@ import { WorkflowNodeParam } from '@/types/flow';
 import { HelpCircle } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import InputItem from './InputItem';
+import { validateRetrievalWeights } from './retrievalValidation';
 import { useTranslation } from 'react-i18next';
 
 interface RerankModel {
@@ -34,7 +35,8 @@ const RetrievalConfig: React.FC<RetrievalConfigProps> = ({ data, onChange, onVal
     const [keywordWeight, setKeywordWeight] = useState(data.value?.keyword_weight ?? 0.5);
     const [vectorWeight, setVectorWeight] = useState(1 - (data.value?.keyword_weight ?? 0.5));
     const [searchSwitch, setSearchSwitch] = useState(data.value?.search_switch ?? false);
-    const [rerankEnabled, setRerankEnabled] = useState(data.value?.rerank_flag ?? false);
+    // G2-b: rerank_flag 默认 true，rerank_model 留空由后端补默认模型。
+    const [rerankEnabled, setRerankEnabled] = useState(data.value?.rerank_flag ?? true);
     const [selectedRerankModel, setSelectedRerankModel] = useState(data.value?.rerank_model || '');
     const [resultLength, setResultLength] = useState(data.value?.max_chunk_size || 15000);
     const [userAuth, setUserAuth] = useState(data.value?.user_auth ?? false);
@@ -51,18 +53,11 @@ const RetrievalConfig: React.FC<RetrievalConfigProps> = ({ data, onChange, onVal
     }, [keywordWeight, vectorWeight]);
 
     useEffect(() => {
-        if (searchSwitch && rerankEnabled) {
-            onValidate(() => {
-                if (!selectedRerankModel) {
-                    return t('rerankModelCannotBeEmpty');
-                }
-                return false;
-            });
-        } else {
-            onValidate(() => false);
-        }
+        // G2-b: rerank 模型可留空，由后端 resolve_rerank_config 查 DB 默认 rerank 模型补全。
+        // 权重范围校验（不再恒通过）；rerank 留空不阻断保存（后端兜底）。
+        onValidate(() => validateRetrievalWeights(vectorWeight, keywordWeight));
         return () => onValidate(() => false);
-    }, [searchSwitch, rerankEnabled, selectedRerankModel, onValidate]);
+    }, [searchSwitch, rerankEnabled, selectedRerankModel, vectorWeight, keywordWeight, onValidate]);
 
     useEffect(() => {
         if (searchSwitch) {
