@@ -286,6 +286,12 @@ def parse_knowledge_file_celery(file_id: int, preview_cache_key: str = None, cal
         _, knowledge = _parse_knowledge_file(file_id, preview_cache_key, callback_url)
     except Exception as e:
         logger.error("parse_knowledge_file_celery error: {}", str(e))
+        # 标 FAILED 而非静默，避免文件卡 PROCESSING（acks_late 普通异常不重投）
+        try:
+            KnowledgeFileDao.update_file_status([file_id], KnowledgeFileStatus.FAILED,
+                                                KnowledgeFileFailedError(exception=e).to_json_str())
+        except Exception as ee:
+            logger.error("mark file FAILED also failed: {}", str(ee))
     finally:
         db_file = KnowledgeFileDao.get_file_by_ids([file_id])
         if not db_file:
@@ -354,9 +360,15 @@ def retry_knowledge_file_celery(file_id: int, preview_cache_key: str = None, cal
                                             KnowledgeFileFailedError(exception=e).to_json_str())
         return
     try:
-        _parse_knowledge_file(file_id, preview_cache_key, callback_url)
+        _, knowledge = _parse_knowledge_file(file_id, preview_cache_key, callback_url)
     except Exception as e:
         logger.error("retry_knowledge_file_celery error: {}", str(e))
+        # 标 FAILED 而非静默，避免文件卡 PROCESSING
+        try:
+            KnowledgeFileDao.update_file_status([file_id], KnowledgeFileStatus.FAILED,
+                                                KnowledgeFileFailedError(exception=e).to_json_str())
+        except Exception as ee:
+            logger.error("mark file FAILED also failed: {}", str(ee))
     finally:
         db_file = KnowledgeFileDao.get_file_by_ids([file_id])
         if not db_file and knowledge:
