@@ -110,12 +110,8 @@ class KnowledgeUtils:
 
     @classmethod
     def aggregate_chunk_metadata(cls, chunk: str, metadata: dict) -> str:
-        # Video Wall ProcessingchunkAndmetadatadata in to get a newchunk
-        res = f"{{<file_title>{metadata.get('document_name', '')}</file_title>\n"
-        if metadata.get("abstract", ""):
-            res += f"<file_abstract>{metadata.get('abstract', '')}</file_abstract>\n"
-        res += f"<paragraph_content>{chunk}</paragraph_content>}}"
-        return res
+        from bisheng.api.services.chunk_format import aggregate_chunk_metadata as _aggregate
+        return _aggregate(chunk, metadata)
 
     @classmethod
     def chunk2promt(cls, chunk: str, metadata: dict) -> str:
@@ -674,8 +670,16 @@ def add_file_embedding(
     vector_client.add_texts(texts=texts, metadatas=metadatas)
 
     logger.info(f"add_es file={db_file.id} file_name={db_file.file_name}")
-    # Deposites
-    es_client.add_texts(texts=texts, metadatas=metadatas)
+    # Deposites — 双写补偿：ES 失败回滚已写 Milvus，避免脏状态
+    try:
+        es_client.add_texts(texts=texts, metadatas=metadatas)
+    except Exception as e:
+        logger.exception(f"ES add_texts failed file={db_file.id}, rolling back Milvus")
+        try:
+            delete_vector_files([db_file.id], knowledge)
+        except Exception as ee:
+            logger.error(f"rollback milvus failed file={db_file.id}: {ee}")
+        raise
 
     logger.info(f"add_complete file={db_file.id} file_name={db_file.file_name}")
 
