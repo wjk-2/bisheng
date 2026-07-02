@@ -7,17 +7,7 @@ import i18next, { use } from 'i18next';
 import { useMemo, useState } from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import { useTranslation } from 'react-i18next';
-export const ruleI18nMap = {
-  '\\n': 'singleNewlineRule',
-  '\\n\\n': 'doubleNewlineRule',
-  '第.{1,3}章': 'chapterRule',
-  '第.{1,3}条': 'articleRule',
-  '。': 'chinesePeriodRule',
-  '！': 'chineseExclamationRule',
-  '？': 'chineseQuestionRule',
-  '；': 'chineseSemicolonRule',
-  '\\.': 'englishPeriodRule',
-}
+import { PREDEFINED_RULES, PREDEFINED_REGEX_MAP, buildPredefinedStrategy } from './predefinedRules';
 
 const FileUploadSplitStrategy = ({ data: strategies, onChange: setStrategies }) => {
   const { t } = useTranslation('knowledge');
@@ -48,12 +38,13 @@ const FileUploadSplitStrategy = ({ data: strategies, onChange: setStrategies }) 
   };
   
   const handleRegexClick = (regex, mode) => {
-    // 根据regex获取对应的规则key
+    // 正则模式作为数据存（非 i18n label），rule 取 i18n desc 仅作 UI 提示
+    const { regex: realRegex, position, rule } = buildPredefinedStrategy(regex, mode, t);
     const newStrategy = {
       id: generateUUID(6),
-      regex:t(`predefinedRules.${ruleI18nMap[regex]}.label`),
-      position: mode,
-      rule: t(`predefinedRules.${ruleI18nMap[regex]}.desc`),
+      regex: realRegex,
+      position,
+      rule,
     };
     setStrategies([...strategies, newStrategy]);
   };
@@ -62,17 +53,7 @@ const FileUploadSplitStrategy = ({ data: strategies, onChange: setStrategies }) 
     setStrategies(strategies.filter(item => item.id !== id));
   };
 
-const [predefinedRules] = useState([
-    { regexKey:  '\\n', mode: 'after' },
-    { regexKey:'\\n\\n', mode: 'after' },
-    { regexKey:  '第.{1,3}章', mode: 'before' },
-    { regexKey: '第.{1,3}条', mode: 'before' },
-    { regexKey: '。', mode: 'after' },
-    { regexKey: '！', mode: 'after' },
-    { regexKey: '？', mode: 'after' },
-    { regexKey: '；', mode: 'after' },
-    { regexKey: '\\.', mode: 'after' }
-  ]);
+const [predefinedRules] = useState(PREDEFINED_RULES);
 
   return (
     <div className='flex gap-6'>
@@ -142,7 +123,7 @@ const [predefinedRules] = useState([
         <h3 className="text-sm text-left font-medium text-gray-700">{t('universalRules')}:</h3>
         <div className="flex flex-wrap gap-2">
           {predefinedRules.map((rule, index) => {
-            const regexDisplay = t(`predefinedRules.${ruleI18nMap[rule.regexKey]}.label`);
+            const regexDisplay = t(`predefinedRules.${PREDEFINED_REGEX_MAP[rule.regexKey]}.label`);
             return (
               <Button
                 key={index}
