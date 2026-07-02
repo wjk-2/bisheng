@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { useKnowledgeListStore } from "./knowledgeListStore";
 import { Button } from "../../components/bs-ui/button";
 import { Input, SearchInput } from "../../components/bs-ui/input";
 import {
@@ -393,18 +394,17 @@ export default function KnowledgeFile() {
         }
     };
 
-    // Cache page before entering detail page, temporary solution
+    // H1: 移除 window.LibPage 全局变量，改 Zustand store 持久分页
     const handleCachePage = () => {
-        window.LibPage = { page, type: 'file' }
+        useKnowledgeListStore.getState().cachePage('file', page)
     }
 
     useEffect(() => {
-        const _page = window.LibPage
-        if (_page) {
-            setPage(_page.page);
-            delete window.LibPage
+        const cached = useKnowledgeListStore.getState().consumeCachedPage()
+        if (cached && cached.type === 'file') {
+            setPage(cached.page)
         } else {
-            setPage(1);
+            setPage(1)
         }
     }, [])
 

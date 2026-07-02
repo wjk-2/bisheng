@@ -1,4 +1,5 @@
 import { QaIcon } from "@/components/bs-icons/knowledge";
+import { useKnowledgeListStore } from "./knowledgeListStore";
 import { LoadIcon, LoadingIcon } from "@/components/bs-icons/loading";
 import { bsConfirm } from "@/components/bs-ui/alertDialog/useConfirm";
 import { Button } from "@/components/bs-ui/button";
@@ -326,16 +327,15 @@ export default function KnowledgeQa(params) {
     };
 
     const handleCachePage = () => {
-        window.LibPage = { page, type: 'qa' };
+        useKnowledgeListStore.getState().cachePage('qa', page);
     };
 
     useEffect(() => {
-        const _page = window.LibPage;
-        if (_page) {
-            setPage(_page.page);
-            delete window.LibPage;
+        const cached = useKnowledgeListStore.getState().consumeCachedPage()
+        if (cached && cached.type === 'qa') {
+            setPage(cached.page)
         } else {
-            setPage(1);
+            setPage(1)
         }
     }, []);
 

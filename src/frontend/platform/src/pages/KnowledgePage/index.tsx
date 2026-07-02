@@ -8,16 +8,16 @@ import {
 import { useTranslation } from "react-i18next";
 import KnowledgeFile from "./KnowledgeFile";
 import KnowledgeQa from "./KnowledgeQa";
+import { useKnowledgeListStore } from "./knowledgeListStore";
 
 
 export default function index() {
 
     const { t } = useTranslation();
 
-    const defaultValue = (() => {
-        const page = window.LibPage;
-        return page ? page.type : 'file'
-    })();
+    // H1: 移除 window.LibPage，改 Zustand store 读缓存 tab
+    const cachedType = useKnowledgeListStore((s) => (s._cached ? s.type : null));
+    const defaultValue = cachedType ?? 'file';
 
     return (
         <div className="w-full h-full px-2 pt-4 relative">
