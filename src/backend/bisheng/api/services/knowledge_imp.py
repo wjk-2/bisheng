@@ -314,29 +314,15 @@ def process_file_task(
 
 
 def delete_vector_files(file_ids: List[int], knowledge: Knowledge) -> bool:
-    """ Delete vector data andesDATA """
-    if not file_ids:
-        return True
-    logger.info(f"delete_files file_ids={file_ids} knowledge_id={knowledge.id}")
-    logger.info("start init Milvus")
-    vector_client = KnowledgeRag.init_knowledge_milvus_vectorstore_sync(0, knowledge=knowledge,
-                                                                        metadata_schemas=KNOWLEDGE_RAG_METADATA_SCHEMA)
-    logger.info("start init ES")
-    es_client = KnowledgeRag.init_knowledge_es_vectorstore_sync(knowledge=knowledge,
-                                                                metadata_schemas=KNOWLEDGE_RAG_METADATA_SCHEMA)
-    # Automatically close purchase order aftercollectionIf it does not exist, it will not
-    if vector_client.col:
-        vector_client.col.delete(expr=f"document_id in {file_ids}", timeout=10)
-    logger.info(f"delete_milvus file_ids={file_ids}")
-
-    if es_client.client.indices.exists(index=knowledge.index_name):
-        res = es_client.client.delete_by_query(
-            index=knowledge.index_name,
-            query={"terms": {"metadata.document_id": file_ids}},
-        )
-        logger.info(f"act=delete_es file_ids={file_ids} res={res}")
-
-    return True
+    """ Delete vector data andesDATA（thin wrapper，迁移到 VectorDeleteService，C3 统一） """
+    import warnings as _w
+    _w.warn(
+        "delete_vector_files is deprecated, use VectorDeleteService.delete_by_file_ids (C3 统一向量删除)",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    from bisheng.common.vector_delete_service import VectorDeleteService
+    return VectorDeleteService.delete_by_file_ids(knowledge=knowledge, file_ids=file_ids)
 
 
 def delete_minio_files(file: KnowledgeFile):
