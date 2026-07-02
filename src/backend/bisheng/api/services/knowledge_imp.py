@@ -1477,59 +1477,20 @@ async def list_qa_by_knowledge_id(
 
 
 def delete_vector_data(knowledge: Knowledge, file_ids: List[int]):
-    """Delete vector data, Want to make a general purpose that can be dockedlangchainright of privacyvectorDB"""
-    # embeddings = FakeEmbedding()
-    # vectore_config_dict: dict = settings.get_knowledge().get('vectorstores')
-    # if not vectore_config_dict:
-    #     raise Exception('Vector database must be configured')
-    # elastic_index = knowledge.index_name or knowledge.collection_name
-    # vectore_client_list = [
-    #     decide_vectorstores(elastic_index, db, embeddings) if db == 'ElasticKeywordsSearch' else
-    #     decide_vectorstores(knowledge.collection_name, db, embeddings)
-    #     for db in vectore_config_dict.keys()
-    # ]
-    # logger.info('vector_init_conn_done col={} dbs={}', knowledge.collection_name,
-    #             vectore_config_dict.keys())
+    """Delete vector data（thin wrapper，迁移到 VectorDeleteService，C3 统一）。
 
-    # for vectore_client in vectore_client_list:
-    # Inquiryvector primary key
-    embeddings = FakeEmbedding()
-    collection_name = knowledge.collection_name
-    # <g id="Bold">Medical Treatment:</g>vectordb
-    vectore_client = decide_vectorstores(collection_name, "Milvus", embeddings)
-    try:
-        if isinstance(vectore_client.col, Collection):
-            pk = vectore_client.col.query(
-                expr=f"file_id in {file_ids}", output_fields=["pk"], timeout=10
-            )
-        else:
-            pk = []
-    except Exception:
-        # Want to try that again?
-        logger.error("timeout_except")
-        vectore_client.close_connection(vectore_client.alias)
-        vectore_client = decide_vectorstores(collection_name, "Milvus", embeddings)
-        pk = vectore_client.col.query(
-            expr=f"file_id in {file_ids}", output_fields=["pk"], timeout=10
-        )
-    logger.info("query_milvus pk={}", pk)
-    if pk:
-        res = vectore_client.col.delete(f"pk in {[p['pk'] for p in pk]}", timeout=10)
-        logger.info(f"act=delete_vector file_id={file_ids} res={res}")
-    vectore_client.close_connection(vectore_client.alias)
-
-    # elastic
-    index_name = knowledge.index_name or collection_name
-    esvectore_client = decide_vectorstores(
-        index_name, "ElasticKeywordsSearch", embeddings
+    原实现用 `file_id in {file_ids}` 错配键（写入时 metadata.document_id = db_file.id，
+    Milvus 无 file_id 字段，实际删不到）。转调 VectorDeleteService.delete_by_file_ids
+    统一用 document_id 正确键。
+    """
+    import warnings
+    warnings.warn(
+        "delete_vector_data is deprecated, use VectorDeleteService.delete_by_file_ids (C3 统一向量删除)",
+        DeprecationWarning,
+        stacklevel=2,
     )
-
-    if esvectore_client:
-        res = esvectore_client.client.delete_by_query(
-            index=index_name, body={"query": {"terms": {"metadata.file_id": file_ids}}}
-        )
-    logger.info(f"act=delete_es  res={res}")
-    return True
+    from bisheng.common.vector_delete_service import VectorDeleteService
+    return VectorDeleteService.delete_by_file_ids(knowledge=knowledge, file_ids=file_ids)
 
 
 def recommend_question(invoke_user_id: int, question: str, answer: str, number: int = 3) -> List[str]:
