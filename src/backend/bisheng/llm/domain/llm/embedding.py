@@ -39,6 +39,9 @@ def _get_openai_params(params: dict, server_config: dict, model_config: dict) ->
     if server_config.get('openai_proxy'):
         params['openai_proxy'] = server_config.get('openai_proxy')
     params["check_embedding_ctx_length"] = False
+    # D2: 注入 request_timeout/max_retries（激活 EagentEmbedding 定义但未注入的死代码，默认 200/6）
+    params.setdefault('request_timeout', 200)
+    params.setdefault('max_retries', 6)
 
     user_kwargs = _get_user_kwargs(model_config)
     user_kwargs.update(params)
