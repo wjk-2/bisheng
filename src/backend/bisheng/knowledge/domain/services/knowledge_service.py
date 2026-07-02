@@ -1,4 +1,5 @@
 import copy
+import logging
 from datetime import datetime
 
 from fastapi import BackgroundTasks
@@ -17,9 +18,16 @@ from bisheng.knowledge.domain.schemas.knowledge_schema import AddKnowledgeMetada
     UpdateKnowledgeMetadataFieldsReq
 from bisheng.utils.util import retry_async
 
+logger = logging.getLogger(__name__)
 
-class KnowledgeService:
-    """Service class for managing knowledge domain operations."""
+
+class KnowledgeMetadataService:
+    """Service class for managing knowledge metadata field operations.
+
+    F3: 原 KnowledgeService 重命名为 KnowledgeMetadataService（仅管元数据字段 CRUD +
+    向量库元数据同步），避免与 api/services/knowledge.py 的 legacy KnowledgeService 同名混淆。
+    DDD 层不再扩接管 CRUD/解析（明确边界收敛，报告 P2 二选一之"明确边界"）。
+    """
 
     def __init__(self, knowledge_repository: 'KnowledgeRepository',
                  knowledge_file_repository: 'KnowledgeFileRepository'):
@@ -390,3 +398,8 @@ class KnowledgeService:
     @classmethod
     def get_first_knowledge(cls) -> Knowledge | None:
         return KnowledgeDao.get_first_knowledge()
+
+
+# F3: 向后兼容别名（旧调用方 `from ... import KnowledgeService` 仍可用）。
+# 新代码应直接用 KnowledgeMetadataService（窄名，避免与 legacy 同名混淆）。
+KnowledgeService = KnowledgeMetadataService
