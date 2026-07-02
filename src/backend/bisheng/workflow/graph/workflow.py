@@ -86,11 +86,11 @@ class Workflow:
     def _cleanup_nodes_tmp_collections(self):
         """C4 workflow 结束清理各节点创建的 tmp collection（Milvus + ES），避免换 embedding 后残留"""
         from loguru import logger
-        nodes = getattr(self.graph_engine, 'nodes', None)
-        if nodes is None:
+        # graph_engine.nodes_map: {node_id: NodeInstance}（见 graph_engine.py:47）
+        nodes_map = getattr(self.graph_engine, 'nodes_map', None)
+        if not nodes_map:
             return
-        node_iter = nodes.values() if isinstance(nodes, dict) else nodes
-        for node in node_iter:
+        for node in nodes_map.values():
             cleanup = getattr(node, '_cleanup_tmp_collections', None)
             if callable(cleanup):
                 try:

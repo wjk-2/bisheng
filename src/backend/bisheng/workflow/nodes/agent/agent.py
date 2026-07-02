@@ -101,6 +101,9 @@ class AgentNode(BaseNode):
         if self._sql_agent and self._sql_agent.open:
             self._sql_address = self._init_sql_address()
 
+        # 临时文件 embedding model_id 缓存（init_file_milvus 写入，init_file_es 复用，避免重复查 DB）
+        self._file_embedding_model_id = None
+
         # agent
         self._agent_executor_type = 'React'
         self._agent = None
@@ -192,17 +195,20 @@ class AgentNode(BaseNode):
         embeddings = LLMService.get_knowledge_default_embedding(self.user_id)
         if not embeddings:
             raise Exception('No default configuredembeddingModels')
+        # 缓存 model_id 供 init_file_es 复用，避免重复查 DB（彭总：不写屎山）
+        self._file_embedding_model_id = getattr(embeddings, 'model_id')
         file_ids = [file_metadata['document_id']]
-        collection_name = self.get_milvus_collection_name(getattr(embeddings, 'model_id'))
-        es_index_name = self.get_es_index_name(getattr(embeddings, 'model_id'))
+        collection_name = self.get_milvus_collection_name(self._file_embedding_model_id)
+        es_index_name = self.get_es_index_name(self._file_embedding_model_id)
         # C4 创建即注册，结束统一 drop
-        self.register_tmp_collection(getattr(embeddings, 'model_id'), collection_name, es_index_name)
+        self.register_tmp_collection(self._file_embedding_model_id, collection_name, es_index_name)
         vector_client = KnowledgeRag.init_milvus_vectorstore(collection_name=collection_name, embeddings=embeddings)
         return vector_client.as_retriever(
             search_kwargs={"expr": f'document_id in {file_ids}'})
 
     def init_file_es(self, file_metadata: Dict):
-        es_index_name = self.get_es_index_name(getattr(LLMService.get_knowledge_default_embedding(self.user_id), 'model_id'))
+        # 复用 init_file_milvus 缓存的 model_id（init_file_milvus 必须先调用，见 :181-182 顺序）
+        es_index_name = self.get_es_index_name(self._file_embedding_model_id)
         es_client = KnowledgeRag.init_es_vectorstore_sync(index_name=es_index_name)
         return es_client.as_retriever(
             search_kwargs={"filter": [{"term": {"metadata.document_id": file_metadata['document_id']}}]})
