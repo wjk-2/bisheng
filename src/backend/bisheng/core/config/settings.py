@@ -148,6 +148,9 @@ class WorkflowConf(BaseModel):
     """ Workflow Configuration """
     max_steps: int = Field(default=50, description="Maximum number of steps a node can run")
     timeout: int = Field(default=720, description="Node timeout (min）")
+    # 方向3 query 改写：默认关，部署态坐实 output 慢后开（避免叠加查询侧 LLM 调用）。
+    query_rewrite_enabled: bool = Field(default=False, description="Enable history-aware query rewrite before retrieval")
+    query_rewrite_timeout: int = Field(default=5, description="Query rewrite LLM call timeout (seconds), fallback to original on timeout")
 
 
 class CeleryConf(BaseModel):
@@ -181,6 +184,12 @@ class CeleryConf(BaseModel):
             self.beat_schedule['telemetry_sync_mid_user_interact_dtl'] = {
                 'task': 'bisheng.worker.telemetry.mid_table.sync_mid_user_interact_dtl',
                 'schedule': crontab(minute=30, hour=0),  # 00:30 exec every day
+            }
+        # D5: 超时文件回收（每小时扫一次，治懒触发致文件卡 PROCESSING）
+        if 'knowledge.timeout_sweeper' not in self.beat_schedule:
+            self.beat_schedule['knowledge.timeout_sweeper'] = {
+                'task': 'knowledge.timeout_sweeper',
+                'schedule': crontab(minute=17),  # 每小时 :17 分执行
             }
 
         # convert str to crontab
