@@ -7,9 +7,11 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.prompts import SystemMessagePromptTemplate, HumanMessagePromptTemplate, ChatPromptTemplate
 from langchain_core.retrievers import BaseRetriever
 from langchain_core.tools import BaseTool
+from loguru import logger
 from pydantic import BaseModel, Field
 
 from bisheng.core.ai.rerank.rrf_rerank import RRFRerank
+from bisheng.workflow.common.rerank_degrade import compress_with_degrade, acompress_with_degrade
 
 system_template = """# 任务
 你是一位知识库问答助手，遵守以下规则回答问题：
@@ -54,8 +56,7 @@ class KnowledgeRetrieverTool(BaseTool):
 
         finally_docs = self._rrf_rerank(milvus_docs, es_docs, query)
 
-        if self.rerank:
-            finally_docs = self.rerank.compress_documents(finally_docs, query)
+        finally_docs, _ = compress_with_degrade(self.rerank, finally_docs, query, logger=logger)
         return finally_docs
 
     async def _arun(self, query: str, **kwargs: Any) -> List[Document]:
@@ -81,7 +82,6 @@ class KnowledgeRetrieverTool(BaseTool):
             for i, result in enumerate(results):
                 if isinstance(result, Exception):
                     # Log error but continue with empty results for this retriever
-                    from loguru import logger
                     logger.warning(f"Retrieval failed for {task_types[i]}: {result}")
                 elif task_types[i] == 'milvus':
                     milvus_docs = result
@@ -90,8 +90,7 @@ class KnowledgeRetrieverTool(BaseTool):
 
         finally_docs = self._rrf_rerank(milvus_docs, es_docs, query)
 
-        if self.rerank:
-            finally_docs = await self.rerank.acompress_documents(finally_docs, query)
+        finally_docs, _ = await acompress_with_degrade(self.rerank, finally_docs, query, logger=logger)
         return finally_docs
 
     def _rrf_rerank(self, milvus_docs: List[Document], es_docs: List[Document], query: str) -> List[Document]:
