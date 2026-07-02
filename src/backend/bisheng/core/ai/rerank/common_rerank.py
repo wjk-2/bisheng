@@ -8,6 +8,9 @@ from typing_extensions import Self
 
 from ..base import BaseRerank
 
+# D1: rerank httpx 显式 timeout（秒），避免 rerank 服务卡死无限等待
+RERANK_TIMEOUT = 10.0
+
 
 class CommonRerank(BaseRerank):
     """Document compressor that support `/v1/rerank` router and results simial vllm."""
@@ -26,9 +29,9 @@ class CommonRerank(BaseRerank):
         """Validate that client exists in environment."""
         self.base_url = self.base_url.rstrip("/") if self.base_url else self.base_url
         if not self.client:
-            self.client = Client(base_url=self.base_url)
+            self.client = Client(base_url=self.base_url, timeout=RERANK_TIMEOUT)
         if not self.async_client:
-            self.async_client = AsyncClient(base_url=self.base_url)
+            self.async_client = AsyncClient(base_url=self.base_url, timeout=RERANK_TIMEOUT)
         return self
 
     def get_default_headers(self):
@@ -79,7 +82,7 @@ class CommonRerank(BaseRerank):
         if not req_data:
             return []
 
-        resp = self.client.post(self.rerank_endpoint, json=req_data, headers=self.get_default_headers())
+        resp = self.client.post(self.rerank_endpoint, json=req_data, headers=self.get_default_headers(), timeout=RERANK_TIMEOUT)
         if resp.status_code != 200:
             raise ValueError(f"Rerank request failed with status code {resp.status_code}: {resp.text}")
         results = resp.json().get("results", [])
@@ -104,7 +107,7 @@ class CommonRerank(BaseRerank):
         req_data = self.get_req_data(documents, query)
         if not req_data:
             return []
-        resp = await self.async_client.post(self.rerank_endpoint, json=req_data, headers=self.get_default_headers())
+        resp = await self.async_client.post(self.rerank_endpoint, json=req_data, headers=self.get_default_headers(), timeout=RERANK_TIMEOUT)
         if resp.status_code != 200:
             raise ValueError(f"Rerank request failed with status code {resp.status_code}: {resp.text}")
         results = resp.json().get("results", [])
