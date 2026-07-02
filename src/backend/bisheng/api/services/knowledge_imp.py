@@ -716,8 +716,12 @@ def add_text_into_vector(
     vector_client.add_texts(texts=texts, metadatas=metadatas)
 
     logger.info(f"add_es file={db_file.id} file_name={db_file.file_name}")
-    # Deposites
-    es_client.add_texts(texts=texts, metadatas=metadatas)
+    # Deposites — 双写补偿：ES 失败记日志并抛（回滚由调用方用 VectorDeleteService 处理，本函数无 knowledge 句柄）
+    try:
+        es_client.add_texts(texts=texts, metadatas=metadatas)
+    except Exception as e:
+        logger.exception(f"ES add_texts failed file={db_file.id}, milvus 已写需调用方回滚")
+        raise
 
 
 def parse_partitions(partitions: List[Any]) -> Dict:
