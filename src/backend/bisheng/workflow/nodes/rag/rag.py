@@ -74,12 +74,23 @@ class RagNode(RagUtils):
         return ret
 
     def rag_one_question(self, question: str, output_key: str, unique_id: str) -> str:
+        # init 失败常是配置错误（知识库不存在/embedding 未配/Milvus 连不上），
+        # 与 retrieve 失败（无结果）区分日志，便于运维定位（两者都降级，避免工作流崩）。
+        init_failed = False
         try:
             self.init_multi_retriever()
             self.init_rerank_model()
+        except Exception as e:
+            logger.error(f"RagNode init failed (likely config error): {e}")
+            init_failed = True
+        try:
+            if init_failed:
+                raise RuntimeError("init failed, skip retrieve")
             source_documents = self.retrieve_question(question)
         except Exception as e:
-            # 检索失败降级为空 context，绝不把 str(e) 当结果喂 LLM
+            # 检索/init 失败降级为空 context，绝不把 str(e) 当结果喂 LLM
+            tag = "init_failed" if init_failed else "retrieve_failed"
+            logger.warning(f"RagNode degrade ({tag})")
             source_documents, _ = on_retrieval_failure(e, logger=logger)
 
         qa_chain = create_stuff_documents_chain(llm=self._llm, prompt=self._qa_prompt)

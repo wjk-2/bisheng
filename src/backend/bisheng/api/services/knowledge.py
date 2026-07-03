@@ -208,7 +208,10 @@ class KnowledgeService(KnowledgeUtils):
             except Exception as ee:
                 logger.error(f"rollback es index failed: {ee}")
             # 回滚 DB 记录（KnowledgeDao.delete_by_id 不存在，用 delete_knowledge 等价——此时无 KnowledgeFile）
-            KnowledgeDao.delete_knowledge(db_knowledge.id)
+            try:
+                KnowledgeDao.delete_knowledge(db_knowledge.id)
+            except Exception as ee:
+                logger.error(f"rollback db record failed: {ee}")
             raise KnowledgeIndexCreateError(exception=str(e))
 
         # Handling the next steps in creating a Knowledge Base

@@ -5,20 +5,12 @@
 （`from bisheng.api.services.knowledge_imp import X` 仍可用）。
 
 F1 决策（彭总 2026-07-02）：物理拆分 8 子模块风险高且 re-export 仍让旧路径可用
-（接缝倒置不强制解除），故降级为"包结构 + re-export + DeprecationWarning"。
+（接缝倒置不强制解除），故降级为"包结构 + re-export"。
 接缝倒置的治本由 F3 承担（改 linsight/workflow 调用方用窄接口）。
 
-新增代码应优先从子模块路径 import（待子模块物理拆分后）。
+DeprecationWarning 不在包顶层发（避免多点 import 刷屏 + pytest filterwarnings=error 报错），
+旧 thin wrapper（delete_vector_files/delete_vector_data）各自函数内已发 DeprecationWarning。
 """
-import warnings as _w
-
-_w.warn(
-    "bisheng.api.services.knowledge_imp is a re-export shim over knowledge_imp_legacy; "
-    "new code should import from the specific submodule (F1/F3 接缝倒置收敛)",
-    DeprecationWarning,
-    stacklevel=2,
-)
-
 from bisheng.api.services.knowledge_imp_legacy import *  # noqa: F401,F403
 # 显式 re-export 顶层公开符号（确保 from knowledge_imp import X 可用）
 from bisheng.api.services.knowledge_imp_legacy import (  # noqa: F401
@@ -41,6 +33,7 @@ from bisheng.api.services.knowledge_imp_legacy import (  # noqa: F401
     delete_vector_data,
     delete_vector_files,
     extract_code_blocks,
+    FakeEmbedding,
     list_qa_by_knowledge_id,
     parse_document_title,
     parse_partitions,

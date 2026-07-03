@@ -19,7 +19,11 @@ _SOFT_DELETE_MODELS = None
 
 
 def _get_soft_delete_models():
-    """延迟加载带 is_deleted 字段的模型（避免循环 import）"""
+    """延迟加载带 is_deleted 字段的模型（避免循环 import）。
+
+    失败时不缓存（保持 None 下次重试），避免启动早期模型未加载完毕时永久固化空 tuple
+    致软删过滤静默失效。用 None 与 () 区分：None=未加载（重试），()=已加载但无模型。
+    """
     global _SOFT_DELETE_MODELS
     if _SOFT_DELETE_MODELS is not None:
         return _SOFT_DELETE_MODELS
@@ -28,8 +32,9 @@ def _get_soft_delete_models():
         from bisheng.knowledge.domain.models.knowledge_file import KnowledgeFile
         _SOFT_DELETE_MODELS = (Knowledge, KnowledgeFile)
     except Exception as e:
-        logger.warning(f"soft delete models not loaded yet: {e}")
-        _SOFT_DELETE_MODELS = ()
+        # 不缓存，保持 None 下次重试；error 级日志便于发现
+        logger.error(f"soft delete models not loaded yet (will retry): {e}")
+        return None
     return _SOFT_DELETE_MODELS
 
 
