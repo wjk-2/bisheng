@@ -24,7 +24,7 @@ export default function index() {
             <Tabs defaultValue={defaultValue} className="w-full mb-[40px]">
                 <TabsList className="">
                     <TabsTrigger value="file">{t('lib.fileData')}</TabsTrigger>
-                    <TabsTrigger value="qa" className="roundedrounded-xl">{t('lib.qaData')}</TabsTrigger>
+                    <TabsTrigger value="qa" className="rounded-xl">{t('lib.qaData')}</TabsTrigger>
                 </TabsList>
                 <TabsContent value="qa">
                     <KnowledgeQa />

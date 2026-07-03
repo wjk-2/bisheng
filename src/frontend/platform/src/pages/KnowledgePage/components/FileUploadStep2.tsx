@@ -232,7 +232,7 @@ const FileUploadStep2 = forwardRef(({
                             <div className="">
                                 {displayMode === DisplayModeType.Mixed ? (
                                     <TabsList className="">
-                                        <TabsTrigger id="knowledge_file_tab" value="file" className="roundedrounded-xl">{t('defaultStrategy')}</TabsTrigger>
+                                        <TabsTrigger id="knowledge_file_tab" value="file" className="rounded-xl">{t('defaultStrategy')}</TabsTrigger>
                                         <TabsTrigger id="knowledge_table_tab" value="table">{t('customStrategy')}</TabsTrigger>
                                     </TabsList>
                                 ) : <div className="h-1"></div>}
