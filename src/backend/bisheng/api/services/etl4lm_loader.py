@@ -229,7 +229,8 @@ class Etl4lmLoader(BasePDFLoader):
 
     def load(self) -> List[Document]:
         """Load given path as pages."""
-        b64_data = base64.b64encode(open(self.file_path, "rb").read()).decode()
+        with open(self.file_path, "rb") as f:
+            b64_data = base64.b64encode(f.read()).decode()
         parameters = {"start": self.start, "n": self.n}
         parameters.update(self.extra_kwargs)
         payload = dict(

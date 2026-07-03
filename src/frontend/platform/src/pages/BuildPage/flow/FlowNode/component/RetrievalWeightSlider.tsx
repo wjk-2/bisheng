@@ -38,7 +38,7 @@ const RetrievalConfig: React.FC<RetrievalConfigProps> = ({ data, onChange, onVal
     // G2-b: rerank_flag 默认 true，rerank_model 留空由后端补默认模型。
     const [rerankEnabled, setRerankEnabled] = useState(data.value?.rerank_flag ?? true);
     const [selectedRerankModel, setSelectedRerankModel] = useState(data.value?.rerank_model || '');
-    const [resultLength, setResultLength] = useState(data.value?.max_chunk_size || 15000);
+    const [resultLength, setResultLength] = useState(data.value?.max_chunk_size ?? 15000);
     const [userAuth, setUserAuth] = useState(data.value?.user_auth ?? false);
     const { rerank } = useModel();
 
