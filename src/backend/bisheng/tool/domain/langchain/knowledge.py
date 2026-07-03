@@ -57,10 +57,8 @@ class KnowledgeRetrieverTool(BaseTool):
         finally_docs = self._rrf_rerank(milvus_docs, es_docs, query)
 
         finally_docs, _ = compress_with_degrade(self.rerank, finally_docs, query, logger=logger)
-        # G4: small-to-big 层级检索——命中 chunk 后回溯相邻 chunk 扩展上下文。
-        # fetch_adjacent 传 None（本机/未接 Milvus 不扩展，存量兼容）；部署后接 Milvus 回调真正扩展。
-        from bisheng.workflow.common.parent_context import expand_to_parent_context
-        finally_docs = expand_to_parent_context(finally_docs, fetch_adjacent=None, window=1)
+        # G4 small-to-big review 后降级不做：fetch_adjacent 需 Milvus query（本机不可测，
+        # 部署后才能验），传 None 等同没调。parent_context 模块保留待后续真实现 fetch_adjacent 再接。
         return finally_docs
 
     async def _arun(self, query: str, **kwargs: Any) -> List[Document]:
@@ -95,9 +93,7 @@ class KnowledgeRetrieverTool(BaseTool):
         finally_docs = self._rrf_rerank(milvus_docs, es_docs, query)
 
         finally_docs, _ = await acompress_with_degrade(self.rerank, finally_docs, query, logger=logger)
-        # G4: small-to-big（同 _run，fetch_adjacent 待部署后接 Milvus 异步查询）
-        from bisheng.workflow.common.parent_context import expand_to_parent_context
-        finally_docs = expand_to_parent_context(finally_docs, fetch_adjacent=None, window=1)
+        # G4 small-to-big 降级不做（同 _run，parent_context 待真实现 fetch_adjacent 再接）
         return finally_docs
 
     def _rrf_rerank(self, milvus_docs: List[Document], es_docs: List[Document], query: str) -> List[Document]:

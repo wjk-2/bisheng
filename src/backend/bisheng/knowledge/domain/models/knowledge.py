@@ -500,29 +500,27 @@ class KnowledgeDao(KnowledgeBase):
             return session.exec(statement).first()
 
     @classmethod
-    def delete_knowledge(cls, knowledge_id: int, only_clear: bool = False, purge: bool = False):
+    def delete_knowledge(cls, knowledge_id: int, only_clear: bool = False, purge: bool = True):
         """Delete or empty the knowledge base.
 
-        E3 软删除：默认软删（is_deleted=True），误删可从回收站恢复；
-        purge=True 时硬删（DROP，回收站清空时用）。
+        E3 软删除 review 后降级：do_orm_execute 全局过滤未注册（回收站 API 未补，
+        单开过滤会让软删记录成孤儿）。故默认 purge=True 硬删（与修复前行为一致），
+        is_deleted 字段闲置保留。待回收站 API（列软删/恢复）一起做时，
+        改默认 purge=False + 注册 do_orm_execute event。
         only_clear=True 时清空文件但保留知识库记录（向量重建场景）。
         """
         from datetime import datetime
         with get_sync_db_session() as session:
             if only_clear:
-                # 清空文件（向量重建），保留知识库记录——文件也软删
-                session.exec(
-                    update(KnowledgeFile)
-                    .where(KnowledgeFile.knowledge_id == knowledge_id)
-                    .values(is_deleted=True, deleted_at=datetime.now())
-                )
+                # 清空文件（向量重建），保留知识库记录——文件硬删（软删未启用）
+                session.exec(delete(KnowledgeFile).where(KnowledgeFile.knowledge_id == knowledge_id))
                 return
             if purge:
-                # 硬删（回收站清空）：连向量孤儿一起删由调用方处理，DB 直接 delete
+                # 硬删（默认）：连向量孤儿一起删由调用方处理，DB 直接 delete
                 session.exec(delete(KnowledgeFile).where(KnowledgeFile.knowledge_id == knowledge_id))
                 session.exec(delete(Knowledge).where(Knowledge.id == knowledge_id))
             else:
-                # 软删：知识库 + 文件标 is_deleted=True（do_orm_execute event 全局过滤）
+                # 软删（待回收站 API 启用后用）：知识库 + 文件标 is_deleted=True
                 session.exec(
                     update(KnowledgeFile)
                     .where(KnowledgeFile.knowledge_id == knowledge_id)

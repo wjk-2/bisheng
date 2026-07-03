@@ -1,11 +1,11 @@
-"""TDD: E3 软删除/回收站。
+"""TDD: E3 软删除/回收站（review 后降级：字段保留，event/do_orm_execute 不注册）。
 
 验证：
-1. knowledge / knowledge_file 模型有 is_deleted / deleted_at 字段
-2. do_orm_execute event 注册（全局过滤 is_deleted=False）
-3. alembic 迁移存在（加列 + 索引）
-
-本机无 langchain 等重依赖，用源码级断言。
+1. knowledge / knowledge_file 模型有 is_deleted / deleted_at 字段（保留，待回收站启用）
+2. soft_delete_filter 模块存在（do_orm_execute event 已实现，待回收站 API 启用时注册）
+3. connection.py 未注册 event（回收站未闭环，注册会让软删记录成孤儿）
+4. delete_knowledge 默认 purge=True 硬删（与修复前行为一致）
+5. alembic 迁移存在（加列 + 索引，字段就位）
 """
 import os
 
@@ -29,19 +29,22 @@ def test_knowledge_file_model_has_soft_delete_fields():
     assert "deleted_at" in src, "KnowledgeFile 模型缺 deleted_at 字段"
 
 
-def test_do_orm_execute_event_registered():
-    """soft_delete_filter 注册 do_orm_execute event 全局过滤"""
+def test_soft_delete_filter_module_implemented():
+    """soft_delete_filter 模块已实现 do_orm_execute event（待回收站启用时注册）"""
     src = _read("bisheng/core/database/soft_delete_filter.py")
     assert 'event.listens_for(Session, "do_orm_execute")' in src, \
-        "未注册 do_orm_execute event"
+        "soft_delete_filter 未实现 do_orm_execute event"
     assert "is_deleted.is_(False)" in src, "event 未注入 is_deleted=False 过滤"
     assert "include_deleted" in src, "缺 include_deleted 绕过选项（回收站/purge 用）"
 
 
-def test_connection_imports_soft_delete_filter():
-    """connection.py import soft_delete_filter 触发 event 注册"""
+def test_connection_does_not_register_event_yet():
+    """connection.py 未注册 soft_delete event（回收站未闭环，注册会让软删记录成孤儿）"""
     src = _read("bisheng/core/database/connection.py")
-    assert "soft_delete_filter" in src, "connection.py 未 import soft_delete_filter（event 不注册）"
+    # import 应被注释（待回收站 API 启用）
+    active_import = [l for l in src.splitlines()
+                     if "import soft_delete_filter" in l and not l.strip().startswith("#")]
+    assert not active_import, "connection.py 注册了 soft_delete event（回收站未闭环应停用）"
 
 
 def test_alembic_migration_exists():
@@ -57,14 +60,12 @@ def test_alembic_migration_exists():
     assert "down_revision = 'e2_add_indexes_20260702'" in mig_src, "E3 迁移 down_revision 应为 e2"
 
 
-def test_delete_knowledge_is_soft_delete_by_default():
-    """delete_knowledge 默认软删（is_deleted=True），purge=True 才硬删"""
+def test_delete_knowledge_defaults_to_purge():
+    """delete_knowledge 默认 purge=True 硬删（回收站未启用，与修复前行为一致）"""
     src = _read("bisheng/knowledge/domain/models/knowledge.py")
     start = src.find("def delete_knowledge(")
     end = src.find("\n    @classmethod", start + 10)
     fn = src[start:end if end != -1 else len(src)]
-    assert "purge" in fn, "delete_knowledge 缺 purge 参数（硬删选项）"
-    assert "is_deleted=True" in fn, "delete_knowledge 未实现软删（is_deleted=True）"
-    # 默认分支应 update 软删，非默认 purge 才 delete
-    assert "update(Knowledge" in fn, "delete_knowledge 默认应用 update 软删"
+    assert "purge: bool = True" in fn, "delete_knowledge 默认应为 purge=True（回收站未启用）"
+    assert "is_deleted=True" in fn, "delete_knowledge 软删分支保留（待回收站启用）"
 

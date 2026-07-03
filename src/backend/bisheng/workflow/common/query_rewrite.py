@@ -31,39 +31,8 @@ def should_rewrite_query(history_text: Optional[str]) -> bool:
     return bool(history_text and history_text.strip())
 
 
-# HyDE（Hypothetical Document Embeddings）：让 LLM 先对 query 生成一段假设答案，
-# 再用假设答案（而非原 query）做向量检索——假设答案的语义空间更接近目标文档，
-# 对学术术语/缩写/模糊 query 提升召回。失败/超时降级为原 query。
-_HYDE_PROMPT = (
-    "请用一两段话给出以下问题的假设性回答（不必准确，体现期望答案的措辞与术语即可），"
-    "只输出回答正文，不要解释、不要重复问题。\n\n问题: {question}\n\n假设性回答:"
-)
-
-
-def hyde_question(
-    question: str,
-    llm: "BaseChatModel",
-    timeout: int = 5,
-) -> str:
-    """用 LLM 生成假设答案供向量检索（HyDE）。
-
-    超时（默认 5s）或失败时降级为原 question，不阻断检索（HyDE 是增益项，非必需）。
-    是否启用由 settings.workflow_conf.hyde_enabled 控制（调用方判断）。
-    """
-    try:
-        prompt = _HYDE_PROMPT.format(question=question)
-        future = _rewrite_executor.submit(llm.invoke, prompt)
-        rewritten = future.result(timeout=timeout)
-        content = rewritten.content if hasattr(rewritten, "content") else str(rewritten)
-        content = content.strip() if content else ""
-        return content or question
-    except FuturesTimeoutError:
-        logger.warning(f"HyDE timeout ({timeout}s), fallback to original question")
-        return question
-    except Exception as e:
-        logger.warning(f"HyDE failed, fallback to original question: {e}")
-        return question
-
+# HyDE（review 后降级不做）：原计划 LLM 生成假设答案做向量检索，但财经容器 35B 增延迟
+# 且 ES 关键词路不能用假设答案（丢词），接线需谨慎权衡。诚实删函数，待明确需求再实现。
 
 def rewrite_query_with_history(
     question: str,

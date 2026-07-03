@@ -13,8 +13,11 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 logger = logging.getLogger(__name__)
 
-# E3: 注册软删除全局过滤 event（import 即注册 do_orm_execute listener）
-from bisheng.core.database import soft_delete_filter  # noqa: E402,F401
+# E3 软删除 review 后降级：do_orm_execute 全局过滤已实现，但回收站 API（列软删/恢复/purge）未补，
+# 单开过滤会让软删记录成孤儿（既不可见也不可恢复）。故停用 event 注册，
+# is_deleted 字段保留（delete_knowledge 软删写入仍生效，但记录仍可见，等同硬删可见性）。
+# 待回收站 API 一起做时，取消下面注释注册 event。
+# from bisheng.core.database import soft_delete_filter  # noqa: E402,F401
 
 
 class DatabaseConnectionManager:
