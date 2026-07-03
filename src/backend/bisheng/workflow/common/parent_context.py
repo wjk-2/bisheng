@@ -58,7 +58,8 @@ def expand_to_parent_context(
                 want.add(idx + w)
         wanted[doc_id] = want
 
-    # 回调取相邻 chunk
+    # 回调取相邻 chunk，保留 rerank 相关性序：
+    # 命中 chunk 保持原序（rerank 已按相关性排序），相邻 chunk 去重后追加在后（不重排，避免最相关 chunk 被 trim 裁掉）
     expanded = list(hit_docs)
     seen = set()
     for doc in hit_docs:
@@ -74,10 +75,4 @@ def expand_to_parent_context(
                     expanded.append(doc)
         except Exception as e:
             logger.warning(f"fetch_adjacent failed doc={doc_id}: {e}")
-
-    # 按 document_id + chunk_index 排序
-    def sort_key(doc):
-        meta = getattr(doc, "metadata", {}) or {}
-        return (meta.get("document_id", 0), meta.get("chunk_index", 0))
-    expanded.sort(key=sort_key)
     return expanded

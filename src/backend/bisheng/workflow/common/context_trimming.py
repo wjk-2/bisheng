@@ -30,13 +30,16 @@ def estimate_tokens(text: str) -> int:
             return len(_ENC.encode(text))
         except Exception:
             pass
-    # 回退：中文 1 字符≈1-2 token，chars/4 偏低估（安全，少裁不超窗口的相反是可能超窗口）
-    # 用 chars/2 更安全（偏高估，裁更多，防超窗口）
-    return max(1, len(text) // 2)
+    # 回退（无 tiktoken）：中文 1 字符≈1-2 token，用 len(text) 作上界偏高估（保守，宁可多裁防超窗口）
+    return max(1, len(text))
 
 
 def trim_by_token(docs, max_tokens: int):
-    """按 token 累加裁剪 docs，返回裁剪后的子列表（不超 max_tokens）。"""
+    """按 token 累加裁剪 docs，返回裁剪后的子列表（不超 max_tokens）。
+
+    单条 doc 超过 max_tokens 时仍保留首条（至少返回一个结果，避免空 context），
+    但后续 doc 不再追加。
+    """
     if not docs:
         return []
     total = 0
@@ -45,7 +48,7 @@ def trim_by_token(docs, max_tokens: int):
         content = getattr(doc, "page_content", "") or ""
         t = estimate_tokens(content)
         if total + t > max_tokens and kept:
-            break
+            break  # 已有结果，超预算则停
         total += t
         kept.append(doc)
     return kept

@@ -82,3 +82,18 @@ def test_fetch_failure_falls_back_to_hits():
     out = mod.expand_to_parent_context(hits, fetch_adjacent=fetch)
     assert len(out) == 1
     assert out[0].page_content == "hit"
+
+
+def test_expand_preserves_rerank_relevance_order():
+    """命中 chunk 保持 rerank 原序（不被 document_id/chunk_index 物理重排）"""
+    mod = _load()
+    # 模拟 rerank 输出：doc2 最相关在前，doc1 在后
+    hits = [_doc("most_relevant", 2, 5), _doc("less_relevant", 1, 1)]
+
+    def fetch(doc_id, idxs):
+        return [_doc(f"adj{doc_id}_{i}", doc_id, i) for i in idxs if (doc_id, i) not in [(2, 5), (1, 1)]]
+
+    out = mod.expand_to_parent_context(hits, fetch_adjacent=fetch, window=1)
+    # 命中 chunk 仍在最前（保持 rerank 序），相邻追加在后
+    assert out[0].page_content == "most_relevant"
+    assert out[1].page_content == "less_relevant"
