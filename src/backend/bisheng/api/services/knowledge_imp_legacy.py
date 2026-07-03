@@ -661,7 +661,10 @@ def add_file_embedding(
         es_client.add_texts(texts=texts, metadatas=metadatas)
     except Exception as e:
         logger.exception(f"ES add_texts failed file={db_file.id}, rolling back Milvus")
+        # 回滚已写 Milvus（用 knowledge_id 查 knowledge 句柄，避免 NameError）
         try:
+            from bisheng.knowledge.domain.models.knowledge import KnowledgeDao
+            knowledge = KnowledgeDao.query_by_id(knowledge_id)
             delete_vector_files([db_file.id], knowledge)
         except Exception as ee:
             logger.error(f"rollback milvus failed file={db_file.id}: {ee}")

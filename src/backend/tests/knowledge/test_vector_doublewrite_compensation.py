@@ -45,3 +45,13 @@ def test_es_write_failure_reraises():
     after_es = body[es_pos:]
     # except 块内应有 raise（不静默吞）
     assert "raise" in after_es, "ES 失败未 raise（吞掉原异常）"
+
+
+def test_es_rollback_uses_knowledge_id_not_undefined_knowledge():
+    """ES 回滚块用 KnowledgeDao.query_by_id(knowledge_id) 取 knowledge，不引用未定义变量"""
+    src = _read_knowledge_imp_src()
+    body = _add_file_embedding_body(src)
+    es_pos = body.find("es_client.add_texts")
+    after_es = body[es_pos:]
+    assert "KnowledgeDao.query_by_id(knowledge_id)" in after_es, \
+        "ES 回滚未用 KnowledgeDao.query_by_id 取 knowledge（会 NameError）"
