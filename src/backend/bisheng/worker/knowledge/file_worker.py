@@ -292,6 +292,16 @@ def parse_knowledge_file_celery(file_id: int, preview_cache_key: str = None, cal
                                                 KnowledgeFileFailedError(exception=e).to_json_str())
         except Exception as ee:
             logger.error("mark file FAILED also failed: {}", str(ee))
+        # 兜底取 knowledge 句柄：_parse_knowledge_file 中途抛异常时赋值未完成，
+        # knowledge 恒 None 会导致 finally 清理分支跳过、部分写入的向量孤儿。
+        # 用 file_id 查 db_file.knowledge_id 再查 knowledge，使 finally 能清理。
+        if knowledge is None:
+            try:
+                _db_file = KnowledgeFileDao.get_file_by_ids([file_id])
+                if _db_file:
+                    knowledge = KnowledgeDao.query_by_id(_db_file[0].knowledge_id)
+            except Exception as ee:
+                logger.error("fallback query knowledge for cleanup failed: {}", str(ee))
     finally:
         db_file = KnowledgeFileDao.get_file_by_ids([file_id])
         if not db_file:
@@ -371,6 +381,14 @@ def retry_knowledge_file_celery(file_id: int, preview_cache_key: str = None, cal
                                                 KnowledgeFileFailedError(exception=e).to_json_str())
         except Exception as ee:
             logger.error("mark file FAILED also failed: {}", str(ee))
+        # 兜底取 knowledge 句柄（同 parse 路径，避免 finally 清理死分支）
+        if knowledge is None:
+            try:
+                _db_file = KnowledgeFileDao.get_file_by_ids([file_id])
+                if _db_file:
+                    knowledge = KnowledgeDao.query_by_id(_db_file[0].knowledge_id)
+            except Exception as ee:
+                logger.error("fallback query knowledge for cleanup failed: {}", str(ee))
     finally:
         db_file = KnowledgeFileDao.get_file_by_ids([file_id])
         if not db_file and knowledge:

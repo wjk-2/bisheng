@@ -48,3 +48,23 @@ def test_retry_except_marks_file_failed():
     # retry 的 _parse_knowledge_file except 分支应标 FAILED
     assert "KnowledgeFileStatus.FAILED" in fn, \
         "retry_knowledge_file_celery except 未标 FAILED"
+
+
+def test_parse_except_has_knowledge_fallback():
+    """parse except 块有 knowledge 兜底查询（避免 finally 清理死分支）"""
+    src = _read_file_worker_src()
+    start = src.find("def parse_knowledge_file_celery(")
+    end = src.find("\n@bisheng_celery.task", start + 1)
+    fn = src[start:end] if start != -1 else src
+    assert "KnowledgeDao.query_by_id" in fn, \
+        "parse except 未补 knowledge 兜底查询（finally 清理分支会死）"
+
+
+def test_retry_except_has_knowledge_fallback():
+    """retry except 块有 knowledge 兜底查询"""
+    src = _read_file_worker_src()
+    start = src.find("def retry_knowledge_file_celery(")
+    end = src.find("\n@bisheng_celery.task", start + 1)
+    fn = src[start:end] if start != -1 else src
+    assert "KnowledgeDao.query_by_id" in fn, \
+        "retry except 未补 knowledge 兜底查询（finally 清理分支会死）"
