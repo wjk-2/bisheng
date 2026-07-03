@@ -35,4 +35,24 @@ describe('B1 前后端类型对齐', () => {
     expect(p.filter_page_header_footer).toBe(1);
     expect(p.retain_images).toBe(0);
   });
+
+  it('空字符串/NaN/非正数 chunk_size 回退默认 1000', () => {
+    for (const bad of ['', 'abc', '-1', '0']) {
+      const p = buildFileProcessPayload({
+        chunkSize: bad, chunkOverlap: '0',
+        retainImages: true, enableFormula: true, forceOcr: true,
+        pageHeaderFooter: true,
+      });
+      expect(p.chunk_size).toBe(1000);
+    }
+  });
+
+  it('负数 chunk_overlap 回退 0', () => {
+    const p = buildFileProcessPayload({
+      chunkSize: '1000', chunkOverlap: '-5',
+      retainImages: true, enableFormula: true, forceOcr: true,
+      pageHeaderFooter: true,
+    });
+    expect(p.chunk_overlap).toBe(0);
+  });
 });

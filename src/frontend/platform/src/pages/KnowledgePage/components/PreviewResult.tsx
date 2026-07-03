@@ -102,12 +102,12 @@ export default function PreviewResult({
         }],
         separator: normalizeSeparators(separator),
         separator_rule: separatorRule,
-        chunk_size: chunkSize,
-        chunk_overlap: chunkOverlap,
-        retain_images: retainImages,
-        enable_formula: enableFormula,
-        force_ocr: forceOcr,
-        filter_page_header_footer: pageHeaderFooter
+        chunk_size: Number(chunkSize) || 1000,
+        chunk_overlap: Number(chunkOverlap) || 0,
+        retain_images: retainImages ? 1 : 0,
+        enable_formula: enableFormula ? 1 : 0,
+        force_ocr: forceOcr ? 1 : 0,
+        filter_page_header_footer: pageHeaderFooter ? 1 : 0
       },
       (eventType, data) => {
         switch (eventType) {

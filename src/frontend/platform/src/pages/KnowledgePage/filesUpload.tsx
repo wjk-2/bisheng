@@ -157,16 +157,16 @@ export default function FilesUpload() {
       knowledge_id: Number(_config.rules.knowledgeId || knowledgeId),
       separator: normalizeSeparators(_config.rules.separator),
       separator_rule: _config.rules.separatorRule,
-      chunk_size: _config.rules.chunkSize,
-      chunk_overlap: _config.rules.chunkOverlap,
+      chunk_size: Number(_config.rules.chunkSize) || 1000,
+      chunk_overlap: Number(_config.rules.chunkOverlap) || 0,
       file_list: _config.rules.fileList.map(item => ({
         file_path: item.filePath,
         excel_rule: _config.applyEachCell ? item.excelRule : _config.cellGeneralConfig
       })),
-      retain_images: _config.rules.retainImages,
-      enable_formula: _config.rules.enableFormula,
-      force_ocr: _config.rules.forceOcr,
-      filter_page_header_footer: _config.rules.pageHeaderFooter
+      retain_images: _config.rules.retainImages ? 1 : 0,
+      enable_formula: _config.rules.enableFormula ? 1 : 0,
+      force_ocr: _config.rules.forceOcr ? 1 : 0,
+      filter_page_header_footer: _config.rules.pageHeaderFooter ? 1 : 0
     };
 
     captureAndAlertRequestErrorHoc(subUploadLibFile(apiConfig).then(res => {

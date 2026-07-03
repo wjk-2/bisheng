@@ -154,7 +154,9 @@ export default function RuleFile({
     setInternalValues(prev => ({ ...prev, [key]: rawValue }));
 
     if (isAdjustMode) {
-      const snakeKey = camelToSnake(key);
+      // pageHeaderFooter 后端字段为 filter_page_header_footer（带 filter_ 前缀），camelToSnake 无法处理，显式映射
+      const SNAKE_KEY_MAP = { pageHeaderFooter: 'filter_page_header_footer' };
+      const snakeKey = SNAKE_KEY_MAP[key] ?? camelToSnake(key);
 
       let storedValue;
       if (typeof rawValue === 'boolean') {

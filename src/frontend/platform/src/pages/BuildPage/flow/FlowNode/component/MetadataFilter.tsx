@@ -339,7 +339,7 @@ const MetadataFilter = ({
       const validFieldIds = new Set<string>();
       knowledgeDetails.forEach((detail: any) => {
 
-        const defaultFields = ["document_id", "document_name", "upload_time", "update_time", "uploader", "updater"];
+        const defaultFields = DEFAULT_FILTER_METADATA_FIELDS.map((f) => f.name);
         defaultFields.forEach(field => {
           validFieldIds.add(`${detail.id}-${field}`);
         });

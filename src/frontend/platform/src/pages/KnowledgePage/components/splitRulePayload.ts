@@ -23,9 +23,12 @@ export interface FileProcessPayload {
 }
 
 export function buildFileProcessPayload(s: FileProcessState): FileProcessPayload {
+  // Number('')===0、Number('abc')===NaN，空/非法输入回退默认（chunk_size 1000、overlap 0），避免发 0/NaN 给后端
+  const chunkSize = Number(s.chunkSize);
+  const chunkOverlap = Number(s.chunkOverlap);
   return {
-    chunk_size: Number(s.chunkSize),
-    chunk_overlap: Number(s.chunkOverlap),
+    chunk_size: Number.isFinite(chunkSize) && chunkSize > 0 ? chunkSize : 1000,
+    chunk_overlap: Number.isFinite(chunkOverlap) && chunkOverlap >= 0 ? chunkOverlap : 0,
     retain_images: s.retainImages ? 1 : 0,
     enable_formula: s.enableFormula ? 1 : 0,
     force_ocr: s.forceOcr ? 1 : 0,

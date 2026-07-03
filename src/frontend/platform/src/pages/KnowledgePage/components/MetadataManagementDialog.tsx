@@ -12,7 +12,7 @@ import { addMetadata, updateMetadataFields, deleteMetadataFields } from "@/contr
 import { QuestionTooltip, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/bs-ui/tooltip"
 import { useTranslation } from "react-i18next"
 import { formatFieldType } from '../utils'
-import { BUILT_IN_METADATA_FIELDS } from './MetadataBuiltInFields'
+import { BUILT_IN_METADATA_FIELDS, DEFAULT_FILTER_METADATA_FIELDS } from './MetadataBuiltInFields'
 
 type MetadataType = "String" | "Number" | "Time"
 
@@ -465,7 +465,7 @@ export function MetadataManagementDialog({
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                {BUILT_IN_METADATA.slice(0, 6).map((metadata) => (
+                                {DEFAULT_FILTER_METADATA_FIELDS.map((metadata) => (
                                     <div
                                         key={metadata.name}
                                         className={cname("flex items-center bg-muted rounded-lg", isSmallScreen ? "p-2 gap-2" : "p-3 gap-3")}

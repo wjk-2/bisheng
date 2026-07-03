@@ -427,7 +427,7 @@ class FileProcessBase(BaseModel):
     chunk_size: Optional[int] = Field(default=1000, description='Split text length, default if not passed')
     chunk_overlap: Optional[int] = Field(default=100, description='Split text overlap length, default if not passed')
     retain_images: Optional[int] = Field(default=1, description='Keep document image')
-    force_ocr: Optional[int] = Field(default=0, description='EnableOCR')
+    force_ocr: Optional[int] = Field(default=1, description='EnableOCR')
     enable_formula: Optional[int] = Field(default=1, description='latexFormula Recognition')
     filter_page_header_footer: Optional[int] = Field(default=1, description='Filter Header Footer')
     excel_rule: Optional[ExcelRule] = Field(default=None, description="excel rule")
