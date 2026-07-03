@@ -1,13 +1,13 @@
-"""I3: 逻辑备份——rebuild 删前先备份 Milvus/ES 向量到 MinIO（防删后不可回退）。
+"""I3: 逻辑备份（未真实现，placeholder 模块，勿接入主流程）。
 
-彭总定案降级为逻辑备份（Milvus 2.3.3 无原生 snapshot、ES snapshot 需改生产配置触禁令）：
-- Milvus：query 全量导出向量 + metadata 到 MinIO（JSON/parquet）
-- ES：scroll + bulk dump 到 MinIO 文件
-- MinIO：版本化（bucket lifecycle）
-- MySQL：走运维 mysqldump cron，不在应用代码范围
+原计划：rebuild 删前先备份 Milvus/ES 向量到 MinIO（防删后不可回退）。
+降级方案：Milvus 2.3.3 无原生 snapshot、ES snapshot 需改生产配置触禁令，改逻辑备份。
 
-本模块提供 backup_before_rebuild 钩子，rebuild 删前调。
-本机无 Milvus/ES/MinIO，导出函数为 placeholder（部署后接真实导出）。
+**当前状态：未真实现**。本模块函数体仅构造 object_name 字符串，未 query Milvus、
+未 scroll ES、未调 minio_client.put_object。rebuild 已移除伪备份接线（避免误导）。
+
+真实现需补全：vector_client.col.query 全量 → 序列化 JSON → minio_client.put_object 全链路。
+实现前不要在 rebuild 或其他主流程调用 backup_before_rebuild。
 """
 import logging
 from datetime import datetime, timezone

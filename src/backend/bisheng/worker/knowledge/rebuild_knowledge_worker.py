@@ -48,9 +48,8 @@ def rebuild_knowledge_celery(knowledge_id: int, new_model_id: int, invoke_user_i
             [KnowledgeFileStatus.SUCCESS.value, KnowledgeFileStatus.REBUILDING.value]
         )
         # 2. According to thecollection_namewentmilvusDelete Vector Store in
-        # I3: 删向量前先逻辑备份到 MinIO（防重建失败不可回退；备份失败不阻断）
-        from bisheng.worker.knowledge.backup_worker import backup_before_rebuild
-        backup_before_rebuild(knowledge)
+        # I3 备份未真实现（backup_worker 为 placeholder，无 Milvus query/MinIO put_object 全链路），
+        # 移除伪备份接线避免"看似备份实则没有"的误导。rebuild 无备份是既有行为，待备份真实现后再接。
         KnowledgeService.delete_knowledge_file_in_vector(knowledge=knowledge, del_es=False)
 
         if not files:

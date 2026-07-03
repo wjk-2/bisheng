@@ -51,12 +51,16 @@ def test_errcode_base_logs_warning():
     assert "errcode=" in src and "msg=" in src
 
 
-def test_rebuild_calls_backup_before_delete():
-    """rebuild 删向量前调 backup_before_rebuild"""
+def test_rebuild_does_not_call_unimplemented_backup():
+    """rebuild 不接伪备份（backup_worker 未真实现，接了会误导）"""
     src = _read("bisheng/worker/knowledge/rebuild_knowledge_worker.py")
-    # backup_before_rebuild 应在 delete_knowledge_file_in_vector 之前
-    backup_idx = src.find("backup_before_rebuild")
-    delete_idx = src.find("delete_knowledge_file_in_vector")
-    assert backup_idx != -1, "rebuild 未调 backup_before_rebuild"
-    assert delete_idx != -1
-    assert backup_idx < delete_idx, "backup 应在 delete 之前（先备份再删）"
+    # rebuild 不应调 backup_before_rebuild（backup 是 placeholder）
+    assert "backup_before_rebuild(knowledge)" not in src, \
+        "rebuild 不应接伪备份（backup_worker 未真实现）"
+
+
+def test_backup_worker_docstring_marks_unimplemented():
+    """backup_worker docstring 明确标注未真实现，勿接入主流程"""
+    src = _read("bisheng/worker/knowledge/backup_worker.py")
+    assert "未真实现" in src or "placeholder" in src.lower(), \
+        "backup_worker 未标注未真实现（会误导后续接入）"
