@@ -161,6 +161,7 @@ export interface KnowledgeItem {
   create_time: string;
   update_time: string;
   user_id: number;
+  file_count?: number;
 }
 
 /**

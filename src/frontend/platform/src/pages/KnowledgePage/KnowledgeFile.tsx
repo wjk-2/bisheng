@@ -468,6 +468,7 @@ export default function KnowledgeFile() {
                     <TableHeader>
                         <TableRow>
                             <TableHead>{t('lib.libraryName', { ns: 'bs' })}</TableHead>
+                            <TableHead>{t('fileCount')}</TableHead>
                             <TableHead>{t('updateTime')}</TableHead>
                             <TableHead>{t('lib.createUser', { ns: 'bs' })}</TableHead>
                             <TableHead className="text-right">{t('operations')}</TableHead>
@@ -505,6 +506,10 @@ export default function KnowledgeFile() {
                                             </Tip>
                                         </div>
                                     </div>
+                                </TableCell>
+
+                                <TableCell>
+                                    {el.file_count ?? 0}
                                 </TableCell>
 
                                 <TableCell

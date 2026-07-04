@@ -307,6 +307,7 @@
     "type": "类型",
     "creationTime": "创建时间",
     "updateTime": "更新时间",
+    "fileCount": "文件数量",
     "creator": "创建者",
     "update": "更新",
     "unknown": "未知",
