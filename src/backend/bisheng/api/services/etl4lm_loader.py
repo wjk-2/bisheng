@@ -147,6 +147,14 @@ def merge_partitions(file_name, partitions, knowledge_id=None):
                 pix_h = _doc[0].rect.height
     except Exception:
         logger.warning(f"merge_partitions 拿页面尺寸失败 file={file_name}", exc_info=True)
+    # G2步2修复: 开头统一换算所有 partition bboxes（归一→像素 in-place）
+    # adapter 产归一 bbox[0,1]，但 pre_handle/extract_pdf_images/crop_image 用 numpy 切片
+    # 要 int 像素（crop_image:89 img[y1:y2,x1:x2]）。Task8 只改了循环末尾 metadata.bboxes，
+    # 漏了开头 pre_handle 阶段（在换算前），彭总含图文件报 crop TypeError。这里前置统一换算。
+    for part in partitions:
+        _ed = part.get("metadata", {}).get("extra_data", {})
+        if _ed.get("bboxes"):
+            _ed["bboxes"] = [normalize_bbox_to_pixel(b, pix_w, pix_h) for b in _ed["bboxes"]]
     # Pre-processingpdf, Extracting Images
     pre_handle_results = pre_handle(
         partitions=partitions, file_name=file_name, knowledge_id=knowledge_id
