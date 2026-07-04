@@ -1581,6 +1581,7 @@
   "deleteSuccess": "删除成功",
   "createTime": "创建时间",
   "updateTime": "更新时间",
+  "fileCount": "文件数量",
   "saved": "保存成功",
   "edit": "编辑",
   "enable": "启用",
