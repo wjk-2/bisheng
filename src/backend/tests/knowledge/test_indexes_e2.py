@@ -27,5 +27,5 @@ def test_recall_chunk_file_id_indexed():
 def test_e2_migration_exists():
     src = _read("bisheng/core/database/alembic/versions/e2_add_indexes_20260702.py")
     assert "ix_knowledge_update_time" in src
-    assert "ix_knowledge_file_update_time" in src
-    assert "ix_recall_chunk_file_id" in src
+    assert "ix_knowledgefile_update_time" in src  # 表名 knowledgefile（无下划线），索引名一致
+    assert "ix_recallchunk_file_id" in src  # 表名 recallchunk（无下划线），索引名一致

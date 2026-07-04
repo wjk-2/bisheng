@@ -18,6 +18,7 @@ from langchain_community.document_loaders.pdf import BasePDFLoader
 
 from bisheng.core.external.http_client.http_client_manager import get_http_client
 from bisheng.core.storage.minio.minio_manager import get_minio_storage_sync
+from bisheng.api.services.partition_coords import normalize_bbox_to_pixel
 
 logger = logging.getLogger(__name__)
 
@@ -136,6 +137,16 @@ def pre_handle(partitions, file_name, knowledge_id):
 
 
 def merge_partitions(file_name, partitions, knowledge_id=None):
+    # G2 步2 Task8: 拿 page0 尺寸（72DPI 像素=PDF点）供 bbox 归一换算
+    # adapter 产归一 bbox [0,1]（文字页 PyMuPDF / 扫描页 grounding），crop_image 用 72DPI
+    pix_w = pix_h = None
+    try:
+        with fitz.open(file_name) as _doc:
+            if len(_doc) > 0:
+                pix_w = _doc[0].rect.width
+                pix_h = _doc[0].rect.height
+    except Exception:
+        logger.warning(f"merge_partitions 拿页面尺寸失败 file={file_name}", exc_info=True)
     # Pre-processingpdf, Extracting Images
     pre_handle_results = pre_handle(
         partitions=partitions, file_name=file_name, knowledge_id=knowledge_id
@@ -173,7 +184,7 @@ def merge_partitions(file_name, partitions, knowledge_id=None):
 
         last_label = label
         metadata["bboxes"].extend(
-            list(map(lambda x: list(map(int, x)), extra_data["bboxes"]))
+            [normalize_bbox_to_pixel(b, pix_w, pix_h) for b in extra_data["bboxes"]]
         )
         metadata["pages"].extend(extra_data["pages"])
         metadata["types"].extend(extra_data["types"])
