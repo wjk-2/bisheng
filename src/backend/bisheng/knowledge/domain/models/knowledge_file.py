@@ -333,6 +333,25 @@ class KnowledgeFileDao(KnowledgeFileBase):
             return result.scalar_one()
 
     @classmethod
+    async def acount_files_by_knowledge_ids(cls, knowledge_ids: List[int]) -> Dict[int, int]:
+        """批量按 knowledge_id 统计文件数（async，避免 N+1）。
+        返回 {knowledge_id: count}；无文件的 knowledge_id 不在返回 dict 中（调用方 .get(kid, 0)）。
+        不过滤 status（所有文件，含成功/失败/处理中）。
+        """
+        if not knowledge_ids:
+            return {}
+        # SELECT knowledge_id, COUNT(id) FROM knowledgefile
+        # WHERE knowledge_id IN (...) GROUP BY knowledge_id
+        statement = (
+            select(KnowledgeFile.knowledge_id, func.count(KnowledgeFile.id))
+            .where(KnowledgeFile.knowledge_id.in_(knowledge_ids))
+            .group_by(KnowledgeFile.knowledge_id)
+        )
+        async with get_async_db_session() as session:
+            result = await session.execute(statement)
+            return {row[0]: row[1] for row in result.all()}
+
+    @classmethod
     def get_knowledge_ids_by_name(cls, file_name: str) -> List[int]:
         statement = select(KnowledgeFile.knowledge_id).where(KnowledgeFile.file_name.like(f'%{file_name}%')).group_by(
             KnowledgeFile.knowledge_id)

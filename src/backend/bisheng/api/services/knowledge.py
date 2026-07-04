@@ -2,7 +2,7 @@ import json
 import math
 import os
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from fastapi import BackgroundTasks, Request
 from loguru import logger
@@ -111,12 +111,17 @@ class KnowledgeService(KnowledgeUtils):
             )
             total = await KnowledgeDao.acount_all_knowledge(name, knowledge_type)
 
-        result = cls.convert_knowledge_read(login_user, res)
+        # 批量统计每个知识库的文件数（async group_by，避免 N+1）；不过滤 status
+        file_count_dict = await KnowledgeFileDao.acount_files_by_knowledge_ids(
+            [k.id for k in res]
+        ) if res else {}
+        result = cls.convert_knowledge_read(login_user, res, file_count_dict)
         return result, total
 
     @classmethod
     def convert_knowledge_read(
-            cls, login_user: UserPayload, knowledge_list: List[Knowledge]
+            cls, login_user: UserPayload, knowledge_list: List[Knowledge],
+            file_count_dict: Optional[Dict[int, int]] = None,
     ) -> List[KnowledgeRead]:
         db_user_ids = {one.user_id for one in knowledge_list}
         db_user_info = UserDao.get_user_by_ids(list(db_user_ids))
@@ -131,6 +136,8 @@ class KnowledgeService(KnowledgeUtils):
                     copiable=login_user.access_check(
                         one.user_id, str(one.id), AccessType.KNOWLEDGE_WRITE
                     ),
+                    file_count=file_count_dict.get(one.id, 0)
+                    if file_count_dict is not None else None,
                 )
             )
         return res

@@ -82,6 +82,8 @@ class KnowledgeRead(KnowledgeBase):
     id: int
     user_name: Optional[str] = None
     copiable: Optional[bool] = None
+    # GET /api/v1/knowledge 注入：该知识库下所有文件数（不过滤 status）
+    file_count: Optional[int] = None
 
 
 class KnowledgeUpdate(BaseModel):
