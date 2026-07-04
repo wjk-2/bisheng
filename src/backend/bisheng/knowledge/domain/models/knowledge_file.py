@@ -5,7 +5,7 @@ from typing import List, Optional, Dict, Any, Literal
 
 # if TYPE_CHECKING:
 from pydantic import field_validator
-from sqlalchemy import JSON, Column, DateTime, String, or_, text, Text
+from sqlalchemy import JSON, Boolean, Column, DateTime, String, or_, text, Text
 from sqlmodel import Field, delete, func, select, update, col
 
 from bisheng.common.models.base import SQLModelSerializable
@@ -63,6 +63,9 @@ class KnowledgeFileBase(SQLModelSerializable):
         DateTime, nullable=False, server_default=text('CURRENT_TIMESTAMP')))
     update_time: Optional[datetime] = Field(default=None, sa_column=Column(
         DateTime, nullable=False, index=True, server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')))
+    # E3: 软删除（True=已删，查询层 do_orm_execute event 全局过滤）
+    is_deleted: Optional[bool] = Field(default=False, sa_column=Column(Boolean, nullable=False, server_default=text('0'), index=True))
+    deleted_at: Optional[datetime] = Field(default=None, sa_column=Column(DateTime, nullable=True))
 
 
 class QAKnowledgeBase(SQLModelSerializable):
@@ -115,6 +118,17 @@ class QAKnowledge(QAKnowledgeBase, table=True):
 
 class KnowledgeFileRead(KnowledgeFileBase):
     id: int
+    # E1后split_rule是JSON列(Dict),前端多处假设字符串(.replace/JSON.parse)报
+    # a.split_rule.replace is not a function。response统一stringify,前端全适配
+    # (DB Dict不动,后端读容错不动,仅API返回str给前端)
+    split_rule: Optional[str] = None
+
+    @field_validator("split_rule", mode="before")
+    @classmethod
+    def _split_rule_dumps(cls, v):
+        if isinstance(v, dict):
+            return json.dumps(v, ensure_ascii=False)
+        return v
 
 
 class KnowledgeFileCreate(KnowledgeFileBase):
