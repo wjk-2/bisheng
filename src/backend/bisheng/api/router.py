@@ -5,8 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from loguru import logger
 
 from bisheng.api.v1 import (assistant_router, audit_router, chat_router, component_router,
-                            deployment_router, endpoints_router, evaluation_router, flows_router,
-                            group_router, mark_router,
+                            death_audit_router, deployment_router, endpoints_router,
+                            evaluation_router, flows_router, group_router, mark_router,
                             report_router, skillcenter_router, tag_router,
                             user_router, validate_router, variable_router, workflow_router,
                             workstation_router, tool_router, invite_code_router)
@@ -57,6 +57,7 @@ router.include_router(session_router)
 router.include_router(share_link_router)
 # router.include_router(telemetry_search_router)  # disabled: telemetry_search module unavailable
 router.include_router(deployment_router)
+router.include_router(death_audit_router)
 
 _EAGENT_API_KEY = os.getenv('EAGENT_API_KEY', '')
 if not _EAGENT_API_KEY:
